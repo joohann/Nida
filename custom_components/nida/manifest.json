@@ -1,15 +1,15 @@
 {
-  "domain": "prayer_times",
-  "name": "Prayer Times",
+  "domain": "nida",
+  "name": "Nida",
   "version": "1.0.0",
-  "documentation": "https://aladhan.com/prayer-times-api",
+  "documentation": "https://github.com/joohann/Nida",
   "requirements": [],
   "dependencies": [],
-  "codeowners": [],
+  "codeowners": ["@joohann"],
   "config_flow": true,
   "iot_class": "cloud_polling",
   "loggers": [
-    "prayer_times"
+    "nida"
   ],
   "icon": "mdi:mosque"
 }
