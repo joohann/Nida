@@ -86,7 +86,7 @@ sounds/
   02-tarhim.mp3
 ```
 
-Sound files are automatically copied to `/www/prayer_times/sounds/` on installation so Sonos and other speakers can access them without authentication issues.
+Sound files are automatically copied to `/www/nida/sounds/` on installation so Sonos and other speakers can access them without authentication issues.
 
 ---
 
@@ -127,28 +127,28 @@ Sound files are automatically copied to `/www/prayer_times/sounds/` on installat
 
 ## 🛠️ Services
 
-### `prayer_times.preview_adhan`
+### `nida.preview_adhan`
 Play an adhan as a preview.
 ```yaml
-service: prayer_times.preview_adhan
+service: nida.preview_adhan
 data:
   sound: 01-02-adhan-day.mp3
   speaker: media_player.living_room
   volume: 0.5
 ```
 
-### `prayer_times.test_prayer`
+### `nida.test_prayer`
 Test the adhan for a specific prayer.
 ```yaml
-service: prayer_times.test_prayer
+service: nida.test_prayer
 data:
   prayer: dhuhr
 ```
 
-### `prayer_times.test_tarhim`
+### `nida.test_tarhim`
 Test the tarhim recitation.
 ```yaml
-service: prayer_times.test_tarhim
+service: nida.test_tarhim
 data:
   sound: 01-tarhim.mp3
   speaker: media_player.bedroom
@@ -163,11 +163,11 @@ Add this card to your dashboard for a beautiful display with live countdown time
 
 ```yaml
 type: iframe
-url: /local/prayer_times/dashboard.html
+url: /local/nida/dashboard.html
 aspect_ratio: 85%
 ```
 
-The dashboard is automatically copied to `/www/prayer_times/` on installation — no manual setup needed.
+The dashboard is automatically copied to `/www/nida/` on installation — no manual setup needed.
 
 ---
 
