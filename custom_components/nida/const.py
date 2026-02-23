@@ -1,6 +1,6 @@
 """Constants for Prayer Times integration."""
 
-DOMAIN = "prayer_times"
+DOMAIN = "nida"
 
 CONF_CITY = "city"
 CONF_COUNTRY = "country"
@@ -98,7 +98,7 @@ def get_fajr_sounds():
 def get_day_sounds():
     """Scan sounds folder for day adhan MP3s."""
     import os
-    sounds_dir = "/config/www/prayer_times/sounds"
+    sounds_dir = "/config/www/nida/sounds"
     result = {}
     try:
         for f in sorted(os.listdir(sounds_dir)):
@@ -160,7 +160,7 @@ def _format_sound_label(filename: str) -> str:
 def get_suhoor_sounds() -> dict:
     """Get all suhoor MP3 files."""
     import os
-    sounds_dir = "/config/www/prayer_times/sounds"
+    sounds_dir = "/config/www/nida/sounds"
     result = {}
     try:
         for f in sorted(os.listdir(sounds_dir)):
@@ -173,7 +173,7 @@ def get_suhoor_sounds() -> dict:
 def get_jingle_sounds() -> dict:
     """Get all jingle MP3 files."""
     import os
-    sounds_dir = "/config/www/prayer_times/sounds"
+    sounds_dir = "/config/www/nida/sounds"
     result = {}
     try:
         for f in sorted(os.listdir(sounds_dir)):

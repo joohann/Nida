@@ -44,14 +44,14 @@ async def async_copy_sounds(hass: HomeAssistant):
     """Copy sounds and dashboard from integration to www folder."""
     # Copy dashboard HTML
     dashboard_src = os.path.join(os.path.dirname(__file__), "www", "dashboard.html")
-    dashboard_dst = hass.config.path("www/prayer_times/dashboard.html")
+    dashboard_dst = hass.config.path("www/nida/dashboard.html")
     os.makedirs(os.path.dirname(dashboard_dst), exist_ok=True)
     if os.path.exists(dashboard_src):
         shutil.copy2(dashboard_src, dashboard_dst)
         _LOGGER.info("Copied dashboard.html")
     """Copy sounds from integration to www folder on install."""
     sounds_src = os.path.join(os.path.dirname(__file__), "sounds")
-    sounds_dst = hass.config.path("www/prayer_times/sounds")
+    sounds_dst = hass.config.path("www/nida/sounds")
     os.makedirs(sounds_dst, exist_ok=True)
     for f in os.listdir(sounds_src):
         if f.endswith(".mp3"):
@@ -142,7 +142,7 @@ async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
         sound = options.get(CONF_DAY_SOUND, "01-adhan.mp3")
 
     play_method = options.get(CONF_PLAY_METHOD, "media_player")
-    media_path = await _get_media_url(hass, f"/local/prayer_times/sounds/{sound}")
+    media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
 
     _LOGGER.info(f"Playing {sound} on {speaker} at volume {volume}")
 
@@ -229,7 +229,7 @@ async def check_reminders(hass, entry, coordinator, now_ts, prayers):
 
                 # Speel chime geluid
                 if sound:
-                    media_path = await _get_media_url(hass, f"/local/prayer_times/sounds/{sound}")
+                    media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
                     try:
                         await hass.services.async_call(
                             "media_player", "play_media",
@@ -293,7 +293,7 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
             if isinstance(speaker, str): speaker = [speaker]
             volume = _get_volume(options, CONF_TARHIM_VOLUME, 10)
             sound = options.get(CONF_TARHIM_SOUND, "01-tarhim.mp3")
-            media_path = await _get_media_url(hass, f"/local/prayer_times/sounds/{sound}")
+            media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
 
             _LOGGER.info(f"Playing tarhim: {sound}")
             await hass.services.async_call(
@@ -320,7 +320,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         speaker = call.data.get("speaker", options.get(CONF_DAY_SPEAKER, "media_player.adhan_speakers"))
         volume = call.data.get("volume", 0.5)
         play_method = options.get(CONF_PLAY_METHOD, "media_player")
-        media_path = await _get_media_url(hass, f"/local/prayer_times/sounds/{sound}")
+        media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
 
         if play_method == "media_player":
             await hass.services.async_call(
@@ -355,7 +355,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         speaker = call.data.get("speaker", options.get(CONF_TARHIM_SPEAKER, "media_player.adhan_speakers"))
         volume = call.data.get("volume", options.get(CONF_TARHIM_VOLUME, 0.4))
         sound = options.get(CONF_TARHIM_SOUND, "01-tarhim.mp3")
-        media_path = await _get_media_url(hass, f"/local/prayer_times/sounds/{sound}")
+        media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
 
         await hass.services.async_call(
             "media_player", "play_media",
@@ -417,7 +417,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
 
         # Speel geluid
         if sound:
-            media_path = await _get_media_url(hass, f"/local/prayer_times/sounds/{sound}")
+            media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
             await hass.services.async_call(
                 "media_player", "play_media",
                 {"entity_id": speaker, "media_content_id": media_path,
