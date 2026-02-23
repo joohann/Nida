@@ -1,0 +1,28 @@
+{
+  "config": {
+    "step": {
+      "intro": {
+        "title": "Nida — Waktu Solat Islam",
+        "description": "**بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ**\n\n**Assalāmu ʿAlaykum wa Raḥmatullāhi wa Barakātuh** 🌙\n\nSelamat datang ke **Nida** untuk Home Assistant — teman solat Islam yang lengkap untuk rumah pintar anda.\n\nSemoga Allah ﷻ menerima solat anda dan menjadikan integrasi ini sumber kebaikan di rumah anda.\n\n---\n\n🕌 Waktu Solat berdasarkan lokasi via AlAdhan API\n🔔 Peringatan sebelum Azan dengan bunyi dan mesej suara\n🌅 Azan Subuh dengan audio khusus\n📢 Azan untuk semua solat\n📱 Pemberitahuan ke peranti anda\n🌙 Ciri Ramadan — penggera Sahur dan Tarhim\n📅 Kalendar Hijri dengan hari kebesaran Islam\n\n---\n\nSemoga Allah membalas pasukan aladhan.com dengan sebaik-baik balasan. Ameen. 🤲\n\n*— Iftikhar Farzan Izz Al Din Muhsin*"
+      },
+      "location": { "title": "Lokasi & Kaedah Pengiraan", "description": "Masukkan bandar dan negara anda untuk mendapatkan waktu solat yang tepat.", "data": { "city": "Bandar", "country": "Negara", "method": "Kaedah Pengiraan" } },
+      "reminders": { "title": "Peringatan Sebelum Azan", "description": "Mainkan bunyi dan mesej sebelum setiap solat. Gunakan [minutes] dan [prayer] dalam mesej anda.", "data": { "reminder_1_enabled": "Peringatan pertama", "reminder_1_minutes": "Minit sebelum azan", "reminder_1_sound": "Bunyi", "reminder_1_lang": "Bahasa", "reminder_1_tts": "Mesej", "reminder_2_enabled": "Peringatan kedua", "reminder_2_minutes": "Minit sebelum azan", "reminder_2_sound": "Bunyi", "reminder_2_lang": "Bahasa", "reminder_2_tts": "Mesej" } },
+      "fajr": { "title": "Azan Subuh", "description": "Konfigurasi azan Subuh — solat pertama pada hari.", "data": { "fajr_sound": "Bunyi Subuh", "fajr_speaker": "Pembesar suara", "fajr_volume": "Kelantangan" } },
+      "adhan": { "title": "Tetapan Azan", "description": "Konfigurasi azan untuk semua solat.", "data": { "day_sound": "Bunyi Azan", "day_speaker": "Pembesar suara", "day_volume": "Kelantangan siang", "night_volume_enabled": "Kelantangan rendah pada malam", "night_volume": "Kelantangan malam", "night_start_hour": "Malam bermula pada (jam)" } },
+      "notifications": { "title": "Pemberitahuan", "description": "Hantar pemberitahuan pada setiap waktu solat.", "data": { "notify_on_prayer": "Beritahu pada setiap solat", "notify_target": "Perkhidmatan pemberitahuan", "notify_title": "Tajuk", "notify_message": "Mesej (gunakan {prayer})" } },
+      "ramadan": { "title": "Ramadan 🌙", "description": "Ciri istimewa untuk bulan Ramadan yang mulia.", "data": { "suhoor_alarm_enabled": "Aktifkan penggera Sahur", "suhoor_alarm_minutes": "Minit sebelum Subuh", "suhoor_alarm_sound": "Bunyi Sahur", "suhoor_alarm_volume": "Kelantangan Sahur", "tarhim_enabled": "Aktifkan Tarhim sebelum Subuh", "tarhim_sound": "Bunyi Tarhim", "tarhim_speaker": "Pembesar suara", "tarhim_volume": "Kelantangan" } }
+    },
+    "error": { "cannot_connect": "Tidak dapat sambung ke AlAdhan API", "invalid_location": "Bandar atau negara tidak sah" },
+    "abort": { "already_configured": "Nida sudah dikonfigurasi" }
+  },
+  "options": {
+    "step": {
+      "init": { "title": "Lokasi & Kaedah Pengiraan", "data": { "city": "Bandar", "country": "Negara", "method": "Kaedah Pengiraan" } },
+      "reminders": { "title": "Peringatan Sebelum Azan", "data": { "reminder_1_enabled": "Peringatan pertama", "reminder_1_minutes": "Minit sebelum azan", "reminder_1_sound": "Bunyi", "reminder_1_lang": "Bahasa", "reminder_1_tts": "Mesej", "reminder_2_enabled": "Peringatan kedua", "reminder_2_minutes": "Minit sebelum azan", "reminder_2_sound": "Bunyi", "reminder_2_lang": "Bahasa", "reminder_2_tts": "Mesej" } },
+      "fajr": { "title": "Azan Subuh", "data": { "fajr_sound": "Bunyi Subuh", "fajr_speaker": "Pembesar suara", "fajr_volume": "Kelantangan" } },
+      "adhan": { "title": "Tetapan Azan", "data": { "day_sound": "Bunyi Azan", "day_speaker": "Pembesar suara", "day_volume": "Kelantangan siang", "night_volume_enabled": "Kelantangan rendah malam", "night_volume": "Kelantangan malam", "night_start_hour": "Malam bermula" } },
+      "notifications": { "title": "Pemberitahuan", "data": { "notify_on_prayer": "Beritahu setiap solat", "notify_target": "Perkhidmatan", "notify_title": "Tajuk", "notify_message": "Mesej" } },
+      "ramadan": { "title": "Ramadan 🌙", "data": { "suhoor_alarm_enabled": "Penggera Sahur", "suhoor_alarm_minutes": "Minit sebelum Subuh", "suhoor_alarm_sound": "Bunyi Sahur", "suhoor_alarm_volume": "Kelantangan", "tarhim_enabled": "Tarhim", "tarhim_sound": "Bunyi Tarhim", "tarhim_speaker": "Pembesar suara", "tarhim_volume": "Kelantangan" } }
+    }
+  }
+}

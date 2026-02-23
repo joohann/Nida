@@ -130,13 +130,25 @@ REMINDER_LANGUAGES = {
     "en": "English",
     "ar": "العربية",
     "tr": "Türkçe",
+    "de": "Deutsch",
+    "fr": "Français",
+    "ms": "Bahasa Melayu",
+    "id": "Bahasa Indonesia",
+    "ur": "اردو",
+    "fa": "فارسی",
 }
 
 REMINDER_DEFAULT_TEXTS = {
     "nl": "Over [minutes] minuten is het tijd voor [prayer]",
     "en": "In [minutes] minutes it is time for [prayer]",
-    "ar": "‏بعد [minutes] دقيقة حان وقت صلاة [prayer]",
+    "ar": "بعد [minutes] دقيقة حان وقت صلاة [prayer]",
     "tr": "[prayer] namazına [minutes] dakika kaldı",
+    "de": "In [minutes] Minuten ist es Zeit für [prayer]",
+    "fr": "Dans [minutes] minutes, c'est l'heure de [prayer]",
+    "ms": "[prayer] akan tiba dalam [minutes] minit",
+    "id": "[prayer] akan tiba dalam [minutes] menit",
+    "ur": "[minutes] منٹ میں [prayer] کا وقت ہوگا",
+    "fa": "تا [minutes] دقیقه دیگر وقت نماز [prayer] است",
 }
 
 def _format_sound_label(filename: str) -> str:
