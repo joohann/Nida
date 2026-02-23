@@ -214,31 +214,44 @@ data:
 
 ## 📊 Dashboard Card
 
-Add this card to your dashboard for a beautiful display with live countdown timer:
+Nida includes a beautiful custom Lovelace card (`nida-card.js`) with a live countdown timer that automatically adapts to your Home Assistant light or dark theme.
+
+The card is automatically copied to `/www/nida/nida-card.js` on installation.
+
+**Step 1 — Add the resource** (once):
+
+Go to **Settings → Dashboards → ⋮ → Resources → Add Resource**
+
+| Field | Value |
+|---|---|
+| URL | `/local/nida/nida-card.js` |
+| Resource type | `JavaScript Module` |
+
+**Step 2 — Add the card** to your dashboard:
 
 ```yaml
-type: iframe
-url: /local/nida/dashboard.html
-aspect_ratio: 85%
+type: custom:nida-card
 ```
 
-The dashboard is automatically copied to `/www/nida/` on installation — no manual setup needed.
+Optional configuration:
 
-> **First time setup:** The dashboard card needs a Long-Lived Access Token. Go to your **Profile → Security → Long-Lived Access Tokens**, create a token and paste it into the card when prompted. It will be saved locally and never needs to be entered again.
+```yaml
+type: custom:nida-card
+theme: auto   # auto (default), light, or dark
+```
 
 ---
 
 ## 🤖 Automation Example
 
+Notifications are built into the setup wizard, but you can also build your own automations using the prayer time sensors:
+
 ```yaml
 automation:
   - alias: "Notification at Maghrib"
     trigger:
-      - platform: state
-        entity_id: sensor.next_prayer
-    condition:
-      - condition: template
-        value_template: "{{ 'Maghrib' in trigger.to_state.state }}"
+      - platform: time
+        at: sensor.07_maghrib
     action:
       - service: notify.mobile_app
         data:
