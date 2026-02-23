@@ -239,25 +239,6 @@ Optional configuration:
 type: custom:nida-card
 theme: auto   # auto (default), light, or dark
 ```
-
----
-
-## 🤖 Automation Example
-
-Notifications are built into the setup wizard, but you can also build your own automations using the prayer time sensors:
-
-```yaml
-automation:
-  - alias: "Notification at Maghrib"
-    trigger:
-      - platform: time
-        at: sensor.07_maghrib
-    action:
-      - service: notify.mobile_app
-        data:
-          message: "🌅 Maghrib: {{ states('sensor.07_maghrib_readable') }}"
-```
-
 ---
 
 ## 🌍 Calculation Methods
