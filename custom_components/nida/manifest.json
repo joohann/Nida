@@ -5,10 +5,13 @@
   "documentation": "https://github.com/joohann/Nida",
   "requirements": [],
   "dependencies": [],
-  "codeowners": ["@joohann"],
+  "codeowners": [
+    "@joohann"
+  ],
   "config_flow": true,
   "iot_class": "cloud_polling",
   "loggers": [
     "nida"
-  ]
+  ],
+  "issue_tracker": "https://github.com/joohann/Nida/issues"
 }
