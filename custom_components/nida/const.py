@@ -61,48 +61,63 @@ TARHIM_SOUNDS = {
     "tarhim.mp3": "Tarhim 1",
 }
 
+# Pad naar de sounds map (www/sounds/ in de repo = /config/www/sounds/ op HA)
+_SOUNDS_DIR = "/config/www/sounds"
 
 
+def _format_sound_label(filename: str) -> str:
+    """Convert filename to readable label.
+    01-adhan.mp3      -> Adhan 01
+    01-adhan-fajr.mp3 -> Adhan Fajr 01
+    01-jingle.mp3     -> Jingle 01
+    01-tarhim.mp3     -> Tarhim 01
+    """
+    import re
+    name = filename.replace('.mp3', '')
+    parts = re.split(r'[-_]', name)
+    numbers = [p for p in parts if p.isdigit()]
+    words = [p.capitalize() for p in parts if not p.isdigit()]
+    num = numbers[-1] if numbers else ""
+    if words and num:
+        return f"{' '.join(words)} {num}"
+    return name.replace('-', ' ').replace('_', ' ').title()
 
-def get_tarhim_sounds():
+
+def get_tarhim_sounds() -> dict:
     """Scan sounds folder for tarhim MP3s."""
     import os
-    sounds_path = os.path.join(os.path.dirname(__file__), "sounds")
-    sounds = {}
-    try:
-        with os.scandir(sounds_path) as entries:
-            for entry in sorted(entries, key=lambda e: e.name):
-                if entry.name.endswith(".mp3") and "tarhim" in entry.name.lower():
-                    label = entry.name.replace(".mp3", "").replace("-", " ").title()
-                    sounds[entry.name] = label
-    except Exception:
-        pass
-    return sounds if sounds else {"01-tarhim.mp3": "Tarhim 1"}
-
-
-def get_fajr_sounds():
-    """Scan sounds folder for fajr MP3s."""
-    import os
-    sounds_path = os.path.join(os.path.dirname(__file__), "sounds")
-    sounds = {}
-    try:
-        for f in sorted(os.listdir(sounds_path)):
-            if f.endswith(".mp3") and "fajr" in f.lower():
-                label = f.replace(".mp3", "").replace("-", " ").title()
-                sounds[f] = label
-    except Exception:
-        pass
-    return sounds if sounds else {"01-01-adhan-fajr.mp3": "Adhan Fajr 1"}
-
-
-def get_day_sounds():
-    """Scan sounds folder for day adhan MP3s."""
-    import os
-    sounds_dir = "/config/www/nida/sounds"
     result = {}
     try:
-        for f in sorted(os.listdir(sounds_dir)):
-            if (f.endswith('.mp3') and 'adhan' in f.lower()
+        with os.scandir(_SOUNDS_DIR) as entries:
+            for entry in sorted(entries, key=lambda e: e.name):
+                if entry.name.endswith(".mp3") and "tarhim" in entry.name.lower():
+                    result[entry.name] = _format_sound_label(entry.name)
+    except Exception:
+        pass
+    return result if result else {"01-tarhim.mp3": "Tarhim 01"}
+
+
+def get_fajr_sounds() -> dict:
+    """Scan sounds folder for fajr MP3s."""
+    import os
+    result = {}
+    try:
+        for f in sorted(os.listdir(_SOUNDS_DIR)):
+            if f.endswith(".mp3") and "fajr" in f.lower():
+                result[f] = _format_sound_label(f)
+    except Exception:
+        pass
+    return result if result else {"01-adhan-fajr.mp3": "Adhan Fajr 01"}
+
+
+def get_day_sounds() -> dict:
+    """Scan sounds folder for day adhan MP3s."""
+    import os
+    result = {}
+    try:
+        for f in sorted(os.listdir(_SOUNDS_DIR)):
+            if (f.endswith('.mp3')
+                    and 'adhan' in f.lower()
                     and 'fajr' not in f.lower()
                     and 'tarhim' not in f.lower()
                     and 'jingle' not in f.lower()
@@ -111,6 +126,33 @@ def get_day_sounds():
     except Exception:
         pass
     return result if result else {"01-adhan.mp3": "Adhan 01"}
+
+
+def get_suhoor_sounds() -> dict:
+    """Scan sounds folder for suhoor MP3s."""
+    import os
+    result = {}
+    try:
+        for f in sorted(os.listdir(_SOUNDS_DIR)):
+            if f.endswith('.mp3') and 'suhoor' in f.lower():
+                result[f] = _format_sound_label(f)
+    except Exception:
+        pass
+    return result if result else {"01-suhoor.mp3": "Suhoor 01"}
+
+
+def get_jingle_sounds() -> dict:
+    """Scan sounds folder for jingle MP3s."""
+    import os
+    result = {}
+    try:
+        for f in sorted(os.listdir(_SOUNDS_DIR)):
+            if f.endswith('.mp3') and 'jingle' in f.lower():
+                result[f] = _format_sound_label(f)
+    except Exception:
+        pass
+    return result
+
 
 # Pre-adhan reminders
 CONF_REMINDER_1_ENABLED = "reminder_1_enabled"
@@ -150,48 +192,3 @@ REMINDER_DEFAULT_TEXTS = {
     "ur": "[minutes] منٹ میں [prayer] کا وقت ہوگا",
     "fa": "تا [minutes] دقیقه دیگر وقت نماز [prayer] است",
 }
-
-def _format_sound_label(filename: str) -> str:
-    """Convert filename to readable label.
-    01-adhan.mp3      -> Adhan 01
-    01-adhan-fajr.mp3 -> Adhan Fajr 01
-    01-jingle.mp3     -> Jingle 01
-    01-tarhim.mp3     -> Tarhim 01
-    """
-    import re
-    name = filename.replace('.mp3', '')
-    parts = re.split(r'[-_]', name)
-    numbers = [p for p in parts if p.isdigit()]
-    words = [p.capitalize() for p in parts if not p.isdigit()]
-    # Gebruik laatste getal als versienummer
-    num = numbers[-1] if numbers else ""
-    if words and num:
-        return f"{' '.join(words)} {num}"
-    return name.replace('-', ' ').replace('_', ' ').title()
-
-def get_suhoor_sounds() -> dict:
-    """Get all suhoor MP3 files."""
-    import os
-    sounds_dir = "/config/www/nida/sounds"
-    result = {}
-    try:
-        for f in sorted(os.listdir(sounds_dir)):
-            if f.endswith('.mp3') and 'suhoor' in f.lower():
-                result[f] = _format_sound_label(f)
-    except Exception:
-        pass
-    return result if result else {"01-suhoor.mp3": "Suhoor 01"}
-
-def get_jingle_sounds() -> dict:
-    """Get all jingle MP3 files."""
-    import os
-    sounds_dir = "/config/www/nida/sounds"
-    result = {}
-    try:
-        for f in sorted(os.listdir(sounds_dir)):
-            if f.endswith('.mp3') and 'jingle' in f.lower():
-                result[f] = _format_sound_label(f)
-    except Exception:
-        pass
-    return result
-
