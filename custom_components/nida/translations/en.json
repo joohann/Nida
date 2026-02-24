@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "intro": {
-        "title": "Prayer Times",
+        "title": "Nida",
         "description": "**بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ**\n\n**Assalamu Alaikum wa Rahmatullahi wa Barakatuh** 🌙\n\nWelcome to **Prayer Times** for Home Assistant — a complete and customizable Islamic prayer companion for your smart home.\n\nMay Allah ﷻ accept your prayers and make this integration a means of khayr (goodness) in your household.\n\n---\n\n🕌 Location-Based Prayer Times via AlAdhan API\n🔔 Pre-Adhan Reminders with sound and spoken message\n🌅 Fajr Adhan with dedicated audio\n📢 Adhan for All Prayers with day and night volume\n📱 Device Notifications to mobile and speakers\n🌙 Ramadan Features — Suhoor alarm and Tarhim\n📅 Hijri Calendar with Islamic holidays\n\n---\n\nMay Allah reward the team at aladhan.com abundantly. Ameen. 🤲\n\n*— Iftikhar Farzan Izz Al Din Muhsin*"
       },
       "location": {
