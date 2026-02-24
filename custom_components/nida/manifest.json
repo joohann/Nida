@@ -10,6 +10,5 @@
   "iot_class": "cloud_polling",
   "loggers": [
     "nida"
-  ],
-  "icon": "mdi:mosque"
+  ]
 }
