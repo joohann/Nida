@@ -1,4 +1,4 @@
-"""Prayer Times Integration."""
+"""Nida Integration."""
 from __future__ import annotations
 
 from datetime import timedelta, datetime
@@ -41,25 +41,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_copy_sounds(hass: HomeAssistant):
-    """Copy sounds and dashboard from integration to www folder."""
-    # Copy dashboard HTML
-    dashboard_src = os.path.join(os.path.dirname(__file__), "www", "dashboard.html")
-    dashboard_dst = hass.config.path("www/nida/dashboard.html")
-    os.makedirs(os.path.dirname(dashboard_dst), exist_ok=True)
-    if os.path.exists(dashboard_src):
-        shutil.copy2(dashboard_src, dashboard_dst)
-        _LOGGER.info("Copied dashboard.html")
-    """Copy sounds from integration to www folder on install."""
+    """Copy sounds from integration to /config/www/sounds/ on install/update."""
+
+    # Sounds staan in custom_components/nida/sounds/ (meegeleverd via HACS)
     sounds_src = os.path.join(os.path.dirname(__file__), "sounds")
-    sounds_dst = hass.config.path("www/nida/sounds")
+    sounds_dst = hass.config.path("www/sounds")
+
+    if not os.path.isdir(sounds_src):
+        _LOGGER.warning(f"Sounds source directory not found: {sounds_src}")
+        return
+
     os.makedirs(sounds_dst, exist_ok=True)
-    for f in os.listdir(sounds_src):
+    copied = 0
+    for f in sorted(os.listdir(sounds_src)):
         if f.endswith(".mp3"):
             src = os.path.join(sounds_src, f)
             dst = os.path.join(sounds_dst, f)
             if not os.path.exists(dst):
                 shutil.copy2(src, dst)
+                copied += 1
                 _LOGGER.info(f"Copied sound: {f}")
+
+    if copied:
+        _LOGGER.info(f"Copied {copied} sound(s) to {sounds_dst}")
+    else:
+        _LOGGER.debug(f"All sounds already present in {sounds_dst}")
 
 
 async def async_setup_adhan_scheduler(hass: HomeAssistant, entry: ConfigEntry, coordinator):
@@ -79,10 +85,17 @@ async def async_setup_adhan_scheduler(hass: HomeAssistant, entry: ConfigEntry, c
         }
         current_time = now.strftime("%H:%M")
         now_ts = now.timestamp()
+
+        # Op vrijdag: Dhuhr vervangen door Jumat
+        is_friday = now.weekday() == 4
+        if is_friday and "Dhuhr" in prayers:
+            prayers["Jumat"] = prayers.pop("Dhuhr")
+
         for prayer, time_str in prayers.items():
             if current_time == time_str:
+                prayer_key = "jumat" if prayer == "Jumat" else prayer.lower()
                 _LOGGER.info(f"Playing adhan for {prayer}")
-                hass.async_create_task(play_adhan(hass, entry, prayer.lower()))
+                hass.async_create_task(play_adhan(hass, entry, prayer_key))
 
         hass.async_create_task(check_tarhim(hass, entry, coordinator, now_ts))
         hass.async_create_task(check_reminders(hass, entry, coordinator, now_ts, prayers))
@@ -108,9 +121,9 @@ async def _get_media_url(hass, local_path: str) -> str:
     base_url = base_url.rstrip("/")
     return f"{base_url}{local_path}"
 
+
 def _get_volume(options, base_vol_key, base_default):
     """Geef het juiste volume terug op basis van dag/nacht instelling."""
-    from datetime import datetime
     raw = options.get(base_vol_key, base_default)
     volume = raw / 100 if raw > 1 else raw
 
@@ -118,7 +131,6 @@ def _get_volume(options, base_vol_key, base_default):
     if night_enabled:
         night_start = int(options.get("night_start_hour", 22))
         current_hour = datetime.now().hour
-        # Nacht = na night_start OF voor 6 uur
         if current_hour >= night_start or current_hour < 6:
             raw_night = options.get("night_volume", 10)
             volume = raw_night / 100 if raw_night > 1 else raw_night
@@ -135,6 +147,11 @@ async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
         if isinstance(speaker, str): speaker = [speaker]
         volume = _get_volume(options, CONF_FAJR_VOLUME, 10)
         sound = options.get(CONF_FAJR_SOUND, "01-adhan-fajr.mp3")
+    elif prayer_type == "jumat":
+        speaker = options.get("jumat_speaker", options.get(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"]))
+        if isinstance(speaker, str): speaker = [speaker]
+        volume = _get_volume(options, "jumat_volume", options.get(CONF_DAY_VOLUME, 50))
+        sound = options.get("jumat_sound", options.get(CONF_DAY_SOUND, "01-adhan.mp3"))
     else:
         speaker = options.get(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"])
         if isinstance(speaker, str): speaker = [speaker]
@@ -142,7 +159,7 @@ async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
         sound = options.get(CONF_DAY_SOUND, "01-adhan.mp3")
 
     play_method = options.get(CONF_PLAY_METHOD, "media_player")
-    media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+    media_path = await _get_media_url(hass, f"/local/sounds/{sound}")
 
     _LOGGER.info(f"Playing {sound} on {speaker} at volume {volume}")
 
@@ -172,29 +189,19 @@ async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
 
 async def async_send_notification(hass: HomeAssistant, entry: ConfigEntry, message: str, title: str = "🕌 Prayer Times"):
     """Send notification if configured."""
-    options = entry.options if entry.options else entry.data
-    if not options.get("notify_on_prayer", False):
-        return
-    target = options.get("notify_target", "")
+    target = entry.options.get("notify_target", entry.data.get("notify_target", ""))
     if not target:
         return
     try:
-        service = target.replace("notify.", "")
-        await hass.services.async_call("notify", service, {"title": title, "message": message})
-    except Exception as e:
-        _LOGGER.warning(f"Could not send notification: {e}")
-
-async def async_send_notification(hass: HomeAssistant, entry: ConfigEntry, message: str, title: str = "🕌 Prayer Times"):
-    """Send notification if configured."""
-    options = entry.options if entry.options else entry.data
-    if not options.get("notify_on_prayer", False):
-        return
-    target = options.get("notify_target", "")
-    if not target:
-        return
-    try:
-        service = target.replace("notify.", "")
-        await hass.services.async_call("notify", service, {"title": title, "message": message})
+        targets = target if isinstance(target, list) else [target]
+        for t in targets:
+            if not t:
+                continue
+            service = t.replace("notify.", "")
+            await hass.services.async_call(
+                "notify", service,
+                {"title": title, "message": message}
+            )
     except Exception as e:
         _LOGGER.warning(f"Could not send notification: {e}")
 
@@ -202,7 +209,6 @@ async def async_send_notification(hass: HomeAssistant, entry: ConfigEntry, messa
 async def check_reminders(hass, entry, coordinator, now_ts, prayers):
     """Check and play pre-adhan reminders."""
     options = entry.options if entry.options else entry.data
-    from datetime import datetime
 
     for r_num in [1, 2]:
         enabled_key = f"reminder_{r_num}_enabled"
@@ -227,9 +233,8 @@ async def check_reminders(hass, entry, coordinator, now_ts, prayers):
             if abs(now_ts - reminder_ts) < 30:
                 _LOGGER.info(f"Reminder {r_num} for {prayer_name} in {minutes} min")
 
-                # Speel chime geluid
                 if sound:
-                    media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+                    media_path = await _get_media_url(hass, f"/local/sounds/{sound}")
                     try:
                         await hass.services.async_call(
                             "media_player", "play_media",
@@ -241,12 +246,10 @@ async def check_reminders(hass, entry, coordinator, now_ts, prayers):
                                 "extra": {"volume_level": volume}
                             }
                         )
-                        import asyncio as _asyncio
-                        await _asyncio.sleep(3)
+                        await asyncio.sleep(3)
                     except Exception as e:
                         _LOGGER.warning(f"Could not play reminder chime: {e}")
 
-                # Spreek TTS tekst
                 if tts_text:
                     from .const import REMINDER_DEFAULT_TEXTS
                     text = tts_text if tts_text else REMINDER_DEFAULT_TEXTS.get(lang, REMINDER_DEFAULT_TEXTS["en"])
@@ -262,11 +265,12 @@ async def check_reminders(hass, entry, coordinator, now_ts, prayers):
                                 "media_player_entity_id": speaker if isinstance(speaker, list) else [speaker],
                                 "message": text,
                                 "language": tts_lang,
-                                "options": {},
+                                "options": {"voice": "HamedNeural"} if tts_lang == "ar-SA" else {},
                             }
                         )
                     except Exception as e:
                         _LOGGER.warning(f"Could not play TTS reminder: {e}")
+
 
 async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now_ts: float):
     """Play tarhim before Fajr during Ramadan."""
@@ -293,7 +297,7 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
             if isinstance(speaker, str): speaker = [speaker]
             volume = _get_volume(options, CONF_TARHIM_VOLUME, 10)
             sound = options.get(CONF_TARHIM_SOUND, "01-tarhim.mp3")
-            media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+            media_path = await _get_media_url(hass, f"/local/sounds/{sound}")
 
             _LOGGER.info(f"Playing tarhim: {sound}")
             await hass.services.async_call(
@@ -302,7 +306,7 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
                     "entity_id": speaker,
                     "media_content_id": media_path,
                     "media_content_type": "music",
-                "announce": True,
+                    "announce": True,
                     "extra": {"volume_level": volume}
                 }
             )
@@ -320,7 +324,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         speaker = call.data.get("speaker", options.get(CONF_DAY_SPEAKER, "media_player.adhan_speakers"))
         volume = call.data.get("volume", 0.5)
         play_method = options.get(CONF_PLAY_METHOD, "media_player")
-        media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+        media_path = await _get_media_url(hass, f"/local/sounds/{sound}")
 
         if play_method == "media_player":
             await hass.services.async_call(
@@ -329,7 +333,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
                     "entity_id": speaker,
                     "media_content_id": media_path,
                     "media_content_type": "music",
-                "announce": True,
+                    "announce": True,
                     "extra": {"volume_level": volume}
                 }
             )
@@ -355,7 +359,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         speaker = call.data.get("speaker", options.get(CONF_TARHIM_SPEAKER, "media_player.adhan_speakers"))
         volume = call.data.get("volume", options.get(CONF_TARHIM_VOLUME, 0.4))
         sound = options.get(CONF_TARHIM_SOUND, "01-tarhim.mp3")
-        media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+        media_path = await _get_media_url(hass, f"/local/sounds/{sound}")
 
         await hass.services.async_call(
             "media_player", "play_media",
@@ -367,39 +371,6 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
                 "extra": {"volume_level": volume}
             }
         )
-
-    hass.services.async_register(
-        DOMAIN, "preview_adhan", handle_preview,
-        schema=vol.Schema({
-            vol.Required("sound"): str,
-            vol.Optional("speaker"): str,
-            vol.Optional("volume", default=0.5): vol.Coerce(float),
-        })
-    )
-
-    hass.services.async_register(
-        DOMAIN, "test_prayer", handle_test_prayer,
-        schema=vol.Schema({
-            vol.Optional("prayer", default="dhuhr"): vol.In(["fajr", "dhuhr", "asr", "maghrib", "isha"]),
-        })
-    )
-
-    hass.services.async_register(
-        DOMAIN, "test_tarhim", handle_test_tarhim,
-        schema=vol.Schema({
-            vol.Optional("sound"): str,
-            vol.Optional("speaker"): str,
-            vol.Optional("volume", default=0.4): vol.Coerce(float),
-        })
-    )
-
-    async def handle_test_notification(call):
-        """Test notification."""
-        title = call.data.get("title", "🕌 Prayer Times Test")
-        message = call.data.get("message", "This is a test notification from Prayer Times.")
-        custom_title = options.get("notify_title", "🕌 Prayer Times")
-        custom_msg = options.get("notify_message", "It is time for {prayer} prayer")
-        await async_send_notification(hass, entry, custom_msg, custom_title)
 
     async def handle_test_reminder(call):
         """Test pre-adhan reminder (sound + TTS)."""
@@ -415,9 +386,8 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         if isinstance(speaker, str): speaker = [speaker]
         volume = _get_volume(options, CONF_DAY_VOLUME, 50)
 
-        # Speel geluid
         if sound:
-            media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+            media_path = await _get_media_url(hass, f"/local/sounds/{sound}")
             await hass.services.async_call(
                 "media_player", "play_media",
                 {"entity_id": speaker, "media_content_id": media_path,
@@ -426,7 +396,6 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
             )
             await asyncio.sleep(3)
 
-        # Spreek TTS via cloud of google translate
         if text:
             lang_map = {"nl": "nl-NL", "en": "en-US", "ar": "ar-SA", "tr": "tr-TR"}
             tts_lang = lang_map.get(lang, lang)
@@ -441,6 +410,38 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
                     "options": {"voice": "HamedNeural"} if tts_lang == "ar-SA" else {}
                 }
             )
+
+    async def handle_test_notification(call):
+        """Test notification."""
+        options = entry.options if entry.options else entry.data
+        custom_title = options.get("notify_title", "🕌 Prayer Times")
+        custom_msg = options.get("notify_message", "It is time for {prayer} prayer")
+        await async_send_notification(hass, entry, custom_msg, custom_title)
+
+    hass.services.async_register(
+        DOMAIN, "preview_adhan", handle_preview,
+        schema=vol.Schema({
+            vol.Required("sound"): str,
+            vol.Optional("speaker"): str,
+            vol.Optional("volume", default=0.5): vol.Coerce(float),
+        })
+    )
+
+    hass.services.async_register(
+        DOMAIN, "test_prayer", handle_test_prayer,
+        schema=vol.Schema({
+            vol.Optional("prayer", default="dhuhr"): vol.In(["fajr", "dhuhr", "asr", "maghrib", "isha", "jumat"]),
+        })
+    )
+
+    hass.services.async_register(
+        DOMAIN, "test_tarhim", handle_test_tarhim,
+        schema=vol.Schema({
+            vol.Optional("sound"): str,
+            vol.Optional("speaker"): str,
+            vol.Optional("volume", default=0.4): vol.Coerce(float),
+        })
+    )
 
     hass.services.async_register(
         DOMAIN, "test_notification", handle_test_notification,
@@ -483,7 +484,6 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         method = int(self.entry.options.get(CONF_METHOD, self.entry.data.get(CONF_METHOD, 3)))
 
-        # Gebruik HA GPS coördinaten indien beschikbaar, anders stad/land
         lat = self.hass.config.latitude
         lon = self.hass.config.longitude
 
@@ -504,7 +504,6 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
                         if response.status != 200:
                             raise UpdateFailed(f"API error: {response.status}")
                         data = await response.json()
-                        # Log extra beschikbare data
                         timings = data.get("data", {}).get("timings", {})
                         _LOGGER.debug(f"API timings: {list(timings.keys())}")
                         return data
@@ -521,16 +520,17 @@ async def async_update_services_yaml(hass: HomeAssistant):
     day_options = []
     tarhim_options = []
 
-    for f in sorted(os.listdir(sounds_path)):
-        if not f.endswith(".mp3"):
-            continue
-        label = f.replace(".mp3", "").replace("-", " ").title()
-        if "fajr" in f.lower():
-            fajr_options.append({"label": label, "value": f})
-        elif "day" in f.lower():
-            day_options.append({"label": label, "value": f})
-        elif "tarhim" in f.lower():
-            tarhim_options.append({"label": label, "value": f})
+    if os.path.isdir(sounds_path):
+        for f in sorted(os.listdir(sounds_path)):
+            if not f.endswith(".mp3"):
+                continue
+            label = f.replace(".mp3", "").replace("-", " ").title()
+            if "fajr" in f.lower():
+                fajr_options.append({"label": label, "value": f})
+            elif "tarhim" in f.lower():
+                tarhim_options.append({"label": label, "value": f})
+            elif "adhan" in f.lower():
+                day_options.append({"label": label, "value": f})
 
     services = {
         "preview_adhan": {
@@ -573,6 +573,7 @@ async def async_update_services_yaml(hass: HomeAssistant):
                         {"label": "Asr", "value": "asr"},
                         {"label": "Maghrib", "value": "maghrib"},
                         {"label": "Isha", "value": "isha"},
+                        {"label": "Jumat (vrijdag)", "value": "jumat"},
                     ]}}
                 }
             }
@@ -608,21 +609,3 @@ async def async_update_services_yaml(hass: HomeAssistant):
     with open(services_path, "w") as f:
         yaml.dump(services, f, allow_unicode=True, default_flow_style=False)
     _LOGGER.info("services.yaml updated with available sounds")
-
-async def async_send_notification(hass: HomeAssistant, entry: ConfigEntry, message: str, title: str = "🕌 Prayer Times"):
-    """Send notification if configured."""
-    target = entry.options.get("notify_target", entry.data.get("notify_target", ""))
-    if not target:
-        return
-    try:
-        targets = target if isinstance(target, list) else [target]
-        for t in targets:
-            if not t:
-                continue
-            service = t.replace("notify.", "")
-            await hass.services.async_call(
-                "notify", service,
-                {"title": title, "message": message}
-            )
-    except Exception as e:
-        _LOGGER.warning(f"Could not send notification: {e}")
