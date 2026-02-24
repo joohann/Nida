@@ -1,17 +1,17 @@
 {
   "domain": "nida",
   "name": "Nida",
-  "version": "1.0.0",
-  "documentation": "https://github.com/joohann/Nida",
-  "requirements": [],
-  "dependencies": [],
   "codeowners": [
     "@joohann"
   ],
   "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/joohann/Nida",
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/joohann/Nida/issues",
   "loggers": [
     "nida"
   ],
-  "issue_tracker": "https://github.com/joohann/Nida/issues"
+  "requirements": [],
+  "version": "1.0.0"
 }
