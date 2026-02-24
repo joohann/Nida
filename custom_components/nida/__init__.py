@@ -40,7 +40,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_copy_sounds(hass: HomeAssistant):
+
     """Copy sounds from integration to /config/www/sounds/ on install/update."""
 
     # Sounds staan in custom_components/nida/sounds/ (meegeleverd via HACS)
