@@ -325,4 +325,4 @@ class PrayerTimesCard extends LitElement {
     `;
   }
 }
-customElements.define('nida-card', PrayerTimesCard);
+customElements.define('prayer-times-card', PrayerTimesCard);
