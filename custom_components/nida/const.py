@@ -83,76 +83,6 @@ def _format_sound_label(filename: str) -> str:
     return name.replace('-', ' ').replace('_', ' ').title()
 
 
-def get_tarhim_sounds() -> dict:
-    """Scan sounds folder for tarhim MP3s."""
-    import os
-    result = {}
-    try:
-        with os.scandir(_SOUNDS_DIR) as entries:
-            for entry in sorted(entries, key=lambda e: e.name):
-                if entry.name.endswith(".mp3") and "tarhim" in entry.name.lower():
-                    result[entry.name] = _format_sound_label(entry.name)
-    except Exception:
-        pass
-    return result if result else {"01-tarhim.mp3": "Tarhim 01"}
-
-
-def get_fajr_sounds() -> dict:
-    """Scan sounds folder for fajr MP3s."""
-    import os
-    result = {}
-    try:
-        for f in sorted(os.listdir(_SOUNDS_DIR)):
-            if f.endswith(".mp3") and "fajr" in f.lower():
-                result[f] = _format_sound_label(f)
-    except Exception:
-        pass
-    return result if result else {"01-adhan-fajr.mp3": "Adhan Fajr 01"}
-
-
-def get_day_sounds() -> dict:
-    """Scan sounds folder for day adhan MP3s."""
-    import os
-    result = {}
-    try:
-        for f in sorted(os.listdir(_SOUNDS_DIR)):
-            if (f.endswith('.mp3')
-                    and 'adhan' in f.lower()
-                    and 'fajr' not in f.lower()
-                    and 'tarhim' not in f.lower()
-                    and 'jingle' not in f.lower()
-                    and 'suhoor' not in f.lower()):
-                result[f] = _format_sound_label(f)
-    except Exception:
-        pass
-    return result if result else {"01-adhan.mp3": "Adhan 01"}
-
-
-def get_suhoor_sounds() -> dict:
-    """Scan sounds folder for suhoor MP3s."""
-    import os
-    result = {}
-    try:
-        for f in sorted(os.listdir(_SOUNDS_DIR)):
-            if f.endswith('.mp3') and 'suhoor' in f.lower():
-                result[f] = _format_sound_label(f)
-    except Exception:
-        pass
-    return result if result else {"01-suhoor.mp3": "Suhoor 01"}
-
-
-def get_jingle_sounds() -> dict:
-    """Scan sounds folder for jingle MP3s."""
-    import os
-    result = {}
-    try:
-        for f in sorted(os.listdir(_SOUNDS_DIR)):
-            if f.endswith('.mp3') and 'jingle' in f.lower():
-                result[f] = _format_sound_label(f)
-    except Exception:
-        pass
-    return result
-
 
 # Pre-adhan reminders
 CONF_REMINDER_1_ENABLED = "reminder_1_enabled"
@@ -192,3 +122,55 @@ REMINDER_DEFAULT_TEXTS = {
     "ur": "[minutes] منٹ میں [prayer] کا وقت ہوگا",
     "fa": "تا [minutes] دقیقه دیگر وقت نماز [prayer] است",
 }
+
+# Cache sounds bij import (eenmalig, buiten async context)
+import os as _os
+_SOUNDS_CACHE: dict | None = None
+
+def _load_sounds_cache() -> dict:
+    """Laad alle sounds eenmalig in cache."""
+    global _SOUNDS_CACHE
+    if _SOUNDS_CACHE is not None:
+        return _SOUNDS_CACHE
+    result = {"fajr": {}, "day": {}, "tarhim": {}, "jingle": {}, "suhoor": {}}
+    try:
+        files = sorted(_os.listdir(_SOUNDS_DIR))
+        for f in files:
+            if not f.endswith(".mp3"):
+                continue
+            label = _format_sound_label(f)
+            fl = f.lower()
+            if "fajr" in fl:
+                result["fajr"][f] = label
+            elif "tarhim" in fl:
+                result["tarhim"][f] = label
+            elif "jingle" in fl:
+                result["jingle"][f] = label
+            elif "suhoor" in fl:
+                result["suhoor"][f] = label
+            elif "adhan" in fl:
+                result["day"][f] = label
+    except Exception:
+        pass
+    _SOUNDS_CACHE = result
+    return result
+
+def get_fajr_sounds() -> dict:
+    c = _load_sounds_cache()
+    return c["fajr"] if c["fajr"] else {"01-adhan-fajr.mp3": "Adhan Fajr 01"}
+
+def get_day_sounds() -> dict:
+    c = _load_sounds_cache()
+    return c["day"] if c["day"] else {"01-adhan.mp3": "Adhan 01"}
+
+def get_tarhim_sounds() -> dict:
+    c = _load_sounds_cache()
+    return c["tarhim"] if c["tarhim"] else {"01-tarhim.mp3": "Tarhim 01"}
+
+def get_jingle_sounds() -> dict:
+    c = _load_sounds_cache()
+    return c["jingle"]
+
+def get_suhoor_sounds() -> dict:
+    c = _load_sounds_cache()
+    return c["suhoor"] if c["suhoor"] else {"01-suhoor.mp3": "Suhoor 01"}
