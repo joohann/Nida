@@ -8,34 +8,212 @@
       "location": {
         "title": "Localisation & Méthode de calcul",
         "description": "Entrez votre ville et votre pays pour obtenir des heures de prière précises.",
-        "data": { "city": "Ville", "country": "Pays", "method": "Méthode de calcul" }
+        "data": {
+          "city": "Ville",
+          "country": "Pays",
+          "method": "Méthode de calcul"
+        }
       },
       "reminders": {
         "title": "Rappels avant l'Adhan",
         "description": "Jouez un son et un message vocal avant chaque prière. Utilisez [minutes] et [prayer] dans votre message.",
         "data": {
-          "reminder_1_enabled": "Premier rappel", "reminder_1_minutes": "Minutes avant l'adhan",
-          "reminder_1_sound": "Son", "reminder_1_lang": "Langue", "reminder_1_tts": "Message",
-          "reminder_2_enabled": "Deuxième rappel", "reminder_2_minutes": "Minutes avant l'adhan",
-          "reminder_2_sound": "Son", "reminder_2_lang": "Langue", "reminder_2_tts": "Message"
+          "reminder_1_enabled": "Premier rappel",
+          "reminder_1_minutes": "Minutes avant l'adhan",
+          "reminder_1_sound": "Son",
+          "reminder_1_lang": "Langue",
+          "reminder_1_tts": "Message",
+          "reminder_2_enabled": "Deuxième rappel",
+          "reminder_2_minutes": "Minutes avant l'adhan",
+          "reminder_2_sound": "Son",
+          "reminder_2_lang": "Langue",
+          "reminder_2_tts": "Message"
         }
       },
-      "fajr": { "title": "Adhan du Fajr", "description": "Configurez l'adhan du Fajr — la première prière de la journée.", "data": { "fajr_sound": "Son Fajr", "fajr_speaker": "Haut-parleur(s)", "fajr_volume": "Volume" } },
-      "adhan": { "title": "Paramètres Adhan", "description": "Configurez l'adhan pour toutes les prières.", "data": { "day_sound": "Son Adhan", "day_speaker": "Haut-parleur(s)", "day_volume": "Volume jour", "night_volume_enabled": "Volume réduit la nuit", "night_volume": "Volume nuit", "night_start_hour": "La nuit commence à (heure)" } },
-      "notifications": { "title": "Notifications", "description": "Envoyez une notification à chaque heure de prière.", "data": { "notify_on_prayer": "Notifier à chaque prière", "notify_target": "Service(s) de notification", "notify_title": "Titre", "notify_message": "Message (utilisez {prayer})" } },
-      "ramadan": { "title": "Ramadan 🌙", "description": "Fonctionnalités spéciales pour le mois béni du Ramadan.", "data": { "suhoor_alarm_enabled": "Activer l'alarme Suhoor", "suhoor_alarm_minutes": "Minutes avant Fajr", "suhoor_alarm_sound": "Son Suhoor", "suhoor_alarm_volume": "Volume Suhoor", "tarhim_enabled": "Activer le Tarhim avant Fajr", "tarhim_sound": "Son Tarhim", "tarhim_speaker": "Haut-parleur(s)", "tarhim_volume": "Volume" } }
+      "fajr": {
+        "title": "Adhan du Fajr",
+        "description": "Configurez l'adhan du Fajr — la première prière de la journée.",
+        "data": {
+          "fajr_sound": "Son Fajr",
+          "fajr_speaker": "Haut-parleur(s)",
+          "fajr_volume": "Volume"
+        }
+      },
+      "adhan": {
+        "title": "Paramètres Adhan",
+        "description": "Configurez l'adhan pour toutes les prières.",
+        "data": {
+          "day_sound": "Son Adhan",
+          "day_speaker": "Haut-parleur(s)",
+          "day_volume": "Volume jour",
+          "night_volume_enabled": "Volume réduit la nuit",
+          "night_volume": "Volume nuit",
+          "night_start_hour": "La nuit commence à (heure)"
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Envoyez une notification à chaque heure de prière.",
+        "data": {
+          "notify_on_prayer": "Notifier à chaque prière",
+          "notify_target": "Service(s) de notification",
+          "notify_title": "Titre",
+          "notify_message": "Message (utilisez {prayer})"
+        }
+      },
+      "ramadan": {
+        "title": "Ramadan 🌙",
+        "description": "Fonctionnalités spéciales pour le mois béni du Ramadan.",
+        "data": {
+          "suhoor_alarm_enabled": "Activer l'alarme Suhoor",
+          "suhoor_alarm_minutes": "Minutes avant Fajr",
+          "suhoor_alarm_sound": "Son Suhoor",
+          "suhoor_alarm_volume": "Volume Suhoor",
+          "tarhim_enabled": "Activer le Tarhim avant Fajr",
+          "tarhim_sound": "Son Tarhim",
+          "tarhim_speaker": "Haut-parleur(s)",
+          "tarhim_volume": "Volume"
+        }
+      }
     },
-    "error": { "cannot_connect": "Impossible de se connecter à l'API AlAdhan", "invalid_location": "Ville ou pays invalide" },
-    "abort": { "already_configured": "Nida est déjà configuré" }
+    "error": {
+      "cannot_connect": "Impossible de se connecter à l'API AlAdhan",
+      "invalid_location": "Ville ou pays invalide"
+    },
+    "abort": {
+      "already_configured": "Nida est déjà configuré"
+    }
   },
   "options": {
     "step": {
-      "init": { "title": "Localisation & Méthode de calcul", "data": { "city": "Ville", "country": "Pays", "method": "Méthode de calcul" } },
-      "reminders": { "title": "Rappels avant l'Adhan", "data": { "reminder_1_enabled": "Premier rappel", "reminder_1_minutes": "Minutes avant l'adhan", "reminder_1_sound": "Son", "reminder_1_lang": "Langue", "reminder_1_tts": "Message", "reminder_2_enabled": "Deuxième rappel", "reminder_2_minutes": "Minutes avant l'adhan", "reminder_2_sound": "Son", "reminder_2_lang": "Langue", "reminder_2_tts": "Message" } },
-      "fajr": { "title": "Adhan du Fajr", "data": { "fajr_sound": "Son Fajr", "fajr_speaker": "Haut-parleur(s)", "fajr_volume": "Volume" } },
-      "adhan": { "title": "Paramètres Adhan", "data": { "day_sound": "Son Adhan", "day_speaker": "Haut-parleur(s)", "day_volume": "Volume jour", "night_volume_enabled": "Volume réduit la nuit", "night_volume": "Volume nuit", "night_start_hour": "Nuit commence à" } },
-      "notifications": { "title": "Notifications", "data": { "notify_on_prayer": "Notifier à chaque prière", "notify_target": "Service(s)", "notify_title": "Titre", "notify_message": "Message" } },
-      "ramadan": { "title": "Ramadan 🌙", "data": { "suhoor_alarm_enabled": "Alarme Suhoor", "suhoor_alarm_minutes": "Minutes avant Fajr", "suhoor_alarm_sound": "Son Suhoor", "suhoor_alarm_volume": "Volume", "tarhim_enabled": "Tarhim", "tarhim_sound": "Son Tarhim", "tarhim_speaker": "Haut-parleur(s)", "tarhim_volume": "Volume" } }
+      "init": {
+        "title": "Localisation & Méthode de calcul",
+        "data": {
+          "city": "Ville",
+          "country": "Pays",
+          "method": "Méthode de calcul"
+        }
+      },
+      "reminders": {
+        "title": "Rappels avant l'Adhan",
+        "data": {
+          "reminder_1_enabled": "Premier rappel",
+          "reminder_1_minutes": "Minutes avant l'adhan",
+          "reminder_1_sound": "Son",
+          "reminder_1_lang": "Langue",
+          "reminder_1_tts": "Message",
+          "reminder_2_enabled": "Deuxième rappel",
+          "reminder_2_minutes": "Minutes avant l'adhan",
+          "reminder_2_sound": "Son",
+          "reminder_2_lang": "Langue",
+          "reminder_2_tts": "Message"
+        }
+      },
+      "fajr": {
+        "title": "Adhan du Fajr",
+        "data": {
+          "fajr_sound": "Son Fajr",
+          "fajr_speaker": "Haut-parleur(s)",
+          "fajr_volume": "Volume"
+        }
+      },
+      "adhan": {
+        "title": "Paramètres Adhan",
+        "data": {
+          "day_sound": "Son Adhan",
+          "day_speaker": "Haut-parleur(s)",
+          "day_volume": "Volume jour",
+          "night_volume_enabled": "Volume réduit la nuit",
+          "night_volume": "Volume nuit",
+          "night_start_hour": "Nuit commence à"
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "data": {
+          "notify_on_prayer": "Notifier à chaque prière",
+          "notify_target": "Service(s)",
+          "notify_title": "Titre",
+          "notify_message": "Message"
+        }
+      },
+      "ramadan": {
+        "title": "Ramadan 🌙",
+        "data": {
+          "suhoor_alarm_enabled": "Alarme Suhoor",
+          "suhoor_alarm_minutes": "Minutes avant Fajr",
+          "suhoor_alarm_sound": "Son Suhoor",
+          "suhoor_alarm_volume": "Volume",
+          "tarhim_enabled": "Tarhim",
+          "tarhim_sound": "Son Tarhim",
+          "tarhim_speaker": "Haut-parleur(s)",
+          "tarhim_volume": "Volume"
+        }
+      }
+    }
+  },
+  "services": {
+    "common": {
+      "fields": {
+        "speaker": {
+          "name": "Haut-parleur",
+          "description": "Sur quel haut-parleur jouer?"
+        },
+        "volume": {
+          "name": "Volume",
+          "description": "Volume (0.0 - 1.0)"
+        },
+        "prayer": {
+          "name": "Prière",
+          "description": "Quelle prière?"
+        }
+      }
+    },
+    "preview_adhan": {
+      "name": "Aperçu de l'Adhan",
+      "description": "Jouer un adhan en aperçu",
+      "fields": {
+        "sound": {
+          "name": "Son",
+          "description": "Quel adhan voulez-vous jouer?"
+        },
+        "speaker": {
+          "name": "Haut-parleur",
+          "description": "Sur quel haut-parleur jouer?"
+        }
+      }
+    },
+    "test_prayer": {
+      "name": "Tester l'Adhan de prière",
+      "description": "Tester l'adhan pour une prière spécifique"
+    },
+    "test_tarhim": {
+      "name": "Tester le Tarhim",
+      "description": "Tester la récitation du tarhim",
+      "fields": {
+        "sound": {
+          "name": "Son Tarhim",
+          "description": "Quel tarhim voulez-vous jouer?"
+        },
+        "speaker": {
+          "name": "Haut-parleur",
+          "description": "Sur quel haut-parleur jouer?"
+        }
+      }
+    },
+    "test_reminder": {
+      "name": "Tester le rappel pré-Adhan (Test Tadkir)",
+      "description": "Tester le rappel avant la prière",
+      "fields": {
+        "reminder": {
+          "name": "Rappel",
+          "description": "Quel rappel tester?"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Tester la notification",
+      "description": "Tester la notification de prière"
     }
   }
 }
