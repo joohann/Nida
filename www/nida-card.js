@@ -1,6 +1,6 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
 
-class PrayerTimesCard extends LitElement {
+class NidaCard extends LitElement {
   static get properties() { return { hass: {}, _config: {}, _dark: {} }; }
   setConfig(config) { this._config = config; }
   getCardSize() { return 7; }
@@ -325,4 +325,5 @@ class PrayerTimesCard extends LitElement {
     `;
   }
 }
-customElements.define('prayer-times-card', PrayerTimesCard);
+
+customElements.define('nida-card', NidaCard);
