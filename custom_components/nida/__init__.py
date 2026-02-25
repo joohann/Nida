@@ -68,6 +68,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.debug(f"All sounds already present in {sounds_dst}")
 
 
+
+async def async_copy_sounds(hass):
+    """Copy sounds from integration to /config/www/nida/sounds/"""
+
+    def _copy_sounds():
+        import os, shutil
+        sounds_src = os.path.join(os.path.dirname(__file__), "sounds")
+        sounds_dst = hass.config.path("www/nida/sounds")
+
+        if not os.path.isdir(sounds_src):
+            return 0
+
+        os.makedirs(sounds_dst, exist_ok=True)
+        copied = 0
+        for f in sorted(os.listdir(sounds_src)):
+            if f.endswith(".mp3"):
+                src = os.path.join(sounds_src, f)
+                dst = os.path.join(sounds_dst, f)
+                if not os.path.exists(dst):
+                    shutil.copy2(src, dst)
+                    copied += 1
+        return copied
+
+    copied = await hass.async_add_executor_job(_copy_sounds)
+
 async def async_setup_adhan_scheduler(hass: HomeAssistant, entry: ConfigEntry, coordinator):
     """Schedule adhan at prayer times."""
 
