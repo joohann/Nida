@@ -147,11 +147,12 @@ async def _get_media_url(hass, local_path: str) -> str:
     return f"{base_url}{local_path}"
 
 
-def _get_volume(options, base_vol_key, base_default):
-    """Geef het juiste volume terug op basis van dag/nacht instelling."""
+def _get_volume(options, base_vol_key, base_default, hass=None):
+    """Geef het juiste volume terug op basis van dag/nacht en open ramen/deuren."""
     raw = options.get(base_vol_key, base_default)
     volume = raw / 100 if raw > 1 else raw
 
+    # Nacht volume
     night_enabled = options.get("night_volume_enabled", False)
     if night_enabled:
         night_start = int(options.get("night_start_hour", 22))
@@ -159,6 +160,17 @@ def _get_volume(options, base_vol_key, base_default):
         if current_hour >= night_start or current_hour < 6:
             raw_night = options.get("night_volume", 10)
             volume = raw_night / 100 if raw_night > 1 else raw_night
+
+    # Open ramen/deuren volume
+    open_sensor_enabled = options.get("open_sensor_enabled", False)
+    if open_sensor_enabled and hass is not None:
+        sensor = options.get("open_sensor_entity", "")
+        if sensor:
+            state = hass.states.get(sensor)
+            if state and state.state == "on":
+                raw_open = options.get("open_sensor_volume", 5)
+                volume = raw_open / 100 if raw_open > 1 else raw_open
+                _LOGGER.debug(f"Open sensor active, using reduced volume: {volume}")
 
     return volume
 
@@ -170,17 +182,17 @@ async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
     if prayer_type == "fajr":
         speaker = options.get(CONF_FAJR_SPEAKER, ["media_player.adhan_speakers"])
         if isinstance(speaker, str): speaker = [speaker]
-        volume = _get_volume(options, CONF_FAJR_VOLUME, 10)
+        volume = _get_volume(options, CONF_FAJR_VOLUME, 10, hass)
         sound = options.get(CONF_FAJR_SOUND, "01-adhan-fajr.mp3")
     elif prayer_type == "jumat":
         speaker = options.get("jumat_speaker", options.get(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"]))
         if isinstance(speaker, str): speaker = [speaker]
-        volume = _get_volume(options, "jumat_volume", options.get(CONF_DAY_VOLUME, 50))
+        volume = _get_volume(options, "jumat_volume", options.get(CONF_DAY_VOLUME, 50), hass)
         sound = options.get("jumat_sound", options.get(CONF_DAY_SOUND, "01-adhan.mp3"))
     else:
         speaker = options.get(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"])
         if isinstance(speaker, str): speaker = [speaker]
-        volume = _get_volume(options, CONF_DAY_VOLUME, 50)
+        volume = _get_volume(options, CONF_DAY_VOLUME, 50, hass)
         sound = options.get(CONF_DAY_SOUND, "01-adhan.mp3")
 
     play_method = options.get(CONF_PLAY_METHOD, "media_player")
@@ -246,7 +258,7 @@ async def check_reminders(hass, entry, coordinator, now_ts, prayers):
         lang = options.get(f"reminder_{r_num}_lang", "nl")
         speaker = options.get(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"])
         if isinstance(speaker, str): speaker = [speaker]
-        volume = _get_volume(options, CONF_DAY_VOLUME, 50)
+        volume = _get_volume(options, CONF_DAY_VOLUME, 50, hass)
 
         for prayer_name, time_str in prayers.items():
             today = datetime.now().strftime("%Y-%m-%d")
@@ -320,7 +332,7 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
         if abs(now_ts - tarhim_ts) < 30:
             speaker = options.get(CONF_TARHIM_SPEAKER, ["media_player.adhan_speakers"])
             if isinstance(speaker, str): speaker = [speaker]
-            volume = _get_volume(options, CONF_TARHIM_VOLUME, 10)
+            volume = _get_volume(options, CONF_TARHIM_VOLUME, 10, hass)
             sound = options.get(CONF_TARHIM_SOUND, "01-tarhim.mp3")
             media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
 
@@ -409,7 +421,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         text = text.replace("[minutes]", str(int(minutes))).replace("[prayer]", prayer)
         speaker = options.get(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"])
         if isinstance(speaker, str): speaker = [speaker]
-        volume = _get_volume(options, CONF_DAY_VOLUME, 50)
+        volume = _get_volume(options, CONF_DAY_VOLUME, 50, hass)
 
         if sound:
             media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
