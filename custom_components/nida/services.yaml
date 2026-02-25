@@ -1,9 +1,10 @@
 preview_adhan:
-  description: Speel een adhan geluid af als preview
+  name: "[%key:component::nida::services::preview_adhan::name%]"
+  description: "[%key:component::nida::services::preview_adhan::description%]"
   fields:
     sound:
-      description: Welke adhan wil je afspelen?
-      name: Geluid
+      name: "[%key:component::nida::services::preview_adhan::fields::sound::name%]"
+      description: "[%key:component::nida::services::preview_adhan::fields::sound::description%]"
       required: true
       selector:
         select:
@@ -15,32 +16,33 @@ preview_adhan:
           - label: 03 Adhan Fajr
             value: 03-adhan-fajr.mp3
     speaker:
-      description: Op welke speaker wil je afspelen?
-      name: Speaker
+      name: "[%key:component::nida::services::preview_adhan::fields::speaker::name%]"
+      description: "[%key:component::nida::services::preview_adhan::fields::speaker::description%]"
       required: true
       selector:
         entity:
           domain: media_player
     volume:
-      default: 0.5
-      description: Volume tussen 0.0 en 1.0
-      name: Volume
+      name: "[%key:component::nida::services::common::fields::volume::name%]"
+      description: "[%key:component::nida::services::common::fields::volume::description%]"
       required: false
+      default: 0.5
       selector:
         number:
-          max: 1.0
           min: 0.0
-          mode: slider
+          max: 1.0
           step: 0.05
-  name: Preview Adhan
+          mode: slider
+
 test_prayer:
-  description: Test de adhan voor een specifiek gebed
+  name: "[%key:component::nida::services::test_prayer::name%]"
+  description: "[%key:component::nida::services::test_prayer::description%]"
   fields:
     prayer:
-      default: dhuhr
-      description: Welk gebed wil je testen?
-      name: Gebed
+      name: "[%key:component::nida::services::common::fields::prayer::name%]"
+      description: "[%key:component::nida::services::common::fields::prayer::description%]"
       required: true
+      default: dhuhr
       selector:
         select:
           options:
@@ -54,13 +56,16 @@ test_prayer:
             value: maghrib
           - label: Isha
             value: isha
-  name: Test Gebed
+          - label: "Jumat (vrijdag)"
+            value: jumat
+
 test_tarhim:
-  description: Test de tarhim recitatie
+  name: "[%key:component::nida::services::test_tarhim::name%]"
+  description: "[%key:component::nida::services::test_tarhim::description%]"
   fields:
     sound:
-      description: Welke tarhim wil je afspelen?
-      name: Tarhim Geluid
+      name: "[%key:component::nida::services::test_tarhim::fields::sound::name%]"
+      description: "[%key:component::nida::services::test_tarhim::fields::sound::description%]"
       required: false
       selector:
         select:
@@ -70,21 +75,60 @@ test_tarhim:
           - label: 02 Tarhim
             value: 02-tarhim.mp3
     speaker:
-      description: Op welke speaker wil je afspelen?
-      name: Speaker
+      name: "[%key:component::nida::services::common::fields::speaker::name%]"
+      description: "[%key:component::nida::services::common::fields::speaker::description%]"
       required: false
       selector:
         entity:
           domain: media_player
     volume:
-      default: 0.4
-      description: Volume tussen 0.0 en 1.0
-      name: Volume
+      name: "[%key:component::nida::services::common::fields::volume::name%]"
+      description: "[%key:component::nida::services::common::fields::volume::description%]"
       required: false
+      default: 0.4
       selector:
         number:
-          max: 1.0
           min: 0.0
-          mode: slider
+          max: 1.0
           step: 0.05
-  name: Test Tarhim
+          mode: slider
+
+test_reminder:
+  name: "[%key:component::nida::services::test_reminder::name%]"
+  description: "[%key:component::nida::services::test_reminder::description%]"
+  fields:
+    reminder:
+      name: "[%key:component::nida::services::test_reminder::fields::reminder::name%]"
+      description: "[%key:component::nida::services::test_reminder::fields::reminder::description%]"
+      required: false
+      default: 1
+      selector:
+        select:
+          options:
+          - label: Reminder 1
+            value: 1
+          - label: Reminder 2
+            value: 2
+    prayer:
+      name: "[%key:component::nida::services::common::fields::prayer::name%]"
+      description: "[%key:component::nida::services::common::fields::prayer::description%]"
+      required: false
+      default: Dhuhr
+      selector:
+        select:
+          options:
+          - label: Fajr
+            value: Fajr
+          - label: Dhuhr
+            value: Dhuhr
+          - label: Asr
+            value: Asr
+          - label: Maghrib
+            value: Maghrib
+          - label: Isha
+            value: Isha
+
+test_notification:
+  name: "[%key:component::nida::services::test_notification::name%]"
+  description: "[%key:component::nida::services::test_notification::description%]"
+  fields: {}

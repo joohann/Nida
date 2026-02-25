@@ -88,21 +88,132 @@
     "step": {
       "init": {
         "title": "Standort & Berechnungsmethode",
-        "data": { "city": "Stadt", "country": "Land", "method": "Berechnungsmethode" }
+        "data": {
+          "city": "Stadt",
+          "country": "Land",
+          "method": "Berechnungsmethode"
+        }
       },
       "reminders": {
         "title": "Vor-Adhan Erinnerungen",
         "data": {
-          "reminder_1_enabled": "Erste Erinnerung", "reminder_1_minutes": "Minuten vor dem Adhan",
-          "reminder_1_sound": "Ton", "reminder_1_lang": "Sprache", "reminder_1_tts": "Nachricht",
-          "reminder_2_enabled": "Zweite Erinnerung", "reminder_2_minutes": "Minuten vor dem Adhan",
-          "reminder_2_sound": "Ton", "reminder_2_lang": "Sprache", "reminder_2_tts": "Nachricht"
+          "reminder_1_enabled": "Erste Erinnerung",
+          "reminder_1_minutes": "Minuten vor dem Adhan",
+          "reminder_1_sound": "Ton",
+          "reminder_1_lang": "Sprache",
+          "reminder_1_tts": "Nachricht",
+          "reminder_2_enabled": "Zweite Erinnerung",
+          "reminder_2_minutes": "Minuten vor dem Adhan",
+          "reminder_2_sound": "Ton",
+          "reminder_2_lang": "Sprache",
+          "reminder_2_tts": "Nachricht"
         }
       },
-      "fajr": { "title": "Fajr Adhan", "data": { "fajr_sound": "Fajr-Ton", "fajr_speaker": "Lautsprecher", "fajr_volume": "Lautstärke" } },
-      "adhan": { "title": "Adhan-Einstellungen", "data": { "day_sound": "Adhan-Ton", "day_speaker": "Lautsprecher", "day_volume": "Tageslautstärke", "night_volume_enabled": "Niedrigere Lautstärke nachts", "night_volume": "Nachtlautstärke", "night_start_hour": "Nacht beginnt um" } },
-      "notifications": { "title": "Benachrichtigungen", "data": { "notify_on_prayer": "Bei jedem Gebet benachrichtigen", "notify_target": "Dienst(e)", "notify_title": "Titel", "notify_message": "Nachricht" } },
-      "ramadan": { "title": "Ramadan 🌙", "data": { "suhoor_alarm_enabled": "Suhoor-Alarm", "suhoor_alarm_minutes": "Minuten vor Fajr", "suhoor_alarm_sound": "Suhoor-Ton", "suhoor_alarm_volume": "Lautstärke", "tarhim_enabled": "Tarhim aktivieren", "tarhim_sound": "Tarhim-Ton", "tarhim_speaker": "Lautsprecher", "tarhim_volume": "Lautstärke" } }
+      "fajr": {
+        "title": "Fajr Adhan",
+        "data": {
+          "fajr_sound": "Fajr-Ton",
+          "fajr_speaker": "Lautsprecher",
+          "fajr_volume": "Lautstärke"
+        }
+      },
+      "adhan": {
+        "title": "Adhan-Einstellungen",
+        "data": {
+          "day_sound": "Adhan-Ton",
+          "day_speaker": "Lautsprecher",
+          "day_volume": "Tageslautstärke",
+          "night_volume_enabled": "Niedrigere Lautstärke nachts",
+          "night_volume": "Nachtlautstärke",
+          "night_start_hour": "Nacht beginnt um"
+        }
+      },
+      "notifications": {
+        "title": "Benachrichtigungen",
+        "data": {
+          "notify_on_prayer": "Bei jedem Gebet benachrichtigen",
+          "notify_target": "Dienst(e)",
+          "notify_title": "Titel",
+          "notify_message": "Nachricht"
+        }
+      },
+      "ramadan": {
+        "title": "Ramadan 🌙",
+        "data": {
+          "suhoor_alarm_enabled": "Suhoor-Alarm",
+          "suhoor_alarm_minutes": "Minuten vor Fajr",
+          "suhoor_alarm_sound": "Suhoor-Ton",
+          "suhoor_alarm_volume": "Lautstärke",
+          "tarhim_enabled": "Tarhim aktivieren",
+          "tarhim_sound": "Tarhim-Ton",
+          "tarhim_speaker": "Lautsprecher",
+          "tarhim_volume": "Lautstärke"
+        }
+      }
+    }
+  },
+  "services": {
+    "common": {
+      "fields": {
+        "speaker": {
+          "name": "Lautsprecher",
+          "description": "Auf welchem Lautsprecher abspielen?"
+        },
+        "volume": {
+          "name": "Lautstärke",
+          "description": "Lautstärke (0.0 - 1.0)"
+        },
+        "prayer": {
+          "name": "Gebet",
+          "description": "Welches Gebet?"
+        }
+      }
+    },
+    "preview_adhan": {
+      "name": "Adhan Vorschau",
+      "description": "Spiele einen Adhan als Vorschau ab",
+      "fields": {
+        "sound": {
+          "name": "Klang",
+          "description": "Welchen Adhan möchten Sie abspielen?"
+        },
+        "speaker": {
+          "name": "Lautsprecher",
+          "description": "Auf welchem Lautsprecher abspielen?"
+        }
+      }
+    },
+    "test_prayer": {
+      "name": "Gebet Adhan testen",
+      "description": "Teste den Adhan für ein bestimmtes Gebet"
+    },
+    "test_tarhim": {
+      "name": "Tarhim testen",
+      "description": "Teste die Tarhim-Rezitation",
+      "fields": {
+        "sound": {
+          "name": "Tarhim Klang",
+          "description": "Welchen Tarhim möchten Sie abspielen?"
+        },
+        "speaker": {
+          "name": "Lautsprecher",
+          "description": "Auf welchem Lautsprecher abspielen?"
+        }
+      }
+    },
+    "test_reminder": {
+      "name": "Vor-Adhan Erinnerung testen (Tadkir Test)",
+      "description": "Teste die Erinnerung vor dem Gebet",
+      "fields": {
+        "reminder": {
+          "name": "Erinnerung",
+          "description": "Welche Erinnerung testen?"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Benachrichtigung testen",
+      "description": "Teste die Gebetsbenachrichtigung"
     }
   }
 }

@@ -30,5 +30,69 @@
         }
       }
     }
+  },
+  "services": {
+    "common": {
+      "fields": {
+        "speaker": {
+          "name": "المكبر",
+          "description": "على أي مكبر تريد التشغيل؟"
+        },
+        "volume": {
+          "name": "الصوت",
+          "description": "مستوى الصوت (0.0 - 1.0)"
+        },
+        "prayer": {
+          "name": "الصلاة",
+          "description": "أي صلاة؟"
+        }
+      }
+    },
+    "preview_adhan": {
+      "name": "معاينة الأذان",
+      "description": "تشغيل الأذان كمعاينة",
+      "fields": {
+        "sound": {
+          "name": "الصوت",
+          "description": "أي أذان تريد تشغيله؟"
+        },
+        "speaker": {
+          "name": "المكبر",
+          "description": "على أي مكبر تريد التشغيل؟"
+        }
+      }
+    },
+    "test_prayer": {
+      "name": "اختبار أذان الصلاة",
+      "description": "اختبار الأذان لصلاة معينة"
+    },
+    "test_tarhim": {
+      "name": "اختبار الترحيم",
+      "description": "اختبار تلاوة الترحيم",
+      "fields": {
+        "sound": {
+          "name": "صوت الترحيم",
+          "description": "أي ترحيم تريد تشغيله؟"
+        },
+        "speaker": {
+          "name": "المكبر",
+          "description": "على أي مكبر تريد التشغيل؟"
+        }
+      }
+    },
+    "test_reminder": {
+      "name": "اختبار التذكير قبل الأذان",
+      "description": "اختبار التذكير قبل وقت الصلاة",
+      "fields": {
+        "reminder": {
+          "name": "التذكير",
+          "description": "أي تذكير تريد اختباره؟"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "اختبار الإشعار",
+      "description": "اختبار إشعار وقت الصلاة"
+    }
   }
 }

@@ -135,5 +135,69 @@
         }
       }
     }
+  },
+  "services": {
+    "common": {
+      "fields": {
+        "speaker": {
+          "name": "Speaker",
+          "description": "Op welke speaker afspelen?"
+        },
+        "volume": {
+          "name": "Volume",
+          "description": "Volume (0.0 - 1.0)"
+        },
+        "prayer": {
+          "name": "Gebed",
+          "description": "Welk gebed?"
+        }
+      }
+    },
+    "preview_adhan": {
+      "name": "Preview Adhan",
+      "description": "Speel een adhan af als preview",
+      "fields": {
+        "sound": {
+          "name": "Geluid",
+          "description": "Welke adhan wil je afspelen?"
+        },
+        "speaker": {
+          "name": "Speaker",
+          "description": "Op welke speaker afspelen?"
+        }
+      }
+    },
+    "test_prayer": {
+      "name": "Test Gebedsadhan",
+      "description": "Test de adhan voor een specifiek gebed"
+    },
+    "test_tarhim": {
+      "name": "Test Tarhim",
+      "description": "Test de tarhim recitatie",
+      "fields": {
+        "sound": {
+          "name": "Tarhim Geluid",
+          "description": "Welke tarhim wil je afspelen?"
+        },
+        "speaker": {
+          "name": "Speaker",
+          "description": "Op welke speaker afspelen?"
+        }
+      }
+    },
+    "test_reminder": {
+      "name": "Test Pre-Adhan Herinnering (Test Tadkir)",
+      "description": "Test de herinnering voor het gebed",
+      "fields": {
+        "reminder": {
+          "name": "Herinnering",
+          "description": "Welke herinnering testen?"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Test Notificatie",
+      "description": "Test de gebedsnotificatie"
+    }
   }
 }

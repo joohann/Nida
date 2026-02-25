@@ -174,5 +174,69 @@
         }
       }
     }
+  },
+  "services": {
+    "common": {
+      "fields": {
+        "speaker": {
+          "name": "Speaker",
+          "description": "Which speaker to play on?"
+        },
+        "volume": {
+          "name": "Volume",
+          "description": "Volume (0.0 - 1.0)"
+        },
+        "prayer": {
+          "name": "Prayer",
+          "description": "Which prayer?"
+        }
+      }
+    },
+    "preview_adhan": {
+      "name": "Preview Adhan",
+      "description": "Play an adhan as a preview",
+      "fields": {
+        "sound": {
+          "name": "Sound",
+          "description": "Which adhan to play?"
+        },
+        "speaker": {
+          "name": "Speaker",
+          "description": "Which speaker to play on?"
+        }
+      }
+    },
+    "test_prayer": {
+      "name": "Test Prayer Adhan",
+      "description": "Test the adhan for a specific prayer"
+    },
+    "test_tarhim": {
+      "name": "Test Tarhim",
+      "description": "Test the tarhim recitation",
+      "fields": {
+        "sound": {
+          "name": "Tarhim Sound",
+          "description": "Which tarhim to play?"
+        },
+        "speaker": {
+          "name": "Speaker",
+          "description": "Which speaker to play on?"
+        }
+      }
+    },
+    "test_reminder": {
+      "name": "Test Pre-Adhan Reminder (Test Tadkir)",
+      "description": "Test the pre-prayer reminder",
+      "fields": {
+        "reminder": {
+          "name": "Reminder",
+          "description": "Which reminder to test?"
+        }
+      }
+    },
+    "test_notification": {
+      "name": "Test Notification",
+      "description": "Test the prayer notification"
+    }
   }
 }
