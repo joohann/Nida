@@ -1,0 +1,108 @@
+{
+  "config": {
+    "step": {
+      "intro": {
+        "title": "Nida — Islamische Gebetszeiten",
+        "description": "**بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ**\n\n**Assalāmu ʿAlaykum wa Raḥmatullāhi wa Barakātuh** 🌙\n\nWillkommen bei **Nida** für Home Assistant — ein vollständiger islamischer Gebetsbegleiter für Ihr Smart Home.\n\nMöge Allah ﷻ Ihre Gebete annehmen und diese Integration zu einer Quelle des Khayr in Ihrem Haushalt machen.\n\n---\n\n🕌 Standortbasierte Gebetszeiten via AlAdhan API\n🔔 Vor-Adhan Erinnerungen mit Ton und Sprachnachricht\n🌅 Fajr-Adhan mit eigenem Audio\n📢 Adhan für alle Gebete mit Tag- und Nachtlautstärke\n📱 Gerätebenachrichtigungen\n🌙 Ramadan-Funktionen — Suhoor-Alarm und Tarhim\n📅 Hijri-Kalender mit islamischen Feiertagen\n\n---\n\nMöge Allah das Team von aladhan.com reichlich belohnen. Ameen. 🤲\n\n*— Iftikhar Farzan Izz Al Din Muhsin*"
+      },
+      "location": {
+        "title": "Standort & Berechnungsmethode",
+        "description": "Geben Sie Ihre Stadt und Ihr Land ein, um genaue Gebetszeiten zu erhalten.",
+        "data": {
+          "city": "Stadt",
+          "country": "Land",
+          "method": "Berechnungsmethode"
+        }
+      },
+      "reminders": {
+        "title": "Vor-Adhan Erinnerungen",
+        "description": "Spielen Sie einen Ton und eine Sprachnachricht vor jedem Gebet ab. Verwenden Sie [minutes] und [prayer] in Ihrer Nachricht.",
+        "data": {
+          "reminder_1_enabled": "Erste Erinnerung",
+          "reminder_1_minutes": "Minuten vor dem Adhan",
+          "reminder_1_sound": "Ton",
+          "reminder_1_lang": "Sprache",
+          "reminder_1_tts": "Nachricht",
+          "reminder_2_enabled": "Zweite Erinnerung",
+          "reminder_2_minutes": "Minuten vor dem Adhan",
+          "reminder_2_sound": "Ton",
+          "reminder_2_lang": "Sprache",
+          "reminder_2_tts": "Nachricht"
+        }
+      },
+      "fajr": {
+        "title": "Fajr Adhan",
+        "description": "Konfigurieren Sie den Fajr-Adhan — das erste Gebet des Tages.",
+        "data": {
+          "fajr_sound": "Fajr-Ton",
+          "fajr_speaker": "Lautsprecher",
+          "fajr_volume": "Lautstärke"
+        }
+      },
+      "adhan": {
+        "title": "Adhan-Einstellungen",
+        "description": "Konfigurieren Sie den Adhan für alle Gebete.",
+        "data": {
+          "day_sound": "Adhan-Ton",
+          "day_speaker": "Lautsprecher",
+          "day_volume": "Tageslautstärke",
+          "night_volume_enabled": "Niedrigere Lautstärke nachts aktivieren",
+          "night_volume": "Nachtlautstärke",
+          "night_start_hour": "Nacht beginnt um (Stunde)"
+        }
+      },
+      "notifications": {
+        "title": "Benachrichtigungen",
+        "description": "Senden Sie eine Benachrichtigung zu jedem Gebetszeitpunkt.",
+        "data": {
+          "notify_on_prayer": "Bei jedem Gebet benachrichtigen",
+          "notify_target": "Benachrichtigungsdienst(e)",
+          "notify_title": "Benachrichtigungstitel",
+          "notify_message": "Benachrichtigungsnachricht (verwende {prayer})"
+        }
+      },
+      "ramadan": {
+        "title": "Ramadan 🌙",
+        "description": "Besondere Funktionen für den gesegneten Monat Ramadan.",
+        "data": {
+          "suhoor_alarm_enabled": "Suhoor-Alarm aktivieren",
+          "suhoor_alarm_minutes": "Minuten vor Fajr",
+          "suhoor_alarm_sound": "Suhoor-Ton",
+          "suhoor_alarm_volume": "Suhoor-Lautstärke",
+          "tarhim_enabled": "Tarhim vor Fajr aktivieren",
+          "tarhim_sound": "Tarhim-Ton",
+          "tarhim_speaker": "Lautsprecher",
+          "tarhim_volume": "Lautstärke"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Keine Verbindung zur AlAdhan API",
+      "invalid_location": "Ungültige Stadt oder Land"
+    },
+    "abort": {
+      "already_configured": "Nida ist bereits konfiguriert"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Standort & Berechnungsmethode",
+        "data": { "city": "Stadt", "country": "Land", "method": "Berechnungsmethode" }
+      },
+      "reminders": {
+        "title": "Vor-Adhan Erinnerungen",
+        "data": {
+          "reminder_1_enabled": "Erste Erinnerung", "reminder_1_minutes": "Minuten vor dem Adhan",
+          "reminder_1_sound": "Ton", "reminder_1_lang": "Sprache", "reminder_1_tts": "Nachricht",
+          "reminder_2_enabled": "Zweite Erinnerung", "reminder_2_minutes": "Minuten vor dem Adhan",
+          "reminder_2_sound": "Ton", "reminder_2_lang": "Sprache", "reminder_2_tts": "Nachricht"
+        }
+      },
+      "fajr": { "title": "Fajr Adhan", "data": { "fajr_sound": "Fajr-Ton", "fajr_speaker": "Lautsprecher", "fajr_volume": "Lautstärke" } },
+      "adhan": { "title": "Adhan-Einstellungen", "data": { "day_sound": "Adhan-Ton", "day_speaker": "Lautsprecher", "day_volume": "Tageslautstärke", "night_volume_enabled": "Niedrigere Lautstärke nachts", "night_volume": "Nachtlautstärke", "night_start_hour": "Nacht beginnt um" } },
+      "notifications": { "title": "Benachrichtigungen", "data": { "notify_on_prayer": "Bei jedem Gebet benachrichtigen", "notify_target": "Dienst(e)", "notify_title": "Titel", "notify_message": "Nachricht" } },
+      "ramadan": { "title": "Ramadan 🌙", "data": { "suhoor_alarm_enabled": "Suhoor-Alarm", "suhoor_alarm_minutes": "Minuten vor Fajr", "suhoor_alarm_sound": "Suhoor-Ton", "suhoor_alarm_volume": "Lautstärke", "tarhim_enabled": "Tarhim aktivieren", "tarhim_sound": "Tarhim-Ton", "tarhim_speaker": "Lautsprecher", "tarhim_volume": "Lautstärke" } }
+    }
+  }
+}

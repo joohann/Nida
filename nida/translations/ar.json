@@ -1,0 +1,34 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "مواقيت الصلاة - Adhan",
+        "description": "أدخل موقعك وطريقة الحساب",
+        "data": {
+          "city": "المدينة",
+          "country": "البلد",
+          "method": "طريقة الحساب"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "لا يمكن الاتصال بـ Adhan API",
+      "invalid_location": "مدينة أو بلد غير صالح"
+    },
+    "abort": {
+      "already_configured": "Adhan مُهيَّأ بالفعل"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "إعدادات Adhan",
+        "data": {
+          "city": "المدينة",
+          "country": "البلد",
+          "method": "طريقة الحساب"
+        }
+      }
+    }
+  }
+}

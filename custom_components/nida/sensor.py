@@ -1,4 +1,4 @@
-"""Sensor platform for Prayer Times."""
+"""Sensor platform for Nida."""
 from __future__ import annotations
 
 from datetime import datetime
@@ -82,9 +82,9 @@ class PrayerTimeSensor(CoordinatorEntity, SensorEntity):
     def device_info(self):
         return {
             "identifiers": {(DOMAIN, f"{self._entry.entry_id}_prayer")},
-            "name": "Prayer Times",
+            "name": "Nida",
             "manufacturer": "AlAdhan",
-            "model": "Prayer Times API",
+            "model": "AlAdhan API",
         }
 
 
@@ -108,9 +108,9 @@ class PrayerTimeReadableSensor(CoordinatorEntity, SensorEntity):
     def device_info(self):
         return {
             "identifiers": {(DOMAIN, f"{self._entry.entry_id}_readable")},
-            "name": "Prayer Times Readable",
+            "name": "Nida Readable",
             "manufacturer": "AlAdhan",
-            "model": "Prayer Times API",
+            "model": "AlAdhan API",
         }
 
 
@@ -173,7 +173,7 @@ class HijriSensor(CoordinatorEntity, SensorEntity):
             "identifiers": {(DOMAIN, f"{self._entry.entry_id}_hijri")},
             "name": "Hijri Calendar",
             "manufacturer": "AlAdhan",
-            "model": "Prayer Times API",
+            "model": "AlAdhan API",
         }
 
 
@@ -233,9 +233,9 @@ class NextPrayerSensor(CoordinatorEntity, SensorEntity):
     def device_info(self):
         return {
             "identifiers": {(DOMAIN, f"{self._entry.entry_id}_prayer")},
-            "name": "Prayer Times",
+            "name": "Nida",
             "manufacturer": "AlAdhan",
-            "model": "Prayer Times API",
+            "model": "AlAdhan API",
         }
 
 
@@ -277,7 +277,7 @@ class IsRamadanSensor(CoordinatorEntity):
             "identifiers": {(DOMAIN, f"{self._entry.entry_id}_hijri")},
             "name": "Hijri Calendar",
             "manufacturer": "AlAdhan",
-            "model": "Prayer Times API",
+            "model": "AlAdhan API",
         }
 
 
@@ -313,5 +313,5 @@ class IslamicHolidayBinarySensor(CoordinatorEntity):
             "identifiers": {(DOMAIN, f"{self._entry.entry_id}_hijri")},
             "name": "Hijri Calendar",
             "manufacturer": "AlAdhan",
-            "model": "Prayer Times API",
+            "model": "AlAdhan API",
         }
