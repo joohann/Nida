@@ -26,7 +26,7 @@ Prayer times are fetched from the free [AlAdhan API](https://aladhan.com/prayer-
 - 🎵 **Preview Services** — test adhans and tarhim directly from the UI
 - 📊 **Dashboard Card** — beautiful card with live countdown timer
 - 🌍 **15+ Calculation Methods** — Muslim World League, ISNA, Karachi and more
-- 🗣️ **Multi-language** — English, Dutch, Arabic, Turkish, German, French, Malay, Indonedian, Urdu and Farsi (Persian).
+- 🗣️ **Multi-language** — English, Dutch, Arabic, Turkish, German, French, Malay, Indonesian, Urdu and Farsi (Persian).
 
 ---
 
