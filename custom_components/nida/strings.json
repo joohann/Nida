@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-        "description": "Assalamu Alaikum wa Rahmatullahi wa Barakatuh 🌙\n\nWelcome to **Prayer Times** for Home Assistant.\n\nThis integration uses the free **AlAdhan API** (aladhan.com) to provide accurate daily prayer times based on your location. We are truly grateful for this wonderful free service — may Allah reward those who built and maintain it.\n\nPlease enter your city and country to get started.",
+        "description": "Assalamu Alaikum wa Rahmatullahi wa Barakatuh 🌙\n\nWelcome to **Nida** for Home Assistant.\n\nThis integration uses the free **AlAdhan API** (aladhan.com) to provide accurate daily prayer times based on your location. We are truly grateful for this wonderful free service — may Allah reward those who built and maintain it.\n\nPlease enter your city and country to get started.",
         "data": {
           "city": "City",
           "country": "Country",
@@ -69,13 +69,13 @@
       "invalid_location": "Invalid city or country"
     },
     "abort": {
-      "already_configured": "Prayer Times is already configured"
+      "already_configured": "Nida is already configured"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Prayer Times Settings",
+        "title": "Nida Settings",
         "data": {
           "city": "City",
           "country": "Country",

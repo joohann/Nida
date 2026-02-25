@@ -187,7 +187,7 @@ async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
         )
 
 
-async def async_send_notification(hass: HomeAssistant, entry: ConfigEntry, message: str, title: str = "🕌 Prayer Times"):
+async def async_send_notification(hass: HomeAssistant, entry: ConfigEntry, message: str, title: str = "🕌 Nida"):
     """Send notification if configured."""
     target = entry.options.get("notify_target", entry.data.get("notify_target", ""))
     if not target:
@@ -414,7 +414,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
     async def handle_test_notification(call):
         """Test notification."""
         options = entry.options if entry.options else entry.data
-        custom_title = options.get("notify_title", "🕌 Prayer Times")
+        custom_title = options.get("notify_title", "🕌 Nida")
         custom_msg = options.get("notify_message", "It is time for {prayer} prayer")
         await async_send_notification(hass, entry, custom_msg, custom_title)
 

@@ -1,0 +1,72 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Gebedstijden",
+        "description": "Vul je locatie en berekenings methode in",
+        "data": {
+          "city": "Stad",
+          "country": "Land",
+          "method": "Berekenings Methode"
+        }
+      },
+      "adhan": {
+        "title": "Adhan Instellingen",
+        "description": "Stel de adhan in voor dagelijkse gebeden",
+        "data": {
+          "play_method": "Afspeelmethode",
+          "day_sound": "Adhan Geluid",
+          "day_speaker": "Speaker",
+          "day_volume": "Volume"
+        }
+      },
+      "fajr": {
+        "title": "Fajr Instellingen",
+        "description": "Stel de adhan in specifiek voor Fajr",
+        "data": {
+          "fajr_sound": "Fajr Adhan Geluid",
+          "fajr_speaker": "Fajr Speaker",
+          "fajr_volume": "Fajr Volume"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Kan geen verbinding maken met AlAdhan API",
+      "invalid_location": "Ongeldige stad of land"
+    },
+    "abort": {
+      "already_configured": "Gebedstijden is al geconfigureerd"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Gebedstijden Instellingen",
+        "data": {
+          "city": "Stad",
+          "country": "Land",
+          "method": "Berekenings Methode"
+        }
+      },
+      "adhan": {
+        "title": "Adhan Instellingen",
+        "description": "Stel de adhan in voor dagelijkse gebeden",
+        "data": {
+          "play_method": "Afspeelmethode",
+          "day_sound": "Adhan Geluid",
+          "day_speaker": "Speaker",
+          "day_volume": "Volume"
+        }
+      },
+      "fajr": {
+        "title": "Fajr Instellingen",
+        "description": "Stel de adhan in specifiek voor Fajr",
+        "data": {
+          "fajr_sound": "Fajr Adhan Geluid",
+          "fajr_speaker": "Fajr Speaker",
+          "fajr_volume": "Fajr Volume"
+        }
+      }
+    }
+  }
+}

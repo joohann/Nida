@@ -1,4 +1,4 @@
-"""Config flow for Prayer Times."""
+"""Config flow for Nida."""
 from __future__ import annotations
 import asyncio
 import aiohttp
@@ -157,7 +157,7 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({
                 vol.Optional("notify_on_prayer", default=False): bool,
                 vol.Optional("notify_target", default=[]): selector.selector({"select": {"options": notify_services, "mode": "dropdown", "multiple": True, "custom_value": True}}),
-                vol.Optional("notify_title", default="🕌 Prayer Times"): str,
+                vol.Optional("notify_title", default="🕌 Nida"): str,
                 vol.Optional("notify_message", default="It is time for {prayer} prayer"): str,
             }),
         )
@@ -165,7 +165,7 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_ramadan(self, user_input=None):
         if user_input is not None:
             self._data.update(user_input)
-            return self.async_create_entry(title=self._data.get(CONF_CITY, "Prayer Times"), data=self._data)
+            return self.async_create_entry(title=self._data.get(CONF_CITY, "Nida"), data=self._data)
         jingles = {"": "— No sound —", **get_jingle_sounds()}
         return self.async_show_form(
             step_id="ramadan",
@@ -281,7 +281,7 @@ class PrayerTimesOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema({
                 vol.Optional("notify_on_prayer", default=self._get("notify_on_prayer", False)): bool,
                 vol.Optional("notify_target", default=current): selector.selector({"select": {"options": notify_services, "mode": "dropdown", "multiple": True, "custom_value": True}}),
-                vol.Optional("notify_title", default=self._get("notify_title", "🕌 Prayer Times")): str,
+                vol.Optional("notify_title", default=self._get("notify_title", "🕌 Nida")): str,
                 vol.Optional("notify_message", default=self._get("notify_message", "It is time for {prayer} prayer")): str,
             }),
         )

@@ -1,4 +1,4 @@
-"""Constants for Prayer Times integration."""
+"""Constants for Nida integration."""
 
 DOMAIN = "nida"
 
@@ -62,7 +62,7 @@ TARHIM_SOUNDS = {
 }
 
 # Pad naar de sounds map (www/sounds/ in de repo = /config/www/sounds/ op HA)
-_SOUNDS_DIR = "/config/www/sounds"
+_SOUNDS_DIR = "/config/www/nida/sounds"
 
 
 def _format_sound_label(filename: str) -> str:
