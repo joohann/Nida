@@ -184,7 +184,7 @@ async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
         sound = options.get(CONF_DAY_SOUND, "01-adhan.mp3")
 
     play_method = options.get(CONF_PLAY_METHOD, "media_player")
-    media_path = await _get_media_url(hass, f"/local/sounds/{sound}")
+    media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
 
     _LOGGER.info(f"Playing {sound} on {speaker} at volume {volume}")
 
@@ -259,7 +259,7 @@ async def check_reminders(hass, entry, coordinator, now_ts, prayers):
                 _LOGGER.info(f"Reminder {r_num} for {prayer_name} in {minutes} min")
 
                 if sound:
-                    media_path = await _get_media_url(hass, f"/local/sounds/{sound}")
+                    media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
                     try:
                         await hass.services.async_call(
                             "media_player", "play_media",
@@ -322,7 +322,7 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
             if isinstance(speaker, str): speaker = [speaker]
             volume = _get_volume(options, CONF_TARHIM_VOLUME, 10)
             sound = options.get(CONF_TARHIM_SOUND, "01-tarhim.mp3")
-            media_path = await _get_media_url(hass, f"/local/sounds/{sound}")
+            media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
 
             _LOGGER.info(f"Playing tarhim: {sound}")
             await hass.services.async_call(
@@ -349,7 +349,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         speaker = call.data.get("speaker", options.get(CONF_DAY_SPEAKER, "media_player.adhan_speakers"))
         volume = call.data.get("volume", 0.5)
         play_method = options.get(CONF_PLAY_METHOD, "media_player")
-        media_path = await _get_media_url(hass, f"/local/sounds/{sound}")
+        media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
 
         if play_method == "media_player":
             await hass.services.async_call(
@@ -384,7 +384,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         speaker = call.data.get("speaker", options.get(CONF_TARHIM_SPEAKER, "media_player.adhan_speakers"))
         volume = call.data.get("volume", options.get(CONF_TARHIM_VOLUME, 0.4))
         sound = options.get(CONF_TARHIM_SOUND, "01-tarhim.mp3")
-        media_path = await _get_media_url(hass, f"/local/sounds/{sound}")
+        media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
 
         await hass.services.async_call(
             "media_player", "play_media",
@@ -412,7 +412,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         volume = _get_volume(options, CONF_DAY_VOLUME, 50)
 
         if sound:
-            media_path = await _get_media_url(hass, f"/local/sounds/{sound}")
+            media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
             await hass.services.async_call(
                 "media_player", "play_media",
                 {"entity_id": speaker, "media_content_id": media_path,
