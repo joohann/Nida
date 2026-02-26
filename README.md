@@ -4,6 +4,8 @@
 [![HA Version](https://img.shields.io/badge/Home%20Assistant-2023.1%2B-blue)](https://home-assistant.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+<img src="https://raw.githubusercontent.com/joohann/Nida/main/brand/icon.png" width="200">
+
 *Assalāmu ʿAlaykum wa Raḥmatullāhi wa Barakātuh*
 — Iftikhar Farzan Izz Al Din Muhsin
 
