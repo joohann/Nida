@@ -13,6 +13,8 @@
 
 Prayer times are fetched from the free [AlAdhan API](https://aladhan.com/prayer-times-api) — no account or API key required. May Allah reward those who built and maintain it. 🤲
 
+🌍 Supported languages in Home Assistant:
+Arabic • Dutch • German • French • Indonesian • Malay • Persian • Urdu • English
 ---
 
 ## ✨ Features
