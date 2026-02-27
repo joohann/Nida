@@ -1,7 +1,4 @@
-![image](https://github.com/user-attachments/assets/42128827-2189-4b3a-af0b-5592b7b4c80c)
 # 🕌 نداء — مواقيت الصلاة لـ Home Assistant
-
-
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
 [![HA Version](https://img.shields.io/badge/Home%20Assistant-2023.1%2B-blue)](https://home-assistant.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -70,9 +67,9 @@
 | المدينة | مدينتك | `Riyadh` |
 | الدولة | دولتك | `Saudi Arabia` |
 | طريقة الحساب | طريقة احتساب مواقيت الصلاة | `Muslim World League` |
-
+</div>
 ---
-</div><div dir="rtl" align="right">
+<div dir="rtl" align="right">
 
 
 ### الخطوة 2 — تنبيهات قبل الأذان
@@ -89,8 +86,10 @@
 
 استخدم `[minutes]` و `[prayer]` كمتغيرات داخل الرسالة.
 
+</div>
 ---
-</div><div dir="rtl" align="right">
+<div dir="rtl" align="right">
+
 
 ### الخطوة 3 — أذان الفجر
 
@@ -102,8 +101,10 @@
 | المشغّل | كيان media_player |
 | مستوى الصوت | 0 – 100% |
 
+</div>
 ---
-</div><div dir="rtl" align="right">
+<div dir="rtl" align="right">
+
 ### الخطوة 4 — الأذان اليومي
 
 | الحقل | الوصف |
@@ -114,8 +115,10 @@
 | خفض الصوت الليلي | خيار لتقليل الصوت بعد ساعة معينة |
 | بداية الوضع الليلي | الساعة التي يبدأ عندها خفض الصوت |
 
+</div>
 ---
-</div><div dir="rtl" align="right">
+<div dir="rtl" align="right">
+
 ### الخطوة 5 — الإشعارات
 
 | الحقل | الوصف |
@@ -125,8 +128,10 @@
 | العنوان | عنوان الإشعار |
 | الرسالة | استخدم `{prayer}` داخل النص |
 
+</div>
 ---
-</div><div dir="rtl" align="right">
+<div dir="rtl" align="right">
+
 ### الخطوة 6 — رمضان
 
 | الحقل | الوصف |
