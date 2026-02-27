@@ -1,11 +1,9 @@
 # 🕌 نداء — مواقيت الصلاة لـ Home Assistant
-<p dir="rtl" align="right">
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
 [![HA Version](https://img.shields.io/badge/Home%20Assistant-2023.1%2B-blue)](https://home-assistant.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-
-<img src="https://raw.githubusercontent.com/joohann/Nida/main/brand/icon.png" width="200">
+<img src="https://raw.githubusercontent.com/joohann/Nida/main/brand/icon.png" width="200" dir="rtl" align="right">
 
 *السلام عليكم ورحمة الله وبركاته*  
 — افتخار فرزان عز الدين محسن
@@ -13,9 +11,9 @@
 **نداء** يعني *“الدعوة”* — تكامل متكامل لمنصة Home Assistant يوفّر مواقيت الصلاة مع تشغيل الأذان تلقائيًا، وتنبيهات قبل الأذان، وميزات خاصة بشهر رمضان، بالإضافة إلى بطاقة لوحة تحكم جميلة وعملية.
 
 يتم جلب مواقيت الصلاة عبر واجهة [AlAdhan API](https://aladhan.com/prayer-times-api) المجانية — دون الحاجة إلى حساب أو مفتاح API. نسأل الله أن يجزي القائمين عليها خير الجزاء. 🤲
-
+<p dir="rtl" align="right">
 🌍 🇬🇧 🇳🇱 🇩🇪 🇫🇷 🇮🇩 🇲🇾 🇸🇦 🇮🇷 🇵🇰
-
+</p>
 ---
 
 ## ✨ المميزات
