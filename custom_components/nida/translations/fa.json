@@ -214,6 +214,10 @@
     "test_notification": {
       "name": "آزمایش اعلان",
       "description": "آزمایش اعلان وقت نماز"
+    },
+    "test_suhoor": {
+      "name": "آزمایش زنگ سحر",
+      "description": "آزمایش زنگ سحر (رمضان)"
     }
   }
 }

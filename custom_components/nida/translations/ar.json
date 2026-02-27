@@ -93,6 +93,10 @@
     "test_notification": {
       "name": "اختبار الإشعار",
       "description": "اختبار إشعار وقت الصلاة"
+    },
+    "test_suhoor": {
+      "name": "اختبار منبه السحور",
+      "description": "اختبار منبه السحور (رمضان)"
     }
   }
 }

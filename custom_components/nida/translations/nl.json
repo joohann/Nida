@@ -131,6 +131,10 @@
     "test_notification": {
       "name": "Test Notificatie",
       "description": "Test de gebedsnotificatie"
+    },
+    "test_suhoor": {
+      "name": "Test Suhoor Alarm",
+      "description": "Test het suhoor alarm (Ramadan)"
     }
   }
 }
