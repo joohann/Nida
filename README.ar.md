@@ -19,7 +19,6 @@
 <p dir="rtl" align="right">
 🌍 🇬🇧 🇳🇱 🇩🇪 🇫🇷 🇮🇩 🇲🇾 🇸🇦 🇮🇷 🇵🇰
 </p>
-<div dir="rtl" align="right">
 ---
 
 ## ✨ المميزات
@@ -62,7 +61,7 @@
 يتكوّن الإعداد من 6 خطوات:
 
 ---
-</div> <div dir="rtl" align="right">
+<div dir="rtl" align="right">
 
 ### الخطوة 1 — الموقع وطريقة الحساب
 
