@@ -38,7 +38,7 @@
 <img width="6180" height="3000" alt="Image" src="https://github.com/user-attachments/assets/bf29dd2d-da6c-422a-88e7-8986225035a8" />
 
 ---
-
+<div dir="rtl" align="right">
 ## 📦 التثبيت عبر HACS
 
 1. انتقل إلى **HACS → Integrations → ⋮ → Custom Repositories**
@@ -58,7 +58,7 @@
 يتكوّن الإعداد من 6 خطوات:
 
 ---
-<div dir="rtl" align="right">
+</div><div dir="rtl" align="right">
 
 ### الخطوة 1 — الموقع وطريقة الحساب
 
