@@ -67,9 +67,9 @@
 | المدينة | مدينتك | `Riyadh` |
 | الدولة | دولتك | `Saudi Arabia` |
 | طريقة الحساب | طريقة احتساب مواقيت الصلاة | `Muslim World League` |
-</div>
+
 ---
-<div dir="rtl" align="right">
+</div><div dir="rtl" align="right">
 
 
 ### الخطوة 2 — تنبيهات قبل الأذان
@@ -86,10 +86,8 @@
 
 استخدم `[minutes]` و `[prayer]` كمتغيرات داخل الرسالة.
 
-</div>
 ---
-<div dir="rtl" align="right">
-
+</div><div dir="rtl" align="right">
 
 ### الخطوة 3 — أذان الفجر
 
@@ -101,10 +99,8 @@
 | المشغّل | كيان media_player |
 | مستوى الصوت | 0 – 100% |
 
-</div>
 ---
-<div dir="rtl" align="right">
-
+</div><div dir="rtl" align="right">
 ### الخطوة 4 — الأذان اليومي
 
 | الحقل | الوصف |
@@ -115,10 +111,8 @@
 | خفض الصوت الليلي | خيار لتقليل الصوت بعد ساعة معينة |
 | بداية الوضع الليلي | الساعة التي يبدأ عندها خفض الصوت |
 
-</div>
 ---
-<div dir="rtl" align="right">
-
+</div><div dir="rtl" align="right">
 ### الخطوة 5 — الإشعارات
 
 | الحقل | الوصف |
@@ -128,10 +122,8 @@
 | العنوان | عنوان الإشعار |
 | الرسالة | استخدم `{prayer}` داخل النص |
 
-</div>
 ---
-<div dir="rtl" align="right">
-
+</div><div dir="rtl" align="right">
 ### الخطوة 6 — رمضان
 
 | الحقل | الوصف |
