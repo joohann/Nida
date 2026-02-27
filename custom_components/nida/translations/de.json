@@ -214,6 +214,10 @@
     "test_notification": {
       "name": "Benachrichtigung testen",
       "description": "Teste die Gebetsbenachrichtigung"
+    },
+    "test_suhoor": {
+      "name": "Suhoor Alarm testen",
+      "description": "Teste den Suhoor Alarm (Ramadan)"
     }
   }
 }

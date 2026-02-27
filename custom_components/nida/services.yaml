@@ -132,3 +132,7 @@ test_notification:
   name: "[%key:component::nida::services::test_notification::name%]"
   description: "[%key:component::nida::services::test_notification::description%]"
   fields: {}
+test_suhoor:
+  name: "[%key:component::nida::services::test_suhoor::name%]"
+  description: "[%key:component::nida::services::test_suhoor::description%]"
+  fields: {}

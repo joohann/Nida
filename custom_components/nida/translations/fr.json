@@ -214,6 +214,10 @@
     "test_notification": {
       "name": "Tester la notification",
       "description": "Tester la notification de prière"
+    },
+    "test_suhoor": {
+      "name": "Tester l'alarme Suhoor",
+      "description": "Tester l'alarme suhoor (Ramadan)"
     }
   }
 }

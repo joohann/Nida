@@ -214,6 +214,10 @@
     "test_notification": {
       "name": "Uji Notifikasi",
       "description": "Uji notifikasi waktu sholat"
+    },
+    "test_suhoor": {
+      "name": "Uji Alarm Sahur",
+      "description": "Uji alarm sahur (Ramadan)"
     }
   }
 }

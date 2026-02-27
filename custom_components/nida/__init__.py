@@ -123,6 +123,7 @@ async def async_setup_adhan_scheduler(hass: HomeAssistant, entry: ConfigEntry, c
                 hass.async_create_task(play_adhan(hass, entry, prayer_key))
 
         hass.async_create_task(check_tarhim(hass, entry, coordinator, now_ts))
+        hass.async_create_task(check_suhoor(hass, entry, coordinator, now_ts))
         hass.async_create_task(check_reminders(hass, entry, coordinator, now_ts, prayers))
 
     entry.async_on_unload(
@@ -309,6 +310,49 @@ async def check_reminders(hass, entry, coordinator, now_ts, prayers):
                         _LOGGER.warning(f"Could not play TTS reminder: {e}")
 
 
+
+async def check_suhoor(hass: HomeAssistant, entry: ConfigEntry, coordinator, now_ts: float):
+    """Play suhoor alarm before Fajr during Ramadan."""
+    options = entry.options if entry.options else entry.data
+
+    if not options.get("suhoor_alarm_enabled", True):
+        return
+
+    try:
+        hijri_month = coordinator.data["data"]["date"]["hijri"]["month"]["en"]
+        if "Rama" not in hijri_month:
+            return
+    except Exception:
+        return
+
+    try:
+        timings = coordinator.data["data"]["timings"]
+        today = datetime.now().strftime("%Y-%m-%d")
+        fajr_ts = datetime.strptime(f"{today} {timings['Fajr']}", "%Y-%m-%d %H:%M").timestamp()
+        minutes = options.get("suhoor_alarm_minutes", 30)
+        suhoor_ts = fajr_ts - (minutes * 60)
+
+        if abs(now_ts - suhoor_ts) < 30:
+            speaker = options.get(CONF_FAJR_SPEAKER, ["media_player.adhan_speakers"])
+            if isinstance(speaker, str): speaker = [speaker]
+            volume = _get_volume(options, "suhoor_alarm_volume", 10, hass)
+            sound = options.get("suhoor_alarm_sound", "01-suhoor.mp3")
+            media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+
+            _LOGGER.info(f"Playing suhoor alarm: {sound}")
+            await hass.services.async_call(
+                "media_player", "play_media",
+                {
+                    "entity_id": speaker,
+                    "media_content_id": media_path,
+                    "media_content_type": "music",
+                    "announce": True,
+                    "extra": {"volume_level": volume}
+                }
+            )
+    except Exception as e:
+        _LOGGER.error(f"Suhoor alarm error: {e}")
+
 async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now_ts: float):
     """Play tarhim before Fajr during Ramadan."""
     options = entry.options if entry.options else entry.data
@@ -448,6 +492,28 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
                 }
             )
 
+
+    async def handle_test_suhoor(call):
+        """Test suhoor alarm."""
+        options = entry.options if entry.options else entry.data
+        speaker = options.get(CONF_FAJR_SPEAKER, ["media_player.adhan_speakers"])
+        if isinstance(speaker, str): speaker = [speaker]
+        volume = _get_volume(options, "suhoor_alarm_volume", 10, hass)
+        sound = options.get("suhoor_alarm_sound", "01-suhoor.mp3")
+        media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+
+        _LOGGER.info(f"Testing suhoor alarm: {sound}")
+        await hass.services.async_call(
+            "media_player", "play_media",
+            {
+                "entity_id": speaker,
+                "media_content_id": media_path,
+                "media_content_type": "music",
+                "announce": True,
+                "extra": {"volume_level": volume}
+            }
+        )
+
     async def handle_test_notification(call):
         """Test notification."""
         options = entry.options if entry.options else entry.data
@@ -478,6 +544,11 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
             vol.Optional("speaker"): str,
             vol.Optional("volume", default=0.4): vol.Coerce(float),
         })
+    )
+
+    hass.services.async_register(
+        DOMAIN, "test_suhoor", handle_test_suhoor,
+        schema=vol.Schema({})
     )
 
     hass.services.async_register(
