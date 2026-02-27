@@ -1,9 +1,9 @@
 # 🕌 نداء — مواقيت الصلاة لـ Home Assistant
-<div dir="rtl" align="right">
+<p dir="rtl" align="right">
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
 [![HA Version](https://img.shields.io/badge/Home%20Assistant-2023.1%2B-blue)](https://home-assistant.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-</div>
+
 
 <img src="https://raw.githubusercontent.com/joohann/Nida/main/brand/icon.png" width="200">
 
