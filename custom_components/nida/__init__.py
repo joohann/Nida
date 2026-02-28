@@ -93,6 +93,17 @@ async def async_copy_sounds(hass):
 
     copied = await hass.async_add_executor_job(_copy_sounds)
 
+    def _copy_card():
+        import os, shutil
+        card_src = os.path.join(os.path.dirname(__file__), "nida-card.js")
+        card_dst = hass.config.path("www/nida-card.js")
+        if os.path.exists(card_src) and not os.path.exists(card_dst):
+            shutil.copy2(card_src, card_dst)
+            return True
+        return False
+
+    await hass.async_add_executor_job(_copy_card)
+
 async def async_setup_adhan_scheduler(hass: HomeAssistant, entry: ConfigEntry, coordinator):
     """Schedule adhan at prayer times."""
 
