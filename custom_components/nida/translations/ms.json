@@ -58,7 +58,7 @@
           "notify_on_prayer": "Beritahu pada setiap solat",
           "notify_target": "Perkhidmatan pemberitahuan",
           "notify_title": "Tajuk",
-          "notify_message": "Mesej (gunakan {prayer})"
+          "notify_message": "Mesej (gunakan [prayer])"
         }
       },
       "ramadan": {

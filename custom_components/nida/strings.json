@@ -49,7 +49,7 @@
       },
       "reminders": {
         "title": "Pre-Adhan Reminders",
-        "description": "Play a sound and/or spoken message before each prayer time. Use {minutes} and {prayer} in your message.",
+        "description": "Play a sound and/or spoken message before each prayer time. Use [minutes] and [prayer] in your message.",
         "data": {
           "reminder_1_enabled": "First reminder",
           "reminder_1_minutes": "Minutes before adhan",
@@ -120,7 +120,7 @@
       },
       "reminders": {
         "title": "Pre-Adhan Reminders",
-        "description": "Play a sound and/or spoken message before each prayer time. Use {minutes} and {prayer} in your message.",
+        "description": "Play a sound and/or spoken message before each prayer time. Use [minutes] and [prayer] in your message.",
         "data": {
           "reminder_1_enabled": "First reminder",
           "reminder_1_minutes": "Minutes before adhan",

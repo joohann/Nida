@@ -58,7 +58,7 @@
           "notify_on_prayer": "Bei jedem Gebet benachrichtigen",
           "notify_target": "Benachrichtigungsdienst(e)",
           "notify_title": "Benachrichtigungstitel",
-          "notify_message": "Benachrichtigungsnachricht (verwende {prayer})"
+          "notify_message": "Benachrichtigungsnachricht (verwende [prayer])"
         }
       },
       "ramadan": {
