@@ -9,12 +9,12 @@ preview_adhan:
       selector:
         select:
           options:
-          - label: 01 Adhan Fajr
-            value: 01-adhan-fajr.mp3
-          - label: 02 Adhan Fajr
-            value: 02-adhan-fajr.mp3
-          - label: 03 Adhan Fajr
-            value: 03-adhan-fajr.mp3
+            - label: 01 Adhan Fajr
+              value: "01-adhan-fajr.mp3"
+            - label: 02 Adhan Fajr
+              value: "02-adhan-fajr.mp3"
+            - label: 03 Adhan Fajr
+              value: "03-adhan-fajr.mp3"
     speaker:
       name: "[%key:component::nida::services::preview_adhan::fields::speaker::name%]"
       description: "[%key:component::nida::services::preview_adhan::fields::speaker::description%]"
@@ -42,22 +42,22 @@ test_prayer:
       name: "[%key:component::nida::services::common::fields::prayer::name%]"
       description: "[%key:component::nida::services::common::fields::prayer::description%]"
       required: true
-      default: dhuhr
+      default: "dhuhr"
       selector:
         select:
           options:
-          - label: Fajr
-            value: fajr
-          - label: Dhuhr
-            value: dhuhr
-          - label: Asr
-            value: asr
-          - label: Maghrib
-            value: maghrib
-          - label: Isha
-            value: isha
-          - label: "Jumat (vrijdag)"
-            value: jumat
+            - label: Fajr
+              value: "fajr"
+            - label: Dhuhr
+              value: "dhuhr"
+            - label: Asr
+              value: "asr"
+            - label: Maghrib
+              value: "maghrib"
+            - label: Isha
+              value: "isha"
+            - label: "Jumat (vrijdag)"
+              value: "jumat"
 
 test_tarhim:
   name: "[%key:component::nida::services::test_tarhim::name%]"
@@ -70,10 +70,10 @@ test_tarhim:
       selector:
         select:
           options:
-          - label: 01 Tarhim
-            value: 01-tarhim.mp3
-          - label: 02 Tarhim
-            value: 02-tarhim.mp3
+            - label: 01 Tarhim
+              value: "01-tarhim.mp3"
+            - label: 02 Tarhim
+              value: "02-tarhim.mp3"
     speaker:
       name: "[%key:component::nida::services::common::fields::speaker::name%]"
       description: "[%key:component::nida::services::common::fields::speaker::description%]"
@@ -101,37 +101,38 @@ test_reminder:
       name: "[%key:component::nida::services::test_reminder::fields::reminder::name%]"
       description: "[%key:component::nida::services::test_reminder::fields::reminder::description%]"
       required: false
-      default: 1
+      default: "1"
       selector:
         select:
           options:
-          - label: Reminder 1
-            value: 1
-          - label: Reminder 2
-            value: 2
+            - label: Reminder 1
+              value: "1"
+            - label: Reminder 2
+              value: "2"
     prayer:
       name: "[%key:component::nida::services::common::fields::prayer::name%]"
       description: "[%key:component::nida::services::common::fields::prayer::description%]"
       required: false
-      default: Dhuhr
+      default: "dhuhr"
       selector:
         select:
           options:
-          - label: Fajr
-            value: Fajr
-          - label: Dhuhr
-            value: Dhuhr
-          - label: Asr
-            value: Asr
-          - label: Maghrib
-            value: Maghrib
-          - label: Isha
-            value: Isha
+            - label: Fajr
+              value: "fajr"
+            - label: Dhuhr
+              value: "dhuhr"
+            - label: Asr
+              value: "asr"
+            - label: Maghrib
+              value: "maghrib"
+            - label: Isha
+              value: "isha"
 
 test_notification:
   name: "[%key:component::nida::services::test_notification::name%]"
   description: "[%key:component::nida::services::test_notification::description%]"
   fields: {}
+
 test_suhoor:
   name: "[%key:component::nida::services::test_suhoor::name%]"
   description: "[%key:component::nida::services::test_suhoor::description%]"
