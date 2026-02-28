@@ -23,6 +23,8 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+_tarhim_playing: bool = False  # True terwijl tarhim speelt
+
 PLATFORMS = ["sensor"]
 
 
@@ -172,16 +174,31 @@ def _get_volume(options, base_vol_key, base_default, hass=None):
             raw_night = options.get("night_volume", 10)
             volume = raw_night / 100 if raw_night > 1 else raw_night
 
-    # Open ramen/deuren volume
+    # Open ramen/deuren volume — optioneel, ondersteunt meerdere sensoren
     open_sensor_enabled = options.get("open_sensor_enabled", False)
     if open_sensor_enabled and hass is not None:
-        sensor = options.get("open_sensor_entity", "")
-        if sensor:
-            state = hass.states.get(sensor)
-            if state and state.state == "on":
-                raw_open = options.get("open_sensor_volume", 5)
-                volume = raw_open / 100 if raw_open > 1 else raw_open
-                _LOGGER.debug(f"Open sensor active, using reduced volume: {volume}")
+        # Sensoren kunnen een string (1 sensor) of lijst zijn
+        sensors = options.get("open_sensor_entities", [])
+        if not sensors:
+            # Backward compat: oude config met open_sensor_entity (enkelvoud)
+            single = options.get("open_sensor_entity", "")
+            sensors = [single] if single else []
+
+        if isinstance(sensors, str):
+            sensors = [sensors]
+
+        any_open = any(
+            (s := hass.states.get(sensor)) is not None and s.state == "on"
+            for sensor in sensors
+            if sensor
+        )
+        if any_open:
+            raw_open = options.get("open_sensor_volume", 5)
+            volume = raw_open / 100 if raw_open > 1 else raw_open
+            _LOGGER.debug(
+                f"Open sensor actief ({[s for s in sensors]}), "
+                f"verlaagd volume: {volume}"
+            )
 
     return volume
 
@@ -391,16 +408,30 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
             media_path = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
 
             _LOGGER.info(f"Playing tarhim: {sound}")
-            await hass.services.async_call(
-                "media_player", "play_media",
-                {
-                    "entity_id": speaker,
-                    "media_content_id": media_path,
-                    "media_content_type": "music",
-                    "announce": True,
-                    "extra": {"volume_level": volume}
-                }
-            )
+            global _tarhim_playing
+            _tarhim_playing = True
+            _LOGGER.debug("Tarhim gestart — notificaties geblokkeerd")
+            try:
+                await hass.services.async_call(
+                    "media_player", "play_media",
+                    {
+                        "entity_id": speaker,
+                        "media_content_id": media_path,
+                        "media_content_type": "music",
+                        "announce": True,
+                        "extra": {"volume_level": volume}
+                    }
+                )
+            finally:
+                # Wacht iets langer dan de tarhim duurt (~5 min = 300s)
+                # Gebruik een timer zodat de flag zeker gereset wordt
+                async def _reset_tarhim_flag():
+                    import asyncio
+                    await asyncio.sleep(360)  # 6 min veiligheidsmarge
+                    global _tarhim_playing
+                    _tarhim_playing = False
+                    _LOGGER.debug("Tarhim flag gereset")
+                hass.async_create_task(_reset_tarhim_flag())
     except Exception as e:
         _LOGGER.error(f"Tarhim error: {e}")
 
@@ -526,6 +557,11 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
 
     async def handle_test_notification(call):
         """Test notification."""
+    # Geen notificatie sturen als tarhim speelt
+    global _tarhim_playing
+    if _tarhim_playing:
+        _LOGGER.debug("Notificatie overgeslagen: tarhim speelt")
+        return
         options = entry.options if entry.options else entry.data
         custom_title = options.get("notify_title", "🕌 Nida")
         custom_msg = options.get("notify_message", "It is time for [prayer] prayer")

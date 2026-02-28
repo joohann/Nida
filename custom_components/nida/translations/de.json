@@ -49,6 +49,11 @@
           "night_volume_enabled": "Niedrigere Lautstärke nachts aktivieren",
           "night_volume": "Nachtlautstärke",
           "night_start_hour": "Nacht beginnt um (Stunde)"
+        },
+        "data_description": {
+          "open_sensor_enabled": "Lautstärke reduzieren wenn ein Fenster oder eine Tür offen ist",
+          "open_sensor_entities": "Wähle einen oder mehrere Fenster-/Türsensoren. Wenn einer offen ist, wird das reduzierte Volumen verwendet.",
+          "open_sensor_volume": "Lautstärke (%) bei geöffnetem Fenster oder Tür"
         }
       },
       "notifications": {

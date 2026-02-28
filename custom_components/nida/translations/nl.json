@@ -18,6 +18,11 @@
           "day_sound": "Adhan Geluid",
           "day_speaker": "Speaker",
           "day_volume": "Volume"
+        },
+        "data_description": {
+          "open_sensor_enabled": "Verlaag het volume als een raam of deur open staat",
+          "open_sensor_entities": "Selecteer één of meerdere raam-/deursensoren (binary_sensor). Als één van deze sensoren 'open' is, wordt het verlaagde volume gebruikt.",
+          "open_sensor_volume": "Volume (%) dat gebruikt wordt als er een raam of deur open staat"
         }
       },
       "fajr": {

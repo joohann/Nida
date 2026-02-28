@@ -49,6 +49,11 @@
           "night_volume_enabled": "رات کو کم آواز",
           "night_volume": "رات کی آواز",
           "night_start_hour": "رات کا آغاز (گھنٹہ)"
+        },
+        "data_description": {
+          "open_sensor_enabled": "جب کھڑکی یا دروازہ کھلا ہو تو آواز کم کریں",
+          "open_sensor_entities": "ایک یا زیادہ کھڑکی/دروازہ سینسر منتخب کریں۔ اگر کوئی بھی کھلا ہو تو کم آواز استعمال ہوگی۔",
+          "open_sensor_volume": "کھڑکی یا دروازہ کھلا ہو تو استعمال ہونے والا آواز (%)"
         }
       },
       "notifications": {

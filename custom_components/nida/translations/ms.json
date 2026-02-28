@@ -49,6 +49,11 @@
           "night_volume_enabled": "Kelantangan rendah pada malam",
           "night_volume": "Kelantangan malam",
           "night_start_hour": "Malam bermula pada (jam)"
+        },
+        "data_description": {
+          "open_sensor_enabled": "Kurangkan kelantangan apabila tingkap atau pintu terbuka",
+          "open_sensor_entities": "Pilih satu atau lebih penderia tingkap/pintu. Jika mana-mana terbuka, kelantangan yang dikurangkan akan digunakan.",
+          "open_sensor_volume": "Kelantangan (%) yang digunakan apabila tingkap atau pintu terbuka"
         }
       },
       "notifications": {
