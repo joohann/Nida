@@ -35,7 +35,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(entry.add_update_listener(update_listener))
     await async_copy_sounds(hass)
     await async_setup_adhan_scheduler(hass, entry, coordinator)
-    await async_update_services_yaml(hass)
     await async_setup_services(hass, entry)
     return True
 
@@ -630,101 +629,3 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
             raise UpdateFailed(f"API error: {err}")
 
 
-async def async_update_services_yaml(hass: HomeAssistant):
-    """Dynamically update services.yaml based on available sounds."""
-    import yaml
-
-    sounds_path = os.path.join(os.path.dirname(__file__), "sounds")
-    fajr_options = []
-    day_options = []
-    tarhim_options = []
-
-    if os.path.isdir(sounds_path):
-        for f in sorted(os.listdir(sounds_path)):
-            if not f.endswith(".mp3"):
-                continue
-            label = f.replace(".mp3", "").replace("-", " ").title()
-            if "fajr" in f.lower():
-                fajr_options.append({"label": label, "value": f})
-            elif "tarhim" in f.lower():
-                tarhim_options.append({"label": label, "value": f})
-            elif "adhan" in f.lower():
-                day_options.append({"label": label, "value": f})
-
-    services = {
-        "preview_adhan": {
-            "name": "Preview Adhan",
-            "description": "Speel een adhan geluid af als preview",
-            "fields": {
-                "sound": {
-                    "name": "Geluid",
-                    "description": "Welke adhan wil je afspelen?",
-                    "required": True,
-                    "selector": {"select": {"options": fajr_options + day_options}}
-                },
-                "speaker": {
-                    "name": "Speaker",
-                    "description": "Op welke speaker wil je afspelen?",
-                    "required": True,
-                    "selector": {"entity": {"domain": "media_player"}}
-                },
-                "volume": {
-                    "name": "Volume",
-                    "description": "Volume tussen 0.0 en 1.0",
-                    "required": False,
-                    "default": 0.5,
-                    "selector": {"number": {"min": 0.0, "max": 1.0, "step": 0.05, "mode": "slider"}}
-                }
-            }
-        },
-        "test_prayer": {
-            "name": "Test Gebed",
-            "description": "Test de adhan voor een specifiek gebed",
-            "fields": {
-                "prayer": {
-                    "name": "Gebed",
-                    "description": "Welk gebed wil je testen?",
-                    "required": True,
-                    "default": "dhuhr",
-                    "selector": {"select": {"options": [
-                        {"label": "Fajr", "value": "fajr"},
-                        {"label": "Dhuhr", "value": "dhuhr"},
-                        {"label": "Asr", "value": "asr"},
-                        {"label": "Maghrib", "value": "maghrib"},
-                        {"label": "Isha", "value": "isha"},
-                        {"label": "Jumat (vrijdag)", "value": "jumat"},
-                    ]}}
-                }
-            }
-        },
-        "test_tarhim": {
-            "name": "Test Tarhim",
-            "description": "Test de tarhim recitatie",
-            "fields": {
-                "sound": {
-                    "name": "Tarhim Geluid",
-                    "description": "Welke tarhim wil je afspelen?",
-                    "required": False,
-                    "selector": {"select": {"options": tarhim_options}}
-                },
-                "speaker": {
-                    "name": "Speaker",
-                    "description": "Op welke speaker wil je afspelen?",
-                    "required": False,
-                    "selector": {"entity": {"domain": "media_player"}}
-                },
-                "volume": {
-                    "name": "Volume",
-                    "description": "Volume tussen 0.0 en 1.0",
-                    "required": False,
-                    "default": 0.4,
-                    "selector": {"number": {"min": 0.0, "max": 1.0, "step": 0.05, "mode": "slider"}}
-                }
-            }
-        }
-    }
-
-    services_path = os.path.join(os.path.dirname(__file__), "services.yaml")
-    with open(services_path, "w") as f:
-        yaml.dump(services, f, allow_unicode=True, default_flow_style=False)
-    _LOGGER.info("services.yaml updated with available sounds")
