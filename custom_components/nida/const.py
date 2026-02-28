@@ -155,6 +155,13 @@ def _load_sounds_cache() -> dict:
     _SOUNDS_CACHE = result
     return result
 
+async def async_load_sounds_cache(hass) -> dict:
+    """Laad sounds cache via executor (async-safe)."""
+    import asyncio
+    loop = asyncio.get_event_loop()
+    return await hass.async_add_executor_job(_load_sounds_cache)
+
+
 def get_fajr_sounds() -> dict:
     c = _load_sounds_cache()
     return c["fajr"] if c["fajr"] else {"01-adhan-fajr.mp3": "Adhan Fajr 01"}
@@ -174,3 +181,9 @@ def get_jingle_sounds() -> dict:
 def get_suhoor_sounds() -> dict:
     c = _load_sounds_cache()
     return c["suhoor"] if c["suhoor"] else {"01-suhoor.mp3": "Suhoor 01"}
+
+# Load cache at import time (outside async loop)
+try:
+    _load_sounds_cache()
+except Exception:
+    pass
