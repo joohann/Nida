@@ -62,7 +62,7 @@
           "notify_on_prayer": "Notify at each prayer",
           "notify_target": "Notification service(s)",
           "notify_title": "Notification title",
-          "notify_message": "Notification message (use {prayer})"
+          "notify_message": "Notification message (use [prayer])"
         }
       },
       "ramadan": {
@@ -147,7 +147,7 @@
           "notify_on_prayer": "Notify at each prayer",
           "notify_target": "Notification service(s)",
           "notify_title": "Notification title",
-          "notify_message": "Notification message (use {prayer})"
+          "notify_message": "Notification message (use [prayer])"
         }
       },
       "ramadan": {

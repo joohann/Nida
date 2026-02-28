@@ -58,7 +58,7 @@
           "notify_on_prayer": "ہر نماز پر اطلاع",
           "notify_target": "اطلاع سروس",
           "notify_title": "عنوان",
-          "notify_message": "پیغام ({prayer} استعمال کریں)"
+          "notify_message": "پیغام ([prayer] استعمال کریں)"
         }
       },
       "ramadan": {

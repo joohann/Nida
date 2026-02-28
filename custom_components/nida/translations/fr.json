@@ -58,7 +58,7 @@
           "notify_on_prayer": "Notifier à chaque prière",
           "notify_target": "Service(s) de notification",
           "notify_title": "Titre",
-          "notify_message": "Message (utilisez {prayer})"
+          "notify_message": "Message (utilisez [prayer])"
         }
       },
       "ramadan": {

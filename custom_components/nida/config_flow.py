@@ -161,7 +161,7 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional("notify_on_prayer", default=False): bool,
                 vol.Optional("notify_target", default=[]): selector.selector({"select": {"options": notify_services, "mode": "dropdown", "multiple": True, "custom_value": True}}),
                 vol.Optional("notify_title", default="🕌 Nida"): str,
-                vol.Optional("notify_message", default="It is time for {prayer} prayer"): str,
+                vol.Optional("notify_message", default="It is time for [prayer] prayer"): str,
             }),
         )
 
@@ -288,7 +288,7 @@ class PrayerTimesOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional("notify_on_prayer", default=self._get("notify_on_prayer", False)): bool,
                 vol.Optional("notify_target", default=current): selector.selector({"select": {"options": notify_services, "mode": "dropdown", "multiple": True, "custom_value": True}}),
                 vol.Optional("notify_title", default=self._get("notify_title", "🕌 Nida")): str,
-                vol.Optional("notify_message", default=self._get("notify_message", "It is time for {prayer} prayer")): str,
+                vol.Optional("notify_message", default=self._get("notify_message", "It is time for [prayer] prayer")): str,
             }),
         )
 

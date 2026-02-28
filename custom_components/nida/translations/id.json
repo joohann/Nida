@@ -58,7 +58,7 @@
           "notify_on_prayer": "Notifikasi setiap sholat",
           "notify_target": "Layanan notifikasi",
           "notify_title": "Judul",
-          "notify_message": "Pesan (gunakan {prayer})"
+          "notify_message": "Pesan (gunakan [prayer])"
         }
       },
       "ramadan": {

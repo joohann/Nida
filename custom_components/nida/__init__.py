@@ -529,7 +529,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         """Test notification."""
         options = entry.options if entry.options else entry.data
         custom_title = options.get("notify_title", "🕌 Nida")
-        custom_msg = options.get("notify_message", "It is time for {prayer} prayer")
+        custom_msg = options.get("notify_message", "It is time for [prayer] prayer")
         await async_send_notification(hass, entry, custom_msg, custom_title)
 
     hass.services.async_register(
