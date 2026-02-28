@@ -49,6 +49,11 @@
           "night_volume_enabled": "Volume réduit la nuit",
           "night_volume": "Volume nuit",
           "night_start_hour": "La nuit commence à (heure)"
+        },
+        "data_description": {
+          "open_sensor_enabled": "Réduire le volume quand une fenêtre ou porte est ouverte",
+          "open_sensor_entities": "Sélectionnez un ou plusieurs capteurs de fenêtre/porte. Si l'un est ouvert, le volume réduit sera utilisé.",
+          "open_sensor_volume": "Volume (%) utilisé quand une fenêtre ou porte est ouverte"
         }
       },
       "notifications": {

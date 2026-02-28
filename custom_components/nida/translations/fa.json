@@ -49,6 +49,11 @@
           "night_volume_enabled": "صدای کمتر در شب",
           "night_volume": "صدای شب",
           "night_start_hour": "شب از ساعت"
+        },
+        "data_description": {
+          "open_sensor_enabled": "کاهش صدا هنگامی که پنجره یا در باز است",
+          "open_sensor_entities": "یک یا چند حسگر پنجره/در انتخاب کنید. اگر هر کدام باز باشند، صدای کاهش یافته استفاده خواهد شد.",
+          "open_sensor_volume": "صدا (٪) هنگام باز بودن پنجره یا در"
         }
       },
       "notifications": {

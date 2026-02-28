@@ -49,6 +49,11 @@
           "night_volume_enabled": "Volume rendah malam hari",
           "night_volume": "Volume malam",
           "night_start_hour": "Malam mulai pukul"
+        },
+        "data_description": {
+          "open_sensor_enabled": "Kurangi volume saat jendela atau pintu terbuka",
+          "open_sensor_entities": "Pilih satu atau lebih sensor jendela/pintu. Jika salah satu terbuka, volume yang dikurangi akan digunakan.",
+          "open_sensor_volume": "Volume (%) yang digunakan saat jendela atau pintu terbuka"
         }
       },
       "notifications": {

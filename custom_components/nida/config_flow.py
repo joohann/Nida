@@ -144,8 +144,13 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional("night_volume_enabled", default=False): bool,
                 vol.Optional("night_volume", default=10): _volume_sel(),
                 vol.Optional("night_start_hour", default=22): selector.selector({"number": {"min": 18, "max": 23, "step": 1, "unit_of_measurement": "h", "mode": "slider"}}),
-                vol.Optional("open_sensor_enabled", default=False): bool,
-                vol.Optional("open_sensor_entity", default=""): selector.selector({"entity": {"domain": ["binary_sensor", "group"], "multiple": False}}),
+                vol.Optional("open_sensor_enabled", default=False): selector.selector({"boolean": {}}),
+                vol.Optional("open_sensor_entities", default=[]): selector.selector({
+                    "entity": {
+                        "domain": ["binary_sensor", "group"],
+                        "multiple": True,
+                    }
+                }),
                 vol.Optional("open_sensor_volume", default=5): _volume_sel(),
             }),
         )
@@ -270,8 +275,13 @@ class PrayerTimesOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional("night_volume_enabled", default=self._get("night_volume_enabled", False)): bool,
                 vol.Optional("night_volume", default=self._get_vol("night_volume", 20)): _volume_sel(),
                 vol.Optional("night_start_hour", default=self._get("night_start_hour", 22)): selector.selector({"number": {"min": 18, "max": 23, "step": 1, "unit_of_measurement": "h", "mode": "slider"}}),
-                vol.Optional("open_sensor_enabled", default=self._get("open_sensor_enabled", False)): bool,
-                vol.Optional("open_sensor_entity", default=self._get("open_sensor_entity", "")): selector.selector({"entity": {"domain": ["binary_sensor", "group"], "multiple": False}}),
+                vol.Optional("open_sensor_enabled", default=self._get("open_sensor_enabled", False)): selector.selector({"boolean": {}}),
+                vol.Optional("open_sensor_entities", default=self._get("open_sensor_entities", [])): selector.selector({
+                    "entity": {
+                        "domain": ["binary_sensor", "group"],
+                        "multiple": True,
+                    }
+                }),
                 vol.Optional("open_sensor_volume", default=self._get_vol("open_sensor_volume", 5)): _volume_sel(),
             }),
         )
