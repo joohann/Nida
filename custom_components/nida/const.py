@@ -162,6 +162,97 @@ async def async_load_sounds_cache(hass) -> dict:
     return await hass.async_add_executor_job(_load_sounds_cache)
 
 
+
+# ---------------------------------------------------------------------------
+# Audio filename parser (Nida bracket-tag formaat)
+# ---------------------------------------------------------------------------
+import re as _re
+
+_AUDIO_RE = _re.compile(
+    r"^(?P<prefix>[A-Za-z]+)"      # "Adhan" / "Ramadan" / "Nadir"
+    r"\s*\[(?P<tag>[^\]]+)\]"    # "[fajr]" / "[day]" / "[tarhim]"
+    r"\s*-\s*"                     # " - "
+    r"(?P<author>.+?)"              # "Mehdi Yarrahi"
+    r"\.mp3$",                     # ".mp3"
+    _re.IGNORECASE,
+)
+
+# tag → GUI weergavenaam
+_TAG_LABELS: dict[str, str] = {
+    "fajr":   "Fajr",
+    "day":    "Adhan",   # intern "day", in GUI "Adhan"
+    "tarhim": "Tarhim",
+    "sahoor": "Sahoor",
+    "suhoor": "Suhoor",
+    "jingle": "Jingle",
+}
+
+
+def parse_audio_filename(filename: str) -> "dict | None":
+    """
+    Parseer een Nida MP3-bestandsnaam naar metadata.
+
+    Voorbeeld:
+        parse_audio_filename("Adhan [fajr] - Mehdi Yarrahi.mp3")
+        → {
+            "filename":     "Adhan [fajr] - Mehdi Yarrahi.mp3",
+            "category":     "adhan",
+            "tag":          "fajr",
+            "author":       "Mehdi Yarrahi",
+            "prayer_type":  "fajr",
+            "display_name": "Fajr - Mehdi Yarrahi",
+          }
+
+    Returns None voor niet-mp3 bestanden of onbekend formaat.
+    """
+    if not filename.lower().endswith(".mp3"):
+        return None
+    m = _AUDIO_RE.match(filename.strip())
+    if not m:
+        return None
+
+    prefix = m.group("prefix").lower()
+    tag    = m.group("tag").strip().lower()
+    author = m.group("author").strip()
+
+    gui_label    = _TAG_LABELS.get(tag, tag.capitalize())
+    display_name = f"{gui_label} - {author}"
+    prayer_type  = "fajr" if tag == "fajr" else "other"
+
+    return {
+        "filename":     filename,
+        "category":     prefix,       # "adhan" | "ramadan" | "nadir"
+        "tag":          tag,           # "fajr" | "day" | "tarhim" | …
+        "author":       author,
+        "prayer_type":  prayer_type,   # "fajr" | "other"
+        "display_name": display_name,  # GUI label
+    }
+
+
+def _build_sound_options_from_dir(sounds_dir: str, category: str,
+                                   tag_filter: "str | None" = None) -> dict:
+    """
+    Bouw {filename: display_name} dict voor config flow selects.
+    Vervangt de oude _format_sound_label() aanpak.
+
+    category   : "adhan" | "ramadan" | "nadir"
+    tag_filter : optioneel, bv. "fajr" of "day"
+    """
+    result = {}
+    try:
+        for name in sorted(os.listdir(sounds_dir)):
+            parsed = parse_audio_filename(name)
+            if parsed is None:
+                continue
+            if parsed["category"] != category:
+                continue
+            if tag_filter and parsed["tag"] != tag_filter.lower():
+                continue
+            result[name] = parsed["display_name"]
+    except OSError:
+        pass
+    return result
+
 def get_fajr_sounds() -> dict:
     c = _load_sounds_cache()
     return c["fajr"] if c["fajr"] else {"01-adhan-fajr.mp3": "Adhan Fajr 01"}
