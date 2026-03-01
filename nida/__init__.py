@@ -174,7 +174,13 @@ async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
                 "extra": {"volume_level": volume}
             }
         )
-        await async_send_notification(hass, entry, f"Time for {prayer_type.capitalize()} prayer", f"🕌 {prayer_type.capitalize()}")
+        # Adhan notificatie — bericht template ondersteunt {prayer} placeholder
+        prayer_display = prayer_type.capitalize()
+        await async_send_notification(
+            hass, entry,
+            message=f"It is time for {prayer_display} prayer 🕌",
+            notify_type="prayer",
+        )
     else:
         await hass.services.async_call(
             "chime_tts", "say",
@@ -187,21 +193,69 @@ async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
         )
 
 
-async def async_send_notification(hass: HomeAssistant, entry: ConfigEntry, message: str, title: str = "🕌 Prayer Times"):
-    """Send notification if configured."""
-    target = entry.options.get("notify_target", entry.data.get("notify_target", ""))
+async def async_send_notification(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    message: str,
+    title: str = "🕌 Nida",
+    notify_type: str = "prayer",
+):
+    """
+    Stuur notificatie op basis van type.
+    notify_type: "prayer" | "pre_adhan" | "tarhim" | "suhoor"
+
+    Kritische notificaties:
+    - iOS:    push.sound.critical=1 — doorbreekt Niet Storen + stil profiel
+    - Android: channel=alarm_stream  — doorbreekt Niet Storen
+    """
+    options = entry.options if entry.options else entry.data
+
+    # Controleer of dit type notificaties aan staat
+    type_key = f"notify_on_{notify_type}"
+    if not options.get(type_key, notify_type == "prayer"):
+        return
+
+    target = options.get("notify_target", entry.data.get("notify_target", ""))
     if not target:
         return
+
+    # Aangepast bericht per type als ingesteld
+    msg_key = f"notify_msg_{notify_type}"
+    message = options.get(msg_key, message)
+
+    # Titel uit instellingen
+    title = options.get("notify_title", title)
+
+    # Kritische notificatie data
+    critical = options.get("notify_critical", False)
+
     try:
         targets = target if isinstance(target, list) else [target]
         for t in targets:
             if not t:
                 continue
             service = t.replace("notify.", "")
-            await hass.services.async_call(
-                "notify", service,
-                {"title": title, "message": message}
-            )
+
+            data: dict = {"title": title, "message": message}
+
+            if critical:
+                # Beide payloads tegelijk sturen:
+                # iOS pikt push.sound.critical op, Android pikt ttl/priority/channel op
+                # Ze negeren elkaars velden — geen conflict
+                data["data"] = {
+                    "push": {
+                        "sound": {
+                            "name": "default",
+                            "critical": 1,
+                            "volume": 1.0,
+                        }
+                    },
+                    "ttl": 0,
+                    "priority": "high",
+                    "channel": "alarm_stream",
+                }
+
+            await hass.services.async_call("notify", service, data)
     except Exception as e:
         _LOGGER.warning(f"Could not send notification: {e}")
 
@@ -271,6 +325,13 @@ async def check_reminders(hass, entry, coordinator, now_ts, prayers):
                     except Exception as e:
                         _LOGGER.warning(f"Could not play TTS reminder: {e}")
 
+                # Pre-adhan notificatie
+                await async_send_notification(
+                    hass, entry,
+                    message=f"{{prayer_name}} gebed over {{minutes}} minuten",
+                    notify_type="pre_adhan",
+                )
+
 
 async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now_ts: float):
     """Play tarhim before Fajr during Ramadan."""
@@ -309,6 +370,12 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
                     "announce": True,
                     "extra": {"volume_level": volume}
                 }
+            )
+            # Tarhim notificatie
+            await async_send_notification(
+                hass, entry,
+                message="Tarhim — Fajr begint binnenkort 🌙",
+                notify_type="tarhim",
             )
     except Exception as e:
         _LOGGER.error(f"Tarhim error: {e}")
