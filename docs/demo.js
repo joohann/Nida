@@ -1,4 +1,4 @@
-import "nida-card.js";
+import "./nida-card.js";
 
 const qs = new URLSearchParams(location.search);
 
