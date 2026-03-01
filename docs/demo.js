@@ -10,7 +10,15 @@ const inputCity = document.getElementById("city");
 const inputCountry = document.getElementById("country");
 const selectTheme = document.getElementById("theme");
 
-repoLink.href = `https://github.com/${location.pathname.split("/")[1]}/${location.pathname.split("/")[2] || ""}`.replace(/\/$/, "");
+// Repo link (best effort)
+try {
+  repoLink.href = `https://github.com/${location.pathname.split("/")[1]}/${location.pathname.split("/")[2] || ""}`.replace(
+    /\/$/,
+    "",
+  );
+} catch {
+  // ignore
+}
 
 function applyTheme(theme) {
   if (theme === "dark" || theme === "light") {
@@ -44,7 +52,11 @@ function buildConfig() {
   };
 }
 
-async function fetchPrayerTimes({ city, country }) {
+/* ===============================
+   LIVE PRAYER TIMES (AlAdhan)
+================================= */
+
+async function fetchPrayerTimesLive({ city, country }) {
   const url =
     "https://api.aladhan.com/v1/timingsByCity?method=2" +
     `&city=${encodeURIComponent(city)}` +
@@ -52,21 +64,28 @@ async function fetchPrayerTimes({ city, country }) {
 
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`Prayer API HTTP ${res.status}`);
+
   const json = await res.json();
   const t = json?.data?.timings || {};
 
-  // "HH:MM" strings
+  // Keep "HH:MM"
+  const clip = (v) => (typeof v === "string" ? v.slice(0, 5) : "");
+
   return {
-    fajr: (t.Fajr || "").slice(0, 5),
-    dhuhr: (t.Dhuhr || "").slice(0, 5),
-    asr: (t.Asr || "").slice(0, 5),
-    maghrib: (t.Maghrib || "").slice(0, 5),
-    isha: (t.Isha || "").slice(0, 5),
+    fajr: clip(t.Fajr),
+    dhuhr: clip(t.Dhuhr),
+    asr: clip(t.Asr),
+    maghrib: clip(t.Maghrib),
+    isha: clip(t.Isha),
   };
 }
 
+// Map to EXACT entities your card expects (from your grep output)
 function makeStatesForNida(times) {
-  const mk = (state, name) => ({ state, attributes: { friendly_name: name } });
+  const mk = (state, friendly) => ({
+    state: state || "unavailable",
+    attributes: { friendly_name: friendly },
+  });
 
   return {
     "sensor.02_fajr_readable": mk(times.fajr, "Fajr"),
@@ -78,97 +97,12 @@ function makeStatesForNida(times) {
 }
 
 /* ===============================
-   LIVE PRAYER TIMES (AlAdhan)
+   MOUNT / UPDATE
 ================================= */
 
-async function fetchPrayerTimes({ city, country }) {
-  const url =
-    "https://api.aladhan.com/v1/timingsByCity?method=2" +
-    `&city=${encodeURIComponent(city)}` +
-    `&country=${encodeURIComponent(country)}`;
-
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Prayer API HTTP ${res.status}`);
-  const json = await res.json();
-
-  const t = json?.data?.timings || {};
-  return {
-    fajr: t.Fajr,
-    sunrise: t.Sunrise,
-    dhuhr: t.Dhuhr,
-    asr: t.Asr,
-    maghrib: t.Maghrib,
-    isha: t.Isha,
-  };
-}
-
-function computeNextPrayer(times) {
-  const order = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"];
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-
-  function toDate(hhmm) {
-    const v = (hhmm || "").slice(0, 5); // keep "HH:MM"
-    const [h, m] = v.split(":").map((x) => parseInt(x, 10));
-    const d = new Date(`${today}T00:00:00`);
-    d.setHours(h || 0, m || 0, 0, 0);
-    return d;
-  }
-
-  for (const key of order) {
-    const d = toDate(times[key]);
-    if (d > now) return { name: key, at: times[key] };
-  }
-  return { name: "fajr", at: times.fajr };
-}
-
-function makeStatesFromTimes(times) {
-  // times: { fajr, dhuhr, asr, maghrib, isha } -> "HH:MM"
-  function stateObj(state, friendly) {
-    return {
-      state,
-      attributes: {
-        friendly_name: friendly,
-      },
-    };
-  }
-
-  return {
-    "sensor.02_fajr_readable": stateObj(times.fajr, "Fajr"),
-    "sensor.04_dhuhr_readable": stateObj(times.dhuhr, "Dhuhr"),
-    "sensor.05_asr_readable": stateObj(times.asr, "Asr"),
-    "sensor.07_maghrib_readable": stateObj(times.maghrib, "Maghrib"),
-    "sensor.08_isha_readable": stateObj(times.isha, "Isha"),
-  };
-}
-
-/* ===============================
-   MOUNT
-================================= */
-
-async function mountCard() {
-  mount.innerHTML = "";
-
-  const el = document.createElement("nida-card");
-  mount.appendChild(el);
-
-  const cfg = buildConfig();
-  if (typeof el.setConfig === "function") el.setConfig(cfg);
-
-  const hass = makeFakeHass();
-  el.hass = hass;
-
-  try {
-    const times = await fetchPrayerTimes({ city: cfg.city, country: cfg.country });
-    hass.states = { ...hass.states, ...makeStatesForNida(times) };
-    el.hass = { ...hass }; // trigger update
-  } catch (e) {
-    console.error(e);
-  }
-
-  if (!el._config) el._config = cfg;
-  return el;
-}
+let cardEl = null;
+let hassObj = null;
+let refreshTimer = null;
 
 function syncUiFromQuery() {
   inputCity.value = qs.get("city") ?? inputCity.value;
@@ -177,23 +111,80 @@ function syncUiFromQuery() {
   applyTheme(selectTheme.value);
 }
 
-syncUiFromQuery();
+function clearRefreshTimer() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+}
 
-let cardEl;
-(async () => {
-  cardEl = await mountCard();
-})();
+async function updateLiveData(cfg) {
+  if (!hassObj || !cardEl) return;
+
+  try {
+    const times = await fetchPrayerTimesLive({ city: cfg.city, country: cfg.country });
+    hassObj.states = { ...hassObj.states, ...makeStatesForNida(times) };
+    // trigger re-render
+    cardEl.hass = { ...hassObj };
+  } catch (e) {
+    console.error(e);
+    // Put unavailable states so the card can show something predictable
+    hassObj.states = {
+      ...hassObj.states,
+      ...makeStatesForNida({ fajr: "", dhuhr: "", asr: "", maghrib: "", isha: "" }),
+    };
+    cardEl.hass = { ...hassObj };
+  }
+}
+
+async function mountCard() {
+  mount.innerHTML = "";
+
+  const cfg = buildConfig();
+
+  // Create card
+  cardEl = document.createElement("nida-card");
+  mount.appendChild(cardEl);
+
+  if (typeof cardEl.setConfig === "function") cardEl.setConfig(cfg);
+  if (!cardEl._config) cardEl._config = cfg;
+
+  hassObj = makeFakeHass();
+  cardEl.hass = hassObj;
+
+  // First load
+  await updateLiveData(cfg);
+
+  // Refresh every 10 minutes (and keep countdown updated by the card itself)
+  clearRefreshTimer();
+  refreshTimer = setInterval(() => updateLiveData(buildConfig()), 10 * 60 * 1000);
+
+  return cardEl;
+}
 
 async function remount() {
   applyTheme(selectTheme.value);
-  cardEl = await mountCard();
+  await mountCard();
 }
 
-themeToggle.addEventListener("click", async () => {
+/* ===============================
+   EVENTS
+================================= */
+
+themeToggle?.addEventListener("click", async () => {
   const current = document.documentElement.dataset.theme;
   const next = current === "dark" ? "light" : "dark";
   selectTheme.value = next;
   await remount();
 });
 
-[inputCity, inputCountry, selectTheme].forEach((el) => el.addEventListener("change", remount));
+[inputCity, inputCountry, selectTheme].forEach((el) => el?.addEventListener("change", remount));
+
+/* ===============================
+   INIT
+================================= */
+
+syncUiFromQuery();
+(async () => {
+  await mountCard();
+})();
