@@ -44,6 +44,39 @@ function buildConfig() {
   };
 }
 
+async function fetchPrayerTimes({ city, country }) {
+  const url =
+    "https://api.aladhan.com/v1/timingsByCity?method=2" +
+    `&city=${encodeURIComponent(city)}` +
+    `&country=${encodeURIComponent(country)}`;
+
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Prayer API HTTP ${res.status}`);
+  const json = await res.json();
+  const t = json?.data?.timings || {};
+
+  // "HH:MM" strings
+  return {
+    fajr: (t.Fajr || "").slice(0, 5),
+    dhuhr: (t.Dhuhr || "").slice(0, 5),
+    asr: (t.Asr || "").slice(0, 5),
+    maghrib: (t.Maghrib || "").slice(0, 5),
+    isha: (t.Isha || "").slice(0, 5),
+  };
+}
+
+function makeStatesForNida(times) {
+  const mk = (state, name) => ({ state, attributes: { friendly_name: name } });
+
+  return {
+    "sensor.02_fajr_readable": mk(times.fajr, "Fajr"),
+    "sensor.04_dhuhr_readable": mk(times.dhuhr, "Dhuhr"),
+    "sensor.05_asr_readable": mk(times.asr, "Asr"),
+    "sensor.07_maghrib_readable": mk(times.maghrib, "Maghrib"),
+    "sensor.08_isha_readable": mk(times.isha, "Isha"),
+  };
+}
+
 /* ===============================
    LIVE PRAYER TIMES (AlAdhan)
 ================================= */
@@ -90,40 +123,22 @@ function computeNextPrayer(times) {
 }
 
 function makeStatesFromTimes(times) {
-  const next = computeNextPrayer(times);
-
-  const labelMap = {
-    fajr: "Fajr",
-    sunrise: "Sunrise",
-    dhuhr: "Dhuhr",
-    asr: "Asr",
-    maghrib: "Maghrib",
-    isha: "Isha",
-  };
+  // times: { fajr, dhuhr, asr, maghrib, isha } -> "HH:MM"
+  function stateObj(state, friendly) {
+    return {
+      state,
+      attributes: {
+        friendly_name: friendly,
+      },
+    };
+  }
 
   return {
-    // all times
-    "sensor.nida_prayer_times": {
-      state: "ok",
-      attributes: {
-        fajr: times.fajr,
-        sunrise: times.sunrise,
-        dhuhr: times.dhuhr,
-        asr: times.asr,
-        maghrib: times.maghrib,
-        isha: times.isha,
-      },
-    },
-
-    // next prayer label + time
-    "sensor.nida_next_prayer": {
-      state: labelMap[next.name] || next.name,
-      attributes: { friendly_name: "Next prayer" },
-    },
-    "sensor.nida_next_prayer_time": {
-      state: next.at,
-      attributes: { friendly_name: "Next prayer time" },
-    },
+    "sensor.02_fajr_readable": stateObj(times.fajr, "Fajr"),
+    "sensor.04_dhuhr_readable": stateObj(times.dhuhr, "Dhuhr"),
+    "sensor.05_asr_readable": stateObj(times.asr, "Asr"),
+    "sensor.07_maghrib_readable": stateObj(times.maghrib, "Maghrib"),
+    "sensor.08_isha_readable": stateObj(times.isha, "Isha"),
   };
 }
 
@@ -143,21 +158,12 @@ async function mountCard() {
   const hass = makeFakeHass();
   el.hass = hass;
 
-  // fetch live times and inject as HA-like sensors
   try {
     const times = await fetchPrayerTimes({ city: cfg.city, country: cfg.country });
-    hass.states = { ...hass.states, ...makeStatesFromTimes(times) };
+    hass.states = { ...hass.states, ...makeStatesForNida(times) };
     el.hass = { ...hass }; // trigger update
   } catch (e) {
     console.error(e);
-    hass.states = {
-      ...hass.states,
-      "sensor.nida_prayer_times": {
-        state: "error",
-        attributes: { message: String(e) },
-      },
-    };
-    el.hass = { ...hass };
   }
 
   if (!el._config) el._config = cfg;
