@@ -2,7 +2,7 @@ name: Release Nida
 
 on:
   release:
-    types: [published]
+    types: [published, edited]
 
 jobs:
   build:
