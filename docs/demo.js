@@ -48,7 +48,7 @@ function buildConfig() {
 function mountCard() {
   mount.innerHTML = "";
 
-  const el = document.createElement("prayer-times-card"); // pas aan als jouw custom element anders heet
+  const el = document.createElement("nida-card"); // pas aan als jouw custom element anders heet
   mount.appendChild(el);
 
   const cfg = buildConfig();
