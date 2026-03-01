@@ -1,4 +1,5 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
+// NIDA CARD v29 — radius header, progress bar zichtbaar, suhoor middernacht fix
 
 // Hijri maandnamen per taal
 // NL/EN/DE/FR/ID/MS nemen de Arabische uitspraak over in Latijns schrift
@@ -169,9 +170,21 @@ class NidaCard extends LitElement {
     }
     if(isRam){
       const f=this._s('sensor.02_fajr_readable');
-      if(f){const[h,m]=f.split(':').map(Number);const tm=h*60+m-30;if(tm>nowMin)acts.push({type:'tarhim',prayerKey:null,min:tm,time:`${String(Math.floor(tm/60)).padStart(2,'0')}:${String(tm%60).padStart(2,'0')}`});}
-      const im=this._s('sensor.01_imsak_readable');
-      if(im){const[h,m]=im.split(':').map(Number);const sm=h*60+m;if(sm>nowMin)acts.push({type:'suhoor',prayerKey:null,min:sm,time:im});}
+      if(f){
+        const[h,m]=f.split(':').map(Number);
+        // tarhim = 30 min voor fajr — als al voorbij, reken volgende dag (+1440)
+        let tm=h*60+m-30;
+        if(tm<=nowMin) tm+=1440;
+        acts.push({type:'tarhim',prayerKey:null,min:tm,time:`${String(Math.floor((tm%1440)/60)).padStart(2,'0')}:${String(tm%60).padStart(2,'0')}`});
+        // suhoor = imsak tijd
+        const im=this._s('sensor.01_imsak_readable');
+        if(im){
+          const[ih,im2]=im.split(':').map(Number);
+          let sm=ih*60+im2;
+          if(sm<=nowMin) sm+=1440;
+          acts.push({type:'suhoor',prayerKey:null,min:sm,time:`${String(Math.floor((sm%1440)/60)).padStart(2,'0')}:${String(sm%60).padStart(2,'0')}`});
+        }
+      }
     }
     if(!acts.length) return null;
     acts.sort((a,b)=>a.min-b.min);
@@ -241,25 +254,83 @@ class NidaCard extends LitElement {
       /* CARD */
       .card{width:100%;border-radius:var(--ha-card-border-radius,12px);overflow:hidden;transition:background 0.4s;}
 
-      /* HEADER */
-      .header{padding:14px 16px 10px;}
-      .header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+      /* HEADER — verborgen als datum in next-block zit, of toon holiday */
+      .header{padding:0;}
+      .header-top{display:none;}
       .hijri-date{font-family:'Amiri',serif;font-size:19px;font-weight:700;line-height:1.2;display:flex;align-items:center;gap:7px;}
-      .holiday-name{font-size:11px;font-weight:700;margin-top:2px;}
+      .holiday-name{font-size:11px;font-weight:700;padding:6px 16px 0;}
 
-      /* PROGRESS BAR — scheidingslijn boven datum/header */
-      .progress-bar{height:2px;width:calc(100% - 32px);margin:0 16px 10px;border-radius:2px;overflow:hidden;}
-      .progress-fill{height:100%;border-radius:2px;transition:width 1s linear;background:linear-gradient(90deg,#c9a84c,#f0d078);}
+      /* PROGRESS BAR — 5px, zichtbare track */
+      .progress-bar{height:5px;width:100%;overflow:hidden;margin:0;}
+      .progress-fill{height:100%;transition:width 1s linear;background:linear-gradient(90deg,#c9a84c,#f0d078);}
 
-      /* NEXT PRAYER */
-      .next-block{display:flex;align-items:center;gap:12px;border-radius:12px;padding:10px 14px;width:100%;}
-      .next-icon{width:48px;height:48px;background:linear-gradient(135deg,#c9a84c,#a07830);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
-      .next-info{flex:1;min-width:0;}
-      .next-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;}
-      .next-name{font-family:'Amiri',serif;font-size:26px;font-weight:700;line-height:1.1;}
-      .countdown-col{display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;}
-      .countdown-lbl{font-size:8px;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;}
-      .countdown{font-family:'Amiri',serif;font-size:26px;font-weight:700;line-height:1.1;}
+      /* NEXT PRAYER — afgeronde onderkant, zelfde padding als cellen */
+      .next-block{
+        padding:12px 12px 14px;
+        width:100%;
+        box-sizing:border-box;
+        border-radius:0 0 14px 14px;
+      }
+      .next-inner{
+        display:flex;
+        align-items:flex-start;
+        gap:12px;
+        position:relative;
+      }
+      .next-icon{
+        width:48px; height:48px;
+        background:linear-gradient(135deg,#c9a84c,#a07830);
+        border-radius:12px;
+        display:flex; align-items:center; justify-content:center;
+        font-size:24px;
+        flex-shrink:0;
+      }
+      /* Linkerkolom: naam links uitgelijnd */
+      .next-text{
+        flex:1;
+        min-width:0;
+        text-align:left;
+      }
+      .next-label{
+        font-size:9px;letter-spacing:2px;text-transform:uppercase;
+        font-weight:600;line-height:1;
+        display:block;
+        margin-bottom:2px;
+      }
+      .next-name{
+        font-family:'Amiri',serif;font-size:28px;font-weight:700;line-height:1.15;
+        display:block;
+      }
+      /* Rechterkolom: absoluut rechts uitgelijnd */
+      .next-right-col{
+        position:absolute;
+        right:0; top:0;
+        display:flex;
+        flex-direction:column;
+        align-items:flex-end;
+        text-align:right;
+      }
+      .countdown-lbl{
+        font-size:9px;letter-spacing:2px;text-transform:uppercase;
+        font-weight:600;line-height:1;
+        display:block;
+        margin-bottom:2px;
+      }
+      .countdown{
+        font-family:'Amiri',serif;font-size:28px;font-weight:700;line-height:1.15;
+        display:block;
+      }
+      /* Datum — gecentreerd op volledige kaartbreedte */
+      .next-date{
+        font-size:10px;font-weight:600;opacity:.45;
+        margin-top:6px;
+        display:flex;align-items:center;justify-content:center;gap:4px;
+        white-space:nowrap;
+        width:100%;
+      }
+      .next-date-sep{opacity:.5;}
+      .next-info,.countdown-col,.next-row-top,.next-row-main,.next-right,
+      .next-table,.next-row-labels,.next-row-values{display:none;}
 
       /* PRAYER GRID */
       .prayers{padding:10px 12px 10px;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:7px;}
@@ -306,7 +377,7 @@ class NidaCard extends LitElement {
       .prayer-emoji{position:absolute;right:8px;top:8px;font-size:14px;opacity:.12;}
       .prayer-item.active .prayer-emoji{opacity:.28;}
 
-      /* GEAR — groter (15px), iets meer transparant */
+      /* GEAR — halft van next-icon (48px), dus 24px, subtiel */
       .gear-btn{
         position:absolute;
         right:8px;
@@ -315,13 +386,13 @@ class NidaCard extends LitElement {
         border:none;
         cursor:pointer;
         padding:0;
-        font-size:15px;
-        opacity:.13;
+        font-size:24px;
+        opacity:.11;
         transition:opacity .2s;
         line-height:1;
         z-index:2;
       }
-      .gear-btn:hover{opacity:.45;}
+      .gear-btn:hover{opacity:.4;}
 
       /* ── SETTINGS ACHTERKANT ──
          Volledig zwart, zelfde hoogte als voorkant (via height:100%)
@@ -388,9 +459,9 @@ class NidaCard extends LitElement {
 
       /* RTL */
       .rtl{direction:rtl;}
-      .rtl .next-icon{order:2;}
-      .rtl .next-info{order:1;text-align:right;}
-      .rtl .countdown-col{order:0;align-items:flex-start;}
+      .rtl .next-block{direction:rtl;}
+      .rtl .countdown-lbl{text-align:left;}
+      .rtl .countdown{text-align:left;}
       .rtl .prayer-item::before{left:auto;right:0;border-radius:0 10px 10px 0;}
       .rtl .prayer-emoji{right:auto;left:8px;}
       .rtl .nida-action-row{flex-direction:row-reverse;}
@@ -400,12 +471,14 @@ class NidaCard extends LitElement {
       .card.dark .header{border-bottom:none;}
       .card.dark .hijri-date{color:#c9a84c;}
       .card.dark .holiday-name{color:#f0a050;}
-      .card.dark .progress-bar{background:rgba(201,168,76,.08);}
-      .card.dark .next-block{background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.1);}
+      .card.dark .progress-bar{background:rgba(201,168,76,.25);}
+      .card.light .progress-bar{background:rgba(160,120,48,.3);}
+      .card.dark .next-block{background:rgba(201,168,76,.06);border-bottom:1px solid rgba(201,168,76,.1);}
       .card.dark .next-label{color:rgba(201,168,76,.5);}
+      .card.dark .countdown-lbl{color:rgba(201,168,76,.4);}
       .card.dark .next-name{color:#f0e6c8;}
       .card.dark .countdown{color:#f0e6c8;}
-      .card.dark .countdown-lbl{color:rgba(201,168,76,.4);}
+      .card.dark .next-date{color:#c9a84c;}
       .card.dark .prayer-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);}
       .card.dark .prayer-item.active{background:rgba(201,168,76,.09);border-color:rgba(201,168,76,.25);}
       .card.dark .prayer-item.active::before{background:linear-gradient(180deg,#c9a84c,#a07830);}
@@ -424,12 +497,12 @@ class NidaCard extends LitElement {
       /* LIGHT */
       .card.light .hijri-date{color:#8a6820;}
       .card.light .holiday-name{color:#c05800;}
-      .card.light .progress-bar{background:rgba(160,120,48,.1);}
-      .card.light .next-block{background:rgba(201,168,76,.12);border:1px solid rgba(160,120,48,.18);}
+      .card.light .next-block{background:rgba(201,168,76,.10);border-bottom:1px solid rgba(160,120,48,.2);}
       .card.light .next-label{color:rgba(138,104,32,.6);}
+      .card.light .countdown-lbl{color:rgba(138,104,32,.5);}
       .card.light .next-name{color:#3a2c0a;}
       .card.light .countdown{color:#3a2c0a;}
-      .card.light .countdown-lbl{color:rgba(138,104,32,.5);}
+      .card.light .next-date{color:#8a6820;}
       .card.light .prayer-item{background:rgba(255,255,255,.75);border:1px solid rgba(160,120,48,.12);}
       .card.light .prayer-item.active{background:rgba(201,168,76,.15);border-color:rgba(160,120,48,.35);}
       .card.light .prayer-item.active::before{background:linear-gradient(180deg,#c9a84c,#a07830);}
@@ -510,16 +583,14 @@ class NidaCard extends LitElement {
           <div class="dynamic-sub"><span>dagen</span></div>
         </div>`;
     } else {
-      // Default: tijd links, label (ellipsis bij overflow) rechts
+      // Default slot: geen "Tadkir" label — de actietekst IS direct de naam
       dynamicSlot = html`
         <div class="dynamic-slot default-slot">
           <div class="prayer-emoji">🔔</div>
           ${nextAction ? html`
-            <div class="prayer-name">${this._t(nextAction.type)}</div>
-            <div class="nida-action-row">
-              <span class="nida-action-time">${nextAction.time}</span>
-              <span class="nida-action-label">${this._actionLabel(nextAction)}</span>
-            </div>` : html`<div class="prayer-name">${this._t('no_action')}</div>`}
+            <div class="prayer-name">${this._actionLabel(nextAction)}</div>
+            <div class="prayer-time">${nextAction.time}</div>
+          ` : html`<div class="prayer-name">${this._t('no_action')}</div>`}
         </div>`;
     }
 
@@ -529,33 +600,34 @@ class NidaCard extends LitElement {
     const front = html`
       <div class="face front">
         <div class="card ${themeClass} ${isRtl?'rtl':''}" style="${bgStyle}">
-          <div class="header">
-            <div class="header-top">
-              <div>
-                ${this._showTitle ? html`
-                  <div class="hijri-date">
-                    <span>${moonEmoji}</span>
-                    <span>${hijriDay} ${hijriMonthLabel} ${hijriYear}</span>
-                  </div>` : ''}
-                ${holiday==='on' ? html`<div class="holiday-name">🌙 ${holidayName||'Islamic Holiday'}</div>` : ''}
-              </div>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" style="width:${progress}%"></div>
-            </div>
-            <div class="next-block">
+
+          <!-- NEXT PRAYER -->
+          <div class="next-block">
+            <div class="next-inner">
               <div class="next-icon">🕌</div>
-              <div class="next-info">
-                <div class="next-label">${this._t('next_prayer')}</div>
-                <div class="next-name">${this._tp(nextKey)}</div>
+              <div class="next-text">
+                <span class="next-label">${this._t('next_prayer')}</span>
+                <span class="next-name">${this._tp(nextKey)}</span>
               </div>
-              <div class="countdown-col">
-                <div class="countdown-lbl">${this._t('remaining')}</div>
-                <div class="countdown">${this._countdown()}</div>
+              <div class="next-right-col">
+                <span class="countdown-lbl">${this._t('remaining')}</span>
+                <span class="countdown">${this._countdown()}</span>
               </div>
             </div>
+            ${this._showTitle ? html`
+              <div class="next-date">
+                <span>${moonEmoji}</span>
+                <span>${hijriDay} ${hijriMonthLabel} ${hijriYear}</span>
+                ${holiday==='on' && holidayName ? html`<span class="next-date-sep">·</span><span>${holidayName}</span>` : ''}
+              </div>` : ''}
           </div>
 
+          <!-- PROGRESS BAR — scheidingslijn -->
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${progress}%"></div>
+          </div>
+
+          <!-- GEBEDEN RASTER -->
           <div class="prayers">
             ${dynamicSlot}
             ${prayers.map((p,i) => {
@@ -574,6 +646,7 @@ class NidaCard extends LitElement {
                 </div>`;
             })}
           </div>
+
         </div>
       </div>`;
 
@@ -634,3 +707,4 @@ class NidaCard extends LitElement {
 }
 
 customElements.define('nida-card', NidaCard);
+console.log('%c NIDA CARD v29 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');
