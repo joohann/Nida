@@ -14,21 +14,85 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create zip
+      # ── Basis sounds (vaste selectie) ──────────────────────────────────────
+      - name: Define base sounds
         run: |
+          SOUNDS="nida/sounds"
+          BASE_FILES=(
+            "$SOUNDS/Adhan [day] - Ahmed Saeed Al-Omrany.mp3"
+            "$SOUNDS/Adhan [day] - Amer Marei.mp3"
+            "$SOUNDS/Adhan [day] - Hafiz Fahad Shah.mp3"
+            "$SOUNDS/Adhan [fajr] - Ahmed Saeed Al-Omrany.mp3"
+            "$SOUNDS/Adhan [fajr] - Amer Marei.mp3"
+            "$SOUNDS/Adhan [fajr] - Hafiz Fahad Shah.mp3"
+            "$SOUNDS/Nida [jingle] - Announcement.mp3"
+            "$SOUNDS/Ramadan [salawat] - Ustaz Hendra.mp3"
+          )
+          for f in "${BASE_FILES[@]}"; do
+            if [ -f "$f" ]; then
+              echo "✅ $f"
+            else
+              echo "⚠️  Niet gevonden: $f"
+            fi
+          done
+          # Sla lijst op voor hergebruik
+          printf '%s\n' "${BASE_FILES[@]}" > /tmp/base_sounds.txt
+
+      # ── nida.zip — integratie inclusief basis sounds ────────────────────────
+      - name: Create nida.zip
+        run: |
+          # Integratie bestanden (zonder sounds map)
           cd nida
           zip -r ../nida.zip . \
             --exclude "*.pyc" \
             --exclude "__pycache__/*" \
-            --exclude ".DS_Store"
+            --exclude ".DS_Store" \
+            --exclude "sounds/*"
           cd ..
-          echo "ZIP inhoud:"
-          unzip -l nida.zip
 
-      - name: Upload zip to release
+          # Voeg basis sounds toe
+          while IFS= read -r f; do
+            [ -f "$f" ] && zip nida.zip "$f" && echo "➕ $f"
+          done < /tmp/base_sounds.txt
+
+          echo "=== nida.zip inhoud (sounds) ==="
+          unzip -l nida.zip | grep sounds
+
+      # ── Uitbreiding packs (automatisch op basis van [categorie]) ───────────
+      - name: Create extension packs
+        run: |
+          SOUNDS="nida/sounds"
+
+          # pack-adhan.zip — alle [day] en [fajr] bestanden
+          mapfile -t ADHAN < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "\[(day|fajr)\]" | sort)
+          if [ ${#ADHAN[@]} -gt 0 ]; then
+            zip pack-adhan.zip "${ADHAN[@]}"
+            echo "✅ pack-adhan.zip: ${#ADHAN[@]} bestanden"
+          fi
+
+          # pack-ramadan.zip — alle [salawat] en [suhoor] bestanden
+          mapfile -t RAMADAN < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "\[(salawat|suhoor)\]" | sort)
+          if [ ${#RAMADAN[@]} -gt 0 ]; then
+            zip pack-ramadan.zip "${RAMADAN[@]}"
+            echo "✅ pack-ramadan.zip: ${#RAMADAN[@]} bestanden"
+          fi
+
+          # pack-jingles.zip — alle [jingle] bestanden
+          mapfile -t JINGLES < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "\[jingle\]" | sort)
+          if [ ${#JINGLES[@]} -gt 0 ]; then
+            zip pack-jingles.zip "${JINGLES[@]}"
+            echo "✅ pack-jingles.zip: ${#JINGLES[@]} bestanden"
+          fi
+
+      # ── Upload naar release ─────────────────────────────────────────────────
+      - name: Upload to release
         uses: softprops/action-gh-release@v1
         with:
-          files: nida.zip
+          files: |
+            nida.zip
+            pack-adhan.zip
+            pack-ramadan.zip
+            pack-jingles.zip
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

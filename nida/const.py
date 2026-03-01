@@ -1,4 +1,4 @@
-"""Constants for Prayer Times integration."""
+"""Constants for Nida Prayer Times integration."""
 
 DOMAIN = "nida"
 
@@ -20,18 +20,6 @@ PLAY_METHODS = {
     "chime_tts": "chime_tts.say",
 }
 
-FAJR_SOUNDS = {
-    "01-01-adhan-fajr.mp3": "Adhan Fajr 1",
-    "02-01-adhan-fajr.mp3": "Adhan Fajr 2",
-    "03-01-adhan-fajr.mp3": "Adhan Fajr 3",
-}
-
-DAY_SOUNDS = {
-    "01-02-adhan-day.mp3": "Adhan Day 1",
-    "02-02-adhan-day.mp3": "Adhan Day 2",
-    "03-02-adhan-day.mp3": "Adhan Day 3",
-}
-
 CALCULATION_METHODS = {
     0: "Shia Ithna-Ashari",
     1: "University of Islamic Sciences, Karachi",
@@ -50,122 +38,103 @@ CALCULATION_METHODS = {
     15: "Moonsighting Committee Worldwide",
 }
 
-# Tarhim settings
-CONF_TARHIM_ENABLED = "tarhim_enabled"
-CONF_TARHIM_SPEAKER = "tarhim_speaker"
-CONF_TARHIM_VOLUME = "tarhim_volume"
-CONF_TARHIM_SOUND = "tarhim_sound"
-CONF_TARHIM_OFFSET = "tarhim_offset"
+# Salawat settings (voorheen: Tarhim)
+CONF_SALAWAT_ENABLED = "salawat_enabled"
+CONF_SALAWAT_SPEAKER = "salawat_speaker"
+CONF_SALAWAT_VOLUME  = "salawat_volume"
+CONF_SALAWAT_SOUND   = "salawat_sound"
+CONF_SALAWAT_OFFSET  = "salawat_offset"
 
-TARHIM_SOUNDS = {
-    "tarhim.mp3": "Tarhim 1",
-}
-
-# Pad naar de sounds map (www/sounds/ in de repo = /config/www/sounds/ op HA)
+# Sounds directory op HA systeem
 _SOUNDS_DIR = "/config/www/nida/sounds"
 
 
 def _format_sound_label(filename: str) -> str:
-    """Convert filename to readable label.
-    01-adhan.mp3      -> Adhan 01
-    01-adhan-fajr.mp3 -> Adhan Fajr 01
-    01-jingle.mp3     -> Jingle 01
-    01-tarhim.mp3     -> Tarhim 01
+    """
+    Converteer bestandsnaam naar leesbaar label.
+
+    Nieuw formaat: "Adhan [day] - Ahmed Saeed Al-Omrany.mp3" → "Ahmed Saeed Al-Omrany"
+    Oud formaat:   "01-adhan-fajr.mp3"                       → "Adhan Fajr 01"
     """
     import re
-    name = filename.replace('.mp3', '')
+    name = filename.replace(".mp3", "")
+    m = re.match(r'^.+?\[.+?\]\s*-\s*(.+)$', name)
+    if m:
+        return m.group(1).strip()
     parts = re.split(r'[-_]', name)
     numbers = [p for p in parts if p.isdigit()]
-    words = [p.capitalize() for p in parts if not p.isdigit()]
+    words   = [p.capitalize() for p in parts if not p.isdigit()]
     num = numbers[-1] if numbers else ""
     if words and num:
         return f"{' '.join(words)} {num}"
     return name.replace('-', ' ').replace('_', ' ').title()
 
 
-def get_tarhim_sounds() -> dict:
-    """Scan sounds folder for tarhim MP3s."""
+def _scan_sounds(keyword_include: list, keyword_exclude: list = None) -> dict:
+    """Scan sounds map voor mp3s op basis van [categorie] in bestandsnaam."""
     import os
     result = {}
+    keyword_exclude = keyword_exclude or []
     try:
-        with os.scandir(_SOUNDS_DIR) as entries:
-            for entry in sorted(entries, key=lambda e: e.name):
-                if entry.name.endswith(".mp3") and "tarhim" in entry.name.lower():
-                    result[entry.name] = _format_sound_label(entry.name)
+        for f in sorted(os.listdir(_SOUNDS_DIR)):
+            if not f.endswith(".mp3"):
+                continue
+            fl = f.lower()
+            included = any(f"[{kw.lower()}]" in fl or kw.lower() in fl
+                           for kw in keyword_include)
+            if not included:
+                continue
+            excluded = any(f"[{kw.lower()}]" in fl or kw.lower() in fl
+                           for kw in keyword_exclude)
+            if excluded:
+                continue
+            result[f] = _format_sound_label(f)
     except Exception:
         pass
-    return result if result else {"01-tarhim.mp3": "Tarhim 01"}
+    return result
 
 
 def get_fajr_sounds() -> dict:
-    """Scan sounds folder for fajr MP3s."""
-    import os
-    result = {}
-    try:
-        for f in sorted(os.listdir(_SOUNDS_DIR)):
-            if f.endswith(".mp3") and "fajr" in f.lower():
-                result[f] = _format_sound_label(f)
-    except Exception:
-        pass
-    return result if result else {"01-adhan-fajr.mp3": "Adhan Fajr 01"}
+    result = _scan_sounds(["fajr"])
+    return result if result else {"Adhan [fajr] - Default.mp3": "Default"}
 
 
 def get_day_sounds() -> dict:
-    """Scan sounds folder for day adhan MP3s."""
-    import os
-    result = {}
-    try:
-        for f in sorted(os.listdir(_SOUNDS_DIR)):
-            if (f.endswith('.mp3')
-                    and 'adhan' in f.lower()
-                    and 'fajr' not in f.lower()
-                    and 'tarhim' not in f.lower()
-                    and 'jingle' not in f.lower()
-                    and 'suhoor' not in f.lower()):
-                result[f] = _format_sound_label(f)
-    except Exception:
-        pass
-    return result if result else {"01-adhan.mp3": "Adhan 01"}
+    result = _scan_sounds(
+        keyword_include=["day"],
+        keyword_exclude=["fajr", "salawat", "jingle", "suhoor", "ramadan", "nida"],
+    )
+    return result if result else {"Adhan [day] - Default.mp3": "Default"}
+
+
+def get_salawat_sounds() -> dict:
+    result = _scan_sounds(["salawat"])
+    return result if result else {"Ramadan [salawat] - Default.mp3": "Default"}
 
 
 def get_suhoor_sounds() -> dict:
-    """Scan sounds folder for suhoor MP3s."""
-    import os
-    result = {}
-    try:
-        for f in sorted(os.listdir(_SOUNDS_DIR)):
-            if f.endswith('.mp3') and 'suhoor' in f.lower():
-                result[f] = _format_sound_label(f)
-    except Exception:
-        pass
-    return result if result else {"01-suhoor.mp3": "Suhoor 01"}
+    result = _scan_sounds(["suhoor"])
+    return result if result else {"Ramadan [suhoor] - Default.mp3": "Default"}
 
 
 def get_jingle_sounds() -> dict:
-    """Scan sounds folder for jingle MP3s."""
-    import os
-    result = {}
-    try:
-        for f in sorted(os.listdir(_SOUNDS_DIR)):
-            if f.endswith('.mp3') and 'jingle' in f.lower():
-                result[f] = _format_sound_label(f)
-    except Exception:
-        pass
+    result = _scan_sounds(["jingle", "nida"],
+                          keyword_exclude=["adhan", "fajr", "salawat", "suhoor"])
     return result
 
 
 # Pre-adhan reminders
 CONF_REMINDER_1_ENABLED = "reminder_1_enabled"
 CONF_REMINDER_1_MINUTES = "reminder_1_minutes"
-CONF_REMINDER_1_SOUND = "reminder_1_sound"
-CONF_REMINDER_1_TTS = "reminder_1_tts"
-CONF_REMINDER_1_LANG = "reminder_1_lang"
+CONF_REMINDER_1_SOUND   = "reminder_1_sound"
+CONF_REMINDER_1_TTS     = "reminder_1_tts"
+CONF_REMINDER_1_LANG    = "reminder_1_lang"
 
 CONF_REMINDER_2_ENABLED = "reminder_2_enabled"
 CONF_REMINDER_2_MINUTES = "reminder_2_minutes"
-CONF_REMINDER_2_SOUND = "reminder_2_sound"
-CONF_REMINDER_2_TTS = "reminder_2_tts"
-CONF_REMINDER_2_LANG = "reminder_2_lang"
+CONF_REMINDER_2_SOUND   = "reminder_2_sound"
+CONF_REMINDER_2_TTS     = "reminder_2_tts"
+CONF_REMINDER_2_LANG    = "reminder_2_lang"
 
 REMINDER_LANGUAGES = {
     "nl": "Nederlands",
