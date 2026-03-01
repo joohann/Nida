@@ -45,6 +45,87 @@ function buildConfig() {
   };
 }
 
+async function fetchPrayerTimes({ city, country }) {
+  const url =
+    "https://api.aladhan.com/v1/timingsByCity?method=2" +
+    `&city=${encodeURIComponent(city)}` +
+    `&country=${encodeURIComponent(country)}`;
+
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Prayer API HTTP ${res.status}`);
+  const json = await res.json();
+
+  const t = json?.data?.timings || {};
+  // Normaliseer keys die veel kaarten verwachten
+  return {
+    fajr: t.Fajr,
+    sunrise: t.Sunrise,
+    dhuhr: t.Dhuhr,
+    asr: t.Asr,
+    maghrib: t.Maghrib,
+    isha: t.Isha,
+  };
+}
+
+function computeNextPrayer(times) {
+  const order = ["fajr", "sunrise", "dhuhr", "asr", "maghrib", "isha"];
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+
+  function toDate(hhmm) {
+    // hh:mm (soms "05:12 (CET)" -> pak eerste 5)
+    const v = (hhmm || "").slice(0, 5);
+    const [h, m] = v.split(":").map((x) => parseInt(x, 10));
+    const d = new Date(`${today}T00:00:00`);
+    d.setHours(h || 0, m || 0, 0, 0);
+    return d;
+  }
+
+  for (const key of order) {
+    const d = toDate(times[key]);
+    if (d > now) return { name: key, at: times[key] };
+  }
+  // anders: volgende dag fajr
+  return { name: "fajr", at: times.fajr };
+}
+
+function makeStatesFromTimes(times) {
+  const next = computeNextPrayer(times);
+  const labelMap = {
+    fajr: "Fajr",
+    sunrise: "Sunrise",
+    dhuhr: "Dhuhr",
+    asr: "Asr",
+    maghrib: "Maghrib",
+    isha: "Isha",
+  };
+
+  return {
+    // algemene “container” sensor met alle tijden
+    "sensor.nida_prayer_times": {
+      state: "ok",
+      attributes: {
+        fajr: times.fajr,
+        sunrise: times.sunrise,
+        dhuhr: times.dhuhr,
+        asr: times.asr,
+        maghrib: times.maghrib,
+        isha: times.isha,
+      },
+    },
+
+    // next prayer
+    "sensor.nida_next_prayer": {
+      state: labelMap[next.name] || next.name,
+      attributes: { friendly_name: "Next prayer" },
+    },
+    "sensor.nida_next_prayer_time": {
+      state: next.at,
+      attributes: { friendly_name: "Next prayer time" },
+    },
+  };
+}
+
 function mountCard() {
   mount.innerHTML = "";
 
