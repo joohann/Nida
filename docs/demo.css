@@ -19,11 +19,9 @@
 * { box-sizing: border-box; }
 
 body {
-  margin: 0;
-  min-height: 100vh;
-  background: radial-gradient(1200px 900px at 10% 10%, var(--bg2), var(--bg));
-  color: var(--text);
-  font-family: -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
 }
 
 .topbar {
@@ -85,25 +83,30 @@ button {
 
 .stage {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr;
   gap: 16px;
-  padding: 18px;
+  padding: 16px;
   align-items: start;
 }
 
-@media (max-width: 900px) {
-  .stage { grid-template-columns: 1fr; }
-}
-
+/* kaart: mobiel = full width */
 .cardWrap {
+  width: 100%;
+  margin: 0 auto;
+
   display: flex;
   justify-content: center;
-  align-items: start;
-  padding: 18px;
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,0.04);
-  border-radius: 18px;
-  min-height: 320px;
+  align-items: flex-start;
+
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+/* op desktop: centreer layout + simuleer HA card width */
+@media (min-width: 900px) {
+  .stage { grid-template-columns: 400px 320px; }
+  .cardWrap { max-width: 400px; }
 }
 
 .panel {
