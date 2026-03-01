@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Nida Card Demo</title>
+    <link rel="stylesheet" href="./demo.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="dot"></div>
+        <div class="title">Nida Card Live Demo</div>
+      </div>
+
+      <div class="controls">
+        <button id="themeToggle" type="button">Toggle theme</button>
+        <a class="link" id="repoLink" target="_blank" rel="noreferrer">GitHub</a>
+      </div>
+    </header>
+
+    <main class="stage">
+      <div class="cardWrap" id="mount"></div>
+
+      <section class="panel">
+        <div class="panelTitle">Demo settings</div>
+        <div class="row">
+          <label>City</label>
+          <input id="city" value="Utrecht" />
+        </div>
+        <div class="row">
+          <label>Country</label>
+          <input id="country" value="NL" />
+        </div>
+        <div class="row">
+          <label>Theme</label>
+          <select id="theme">
+            <option value="auto">auto</option>
+            <option value="dark" selected>dark</option>
+            <option value="light">light</option>
+          </select>
+        </div>
+
+        <div class="hint">
+          Tip: je kunt ook query params gebruiken, bijv.
+          ?theme=light&city=Jakarta&country=ID
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./demo.js"></script>
+  </body>
+</html>
