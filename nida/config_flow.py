@@ -1,3 +1,5 @@
+# config_flow.py — Nida v2.1
+# Wijzigingen: notificaties per type (adhan/pre-adhan/tarhim/suhoor) + kritische notificaties iOS/Android
 """Config flow for Prayer Times."""
 from __future__ import annotations
 import asyncio
@@ -59,6 +61,46 @@ def _method_sel():
 def _sound_sel(sounds):
     return selector.selector({"select": {"options": [{"value": k, "label": v} for k, v in sounds.items()], "mode": "dropdown"}})
 
+def _notify_schema(hass, get=None):
+    """
+    Bouw het notificatie schema.
+    get: callable(key, default) voor OptionsFlow — None voor ConfigFlow (gebruikt defaults).
+    """
+    def g(key, default):
+        return get(key, default) if get else default
+
+    notify_services = _get_notify_services(hass)
+    current_targets = g("notify_target", [])
+
+    return vol.Schema({
+        # ── Doelapparaten ──────────────────────────────────────────────
+        vol.Optional("notify_target", default=current_targets): selector.selector({
+            "select": {
+                "options": notify_services,
+                "mode": "dropdown",
+                "multiple": True,
+                "custom_value": True,
+            }
+        }),
+        vol.Optional("notify_title", default=g("notify_title", "🕌 Nida")): str,
+
+        # ── Per type aan/uit ────────────────────────────────────────────
+        vol.Optional("notify_on_prayer",   default=g("notify_on_prayer",   True)): bool,
+        vol.Optional("notify_on_pre_adhan",default=g("notify_on_pre_adhan",False)): bool,
+        vol.Optional("notify_on_tarhim",   default=g("notify_on_tarhim",   False)): bool,
+        vol.Optional("notify_on_suhoor",   default=g("notify_on_suhoor",   False)): bool,
+
+        # ── Berichten (gebruik {prayer} als placeholder) ─────────────────
+        vol.Optional("notify_msg_prayer",    default=g("notify_msg_prayer",    "It is time for {prayer} prayer 🕌")): str,
+        vol.Optional("notify_msg_pre_adhan", default=g("notify_msg_pre_adhan", "{prayer} prayer in {minutes} minutes")): str,
+        vol.Optional("notify_msg_tarhim",    default=g("notify_msg_tarhim",    "Tarhim — Fajr starts soon 🌙")): str,
+        vol.Optional("notify_msg_suhoor",    default=g("notify_msg_suhoor",    "Last chance for Suhoor 🍽️")): str,
+
+        # ── Kritische notificaties (iOS én Android) ─────────────────────
+        # iOS negeert Android-velden, Android negeert iOS-velden — geen conflict
+        vol.Optional("notify_critical", default=g("notify_critical", False)): bool,
+    })
+
 
 class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
@@ -76,8 +118,8 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_location(self, user_input=None):
         errors = {}
         ha_config = self.hass.config
-        default_city = getattr(ha_config, 'city', None) or "Amsterdam"
-        default_country = getattr(ha_config, 'country', None) or "Netherlands"
+        default_city = getattr(ha_config, "city", None) or "Amsterdam"
+        default_country = getattr(ha_config, "country", None) or "Netherlands"
         if user_input is not None:
             valid = await _test_connection(user_input[CONF_CITY], user_input[CONF_COUNTRY], user_input[CONF_METHOD])
             if valid:
@@ -151,22 +193,15 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._data.update(user_input)
             return await self.async_step_ramadan()
-        notify_services = _get_notify_services(self.hass)
         return self.async_show_form(
             step_id="notifications",
-            data_schema=vol.Schema({
-                vol.Optional("notify_on_prayer", default=False): bool,
-                vol.Optional("notify_target", default=[]): selector.selector({"select": {"options": notify_services, "mode": "dropdown", "multiple": True, "custom_value": True}}),
-                vol.Optional("notify_title", default="🕌 Prayer Times"): str,
-                vol.Optional("notify_message", default="It is time for {prayer} prayer"): str,
-            }),
+            data_schema=_notify_schema(self.hass),
         )
 
     async def async_step_ramadan(self, user_input=None):
         if user_input is not None:
             self._data.update(user_input)
             return self.async_create_entry(title=self._data.get(CONF_CITY, "Prayer Times"), data=self._data)
-        jingles = {"": "— No sound —", **get_jingle_sounds()}
         return self.async_show_form(
             step_id="ramadan",
             data_schema=vol.Schema({
@@ -274,23 +309,15 @@ class PrayerTimesOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             self._data.update(user_input)
             return await self.async_step_ramadan()
-        notify_services = _get_notify_services(self.hass)
-        current = self._get_list("notify_target", [])
         return self.async_show_form(
             step_id="notifications",
-            data_schema=vol.Schema({
-                vol.Optional("notify_on_prayer", default=self._get("notify_on_prayer", False)): bool,
-                vol.Optional("notify_target", default=current): selector.selector({"select": {"options": notify_services, "mode": "dropdown", "multiple": True, "custom_value": True}}),
-                vol.Optional("notify_title", default=self._get("notify_title", "🕌 Prayer Times")): str,
-                vol.Optional("notify_message", default=self._get("notify_message", "It is time for {prayer} prayer")): str,
-            }),
+            data_schema=_notify_schema(self.hass, get=self._get),
         )
 
     async def async_step_ramadan(self, user_input=None):
         if user_input is not None:
             self._data.update(user_input)
             return self.async_create_entry(title="", data=self._data)
-        jingles = {"": "— No sound —", **get_jingle_sounds()}
         return self.async_show_form(
             step_id="ramadan",
             data_schema=vol.Schema({
