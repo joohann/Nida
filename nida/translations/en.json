@@ -3,7 +3,7 @@
     "step": {
       "intro": {
         "title": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-        "description": "Assalamu Alaikum wa Rahmatullahi wa Barakatuh 🌙\n\nWelcome to Nida — Prayer Times for Home Assistant.\n\nThis integration uses the free AlAdhan API (aladhan.com) to provide accurate daily prayer times based on your location. We are truly grateful for this wonderful free service — may Allah reward those who built and maintain it.\n\nPress Submit to continue."
+        {"description":"بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\n\nAssalamu Alaikum wa Rahmatullahi wa Barakatuh 🌙\n\nWelcome to Nida for Home Assistant — a complete and customizable Islamic prayer companion for your smart home.\n\nMay Allah ﷻ accept your prayers and make this integration a means of khayr (goodness) in your household.\n\n🕌 Location-Based prayer times via AlAdhan API\n🔔 Pre-Adhan reminders with sound and spoken message\n🌅 Dedicated Fajr Adhan audio\n📢 Adhan for all prayers with day & night volume control\n📱 Device notifications to mobile and speakers\n🌙 Ramadan features — Suhoor alarm and Tarhim\n📅 Hijri calendar with Islamic holidays\n\nMay Allah reward the team at aladhan.com abundantly. Ameen. 🤲\n\n— Iftikhar Farzan Izz Al Din Muhsin"}
       },
       "location": {
         "title": "Location & Calculation Method",
