@@ -4,6 +4,9 @@ on:
   release:
     types: [published, edited]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,3 +31,4 @@ jobs:
           files: nida.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
