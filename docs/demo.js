@@ -1,16 +1,14 @@
 import "./nida-card.js";
 
-const qs = new URLSearchParams(location.search);
+/* ===============================
+   THEME
+================================= */
 
 const mount = document.getElementById("mount");
 const themeToggle = document.getElementById("themeToggle");
-const repoLink = document.getElementById("repoLink");
-
 const inputCity = document.getElementById("city");
 const inputCountry = document.getElementById("country");
 const selectTheme = document.getElementById("theme");
-
-repoLink.href = `https://github.com/${location.pathname.split("/")[1]}/${location.pathname.split("/")[2] || ""}`.replace(/\/$/, "");
 
 function applyTheme(theme) {
   if (theme === "dark" || theme === "light") {
@@ -18,32 +16,15 @@ function applyTheme(theme) {
     return;
   }
   document.documentElement.dataset.theme =
-    window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: light)").matches
+      ? "light"
+      : "dark";
 }
 
-function makeFakeHass() {
-  return {
-    language: "en",
-    locale: { language: "en", number_format: "language" },
-    config: {
-      time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      location_name: "Demo",
-    },
-    themes: { darkMode: document.documentElement.dataset.theme === "dark" },
-    states: {},
-    // Sommige kaarten gebruiken this.hass.callService; hier stubben we hem
-    callService: () => {},
-  };
-}
-
-function buildConfig() {
-  return {
-    // dit zijn demo-velden; pas ze gerust aan naar jouw kaart-config
-    theme: selectTheme.value,
-    city: inputCity.value,
-    country: inputCountry.value,
-  };
-}
+/* ===============================
+   API FETCH
+================================= */
 
 async function fetchPrayerTimes({ city, country }) {
   const url =
@@ -56,7 +37,7 @@ async function fetchPrayerTimes({ city, country }) {
   const json = await res.json();
 
   const t = json?.data?.timings || {};
-  // Normaliseer keys die veel kaarten verwachten
+
   return {
     fajr: t.Fajr,
     sunrise: t.Sunrise,
@@ -73,7 +54,6 @@ function computeNextPrayer(times) {
   const today = now.toISOString().slice(0, 10);
 
   function toDate(hhmm) {
-    // hh:mm (soms "05:12 (CET)" -> pak eerste 5)
     const v = (hhmm || "").slice(0, 5);
     const [h, m] = v.split(":").map((x) => parseInt(x, 10));
     const d = new Date(`${today}T00:00:00`);
@@ -85,12 +65,13 @@ function computeNextPrayer(times) {
     const d = toDate(times[key]);
     if (d > now) return { name: key, at: times[key] };
   }
-  // anders: volgende dag fajr
+
   return { name: "fajr", at: times.fajr };
 }
 
 function makeStatesFromTimes(times) {
   const next = computeNextPrayer(times);
+
   const labelMap = {
     fajr: "Fajr",
     sunrise: "Sunrise",
@@ -101,7 +82,6 @@ function makeStatesFromTimes(times) {
   };
 
   return {
-    // algemene “container” sensor met alle tijden
     "sensor.nida_prayer_times": {
       state: "ok",
       attributes: {
@@ -114,11 +94,11 @@ function makeStatesFromTimes(times) {
       },
     },
 
-    // next prayer
     "sensor.nida_next_prayer": {
       state: labelMap[next.name] || next.name,
       attributes: { friendly_name: "Next prayer" },
     },
+
     "sensor.nida_next_prayer_time": {
       state: next.at,
       attributes: { friendly_name: "Next prayer time" },
@@ -126,46 +106,100 @@ function makeStatesFromTimes(times) {
   };
 }
 
-function mountCard() {
+/* ===============================
+   FAKE HASS
+================================= */
+
+function makeFakeHass() {
+  return {
+    language: "en",
+    locale: { language: "en", number_format: "language" },
+    config: {
+      time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      location_name: "Demo",
+    },
+    themes: { darkMode: document.documentElement.dataset.theme === "dark" },
+    states: {},
+    callService: () => {},
+  };
+}
+
+/* ===============================
+   MOUNT
+================================= */
+
+let cardEl;
+
+async function mountCard() {
   mount.innerHTML = "";
 
-  const el = document.createElement("nida-card"); // pas aan als jouw custom element anders heet
+  const el = document.createElement("nida-card");
   mount.appendChild(el);
 
-  const cfg = buildConfig();
+  const cfg = {
+    theme: selectTheme.value,
+    city: inputCity.value,
+    country: inputCountry.value,
+  };
 
-  // 1) probeer HA custom card lifecycle
   if (typeof el.setConfig === "function") el.setConfig(cfg);
 
-  // 2) geef hass mee als de kaart dat verwacht
-  el.hass = makeFakeHass();
+  const hass = makeFakeHass();
+  el.hass = hass;
 
-  // 3) sommige kaarten gebruiken direct _config, dus we zetten hem ook nog
-  if (!el._config) el._config = cfg;
+  try {
+    const times = await fetchPrayerTimes({
+      city: cfg.city,
+      country: cfg.country,
+    });
+
+    hass.states = {
+      ...hass.states,
+      ...makeStatesFromTimes(times),
+    };
+
+    el.hass = { ...hass };
+  } catch (e) {
+    console.error(e);
+    hass.states = {
+      ...hass.states,
+      "sensor.nida_prayer_times": {
+        state: "error",
+        attributes: { message: String(e) },
+      },
+    };
+    el.hass = { ...hass };
+  }
 
   return el;
 }
 
-function syncUiFromQuery() {
-  inputCity.value = qs.get("city") ?? inputCity.value;
-  inputCountry.value = qs.get("country") ?? inputCountry.value;
-  selectTheme.value = qs.get("theme") ?? selectTheme.value;
+async function remount() {
   applyTheme(selectTheme.value);
+  cardEl = await mountCard();
 }
 
-syncUiFromQuery();
-let cardEl = mountCard();
+/* ===============================
+   EVENTS
+================================= */
 
-function remount() {
-  applyTheme(selectTheme.value);
-  cardEl = mountCard();
-}
-
-themeToggle.addEventListener("click", () => {
+themeToggle?.addEventListener("click", () => {
   const current = document.documentElement.dataset.theme;
   const next = current === "dark" ? "light" : "dark";
   selectTheme.value = next;
   remount();
 });
 
-[inputCity, inputCountry, selectTheme].forEach((el) => el.addEventListener("change", remount));
+[inputCity, inputCountry, selectTheme].forEach((el) =>
+  el?.addEventListener("change", remount)
+);
+
+/* ===============================
+   INIT
+================================= */
+
+applyTheme(selectTheme.value);
+
+(async () => {
+  cardEl = await mountCard();
+})();
