@@ -1,50 +1,17 @@
 {
   "config": {
     "step": {
-      "user": {
+      "intro": {
         "title": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-        "description": "Assalamu Alaikum wa Rahmatullahi wa Barakatuh 🌙\n\nWelcome to **Prayer Times** for Home Assistant.\n\nThis integration uses the free **AlAdhan API** (aladhan.com) to provide accurate daily prayer times based on your location. We are truly grateful for this wonderful free service — may Allah reward those who built and maintain it.\n\nPlease enter your city and country to get started.",
+        "description": "Assalamu Alaikum wa Rahmatullahi wa Barakatuh 🌙\n\nWelcome to Nida — Prayer Times for Home Assistant.\n\nThis integration uses the free AlAdhan API (aladhan.com) to provide accurate daily prayer times based on your location. We are truly grateful for this wonderful free service — may Allah reward those who built and maintain it.\n\nPress Submit to continue."
+      },
+      "location": {
+        "title": "Location & Calculation Method",
+        "description": "Enter your city and country to fetch accurate prayer times.",
         "data": {
           "city": "City",
           "country": "Country",
           "method": "Calculation Method"
-        }
-      },
-      "adhan": {
-        "title": "Adhan Settings",
-        "description": "Configure adhan for daily prayers",
-        "data": {
-          "play_method": "Play Method",
-          "day_sound": "Adhan Sound",
-          "day_speaker": "Speaker",
-          "day_volume": "Volume"
-        }
-      },
-      "fajr": {
-        "title": "Fajr Settings",
-        "description": "Configure adhan specifically for Fajr",
-        "data": {
-          "fajr_sound": "Fajr Adhan Sound",
-          "fajr_speaker": "Fajr Speaker",
-          "fajr_volume": "Fajr Volume"
-        }
-      },
-      "tarhim": {
-        "title": "Tarhim (تَرْحِيم) - Ramadan only",
-        "description": "Tarhim is a melodious recitation played before Fajr during Ramadan to wake people for Suhoor. It will play 6.5 minutes before Fajr automatically.",
-        "data": {
-          "tarhim_enabled": "Enable Tarhim during Ramadan",
-          "tarhim_speaker": "Speaker",
-          "tarhim_volume": "Volume"
-        }
-      },
-      "notifications": {
-        "title": "Notifications",
-        "description": "Receive a push notification when a prayer time starts or when prayer times are updated.",
-        "data": {
-          "notify_on_prayer": "Notify at each prayer time",
-          "notify_on_update": "Notify when prayer times are updated",
-          "notify_target": "Send notification to"
         }
       },
       "reminders": {
@@ -62,60 +29,76 @@
           "reminder_2_lang": "Language",
           "reminder_2_tts": "Message"
         }
+      },
+      "fajr": {
+        "title": "Fajr Adhan",
+        "description": "Configure the adhan specifically for Fajr prayer.",
+        "data": {
+          "fajr_sound": "Fajr Adhan Sound",
+          "fajr_speaker": "Speaker",
+          "fajr_volume": "Volume"
+        }
+      },
+      "adhan": {
+        "title": "Adhan Settings",
+        "description": "Configure the adhan for all daily prayers.",
+        "data": {
+          "day_sound": "Adhan Sound",
+          "day_speaker": "Speaker",
+          "day_volume": "Volume",
+          "night_volume_enabled": "Lower volume at night",
+          "night_volume": "Night volume",
+          "night_start_hour": "Night starts at"
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Configure push notifications per event type. Use {prayer} and {minutes} as placeholders in messages.",
+        "data": {
+          "notify_target": "Notification service(s)",
+          "notify_title": "Notification title",
+          "notify_on_prayer": "Notify at each prayer (Adhan)",
+          "notify_on_pre_adhan": "Notify before prayer (pre-Adhan reminder)",
+          "notify_on_tarhim": "Notify at Tarhim (Ramadan)",
+          "notify_on_suhoor": "Notify at Suhoor alarm (Ramadan)",
+          "notify_msg_prayer": "Prayer notification message",
+          "notify_msg_pre_adhan": "Pre-Adhan notification message",
+          "notify_msg_tarhim": "Tarhim notification message",
+          "notify_msg_suhoor": "Suhoor notification message",
+          "notify_critical": "Critical notification — bypasses Do Not Disturb (iOS & Android)"
+        }
+      },
+      "ramadan": {
+        "title": "Ramadan Settings",
+        "description": "Configure Suhoor alarm and Tarhim recitation. These only activate during Ramadan.",
+        "data": {
+          "suhoor_alarm_enabled": "Enable Suhoor alarm",
+          "suhoor_alarm_minutes": "Minutes before Fajr",
+          "suhoor_alarm_sound": "Suhoor alarm sound",
+          "suhoor_alarm_volume": "Suhoor alarm volume",
+          "tarhim_enabled": "Enable Tarhim",
+          "tarhim_sound": "Tarhim sound",
+          "tarhim_speaker": "Tarhim speaker",
+          "tarhim_volume": "Tarhim volume"
+        }
       }
     },
     "error": {
-      "cannot_connect": "Cannot connect to AlAdhan API",
-      "invalid_location": "Invalid city or country"
+      "cannot_connect": "Cannot connect to AlAdhan API. Check your city and country."
     },
     "abort": {
-      "already_configured": "Prayer Times is already configured"
+      "already_configured": "Nida is already configured"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Prayer Times Settings",
+        "title": "Location & Calculation Method",
+        "description": "بِسْمِ اللَّهِ — Prayer times via AlAdhan API (aladhan.com). Jazakallah khair to the creators 🌙",
         "data": {
           "city": "City",
           "country": "Country",
           "method": "Calculation Method"
-        },
-        "description": "بِسْمِ اللَّهِ — Prayer times via AlAdhan API (aladhan.com). Jazakallah khair to the creators 🌙"
-      },
-      "adhan": {
-        "title": "Adhan Settings",
-        "data": {
-          "play_method": "Play Method",
-          "day_sound": "Adhan Sound",
-          "day_speaker": "Speaker",
-          "day_volume": "Volume"
-        }
-      },
-      "fajr": {
-        "title": "Fajr Settings",
-        "data": {
-          "fajr_sound": "Fajr Adhan Sound",
-          "fajr_speaker": "Fajr Speaker",
-          "fajr_volume": "Fajr Volume"
-        }
-      },
-      "tarhim": {
-        "title": "Tarhim (تَرْحِيم) - Ramadan only",
-        "description": "Tarhim will play automatically 6.5 minutes before Fajr during Ramadan.",
-        "data": {
-          "tarhim_enabled": "Enable Tarhim during Ramadan",
-          "tarhim_speaker": "Speaker",
-          "tarhim_volume": "Volume"
-        }
-      },
-      "notifications": {
-        "title": "Notifications",
-        "description": "Receive a push notification when a prayer time starts or when prayer times are updated.",
-        "data": {
-          "notify_on_prayer": "Notify at each prayer time",
-          "notify_on_update": "Notify when prayer times are updated",
-          "notify_target": "Send notification to"
         }
       },
       "reminders": {
@@ -132,6 +115,58 @@
           "reminder_2_sound": "Sound",
           "reminder_2_lang": "Language",
           "reminder_2_tts": "Message"
+        }
+      },
+      "fajr": {
+        "title": "Fajr Adhan",
+        "description": "Configure the adhan specifically for Fajr prayer.",
+        "data": {
+          "fajr_sound": "Fajr Adhan Sound",
+          "fajr_speaker": "Speaker",
+          "fajr_volume": "Volume"
+        }
+      },
+      "adhan": {
+        "title": "Adhan Settings",
+        "description": "Configure the adhan for all daily prayers.",
+        "data": {
+          "day_sound": "Adhan Sound",
+          "day_speaker": "Speaker",
+          "day_volume": "Volume",
+          "night_volume_enabled": "Lower volume at night",
+          "night_volume": "Night volume",
+          "night_start_hour": "Night starts at"
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Configure push notifications per event type. Use {prayer} and {minutes} as placeholders in messages.",
+        "data": {
+          "notify_target": "Notification service(s)",
+          "notify_title": "Notification title",
+          "notify_on_prayer": "Notify at each prayer (Adhan)",
+          "notify_on_pre_adhan": "Notify before prayer (pre-Adhan reminder)",
+          "notify_on_tarhim": "Notify at Tarhim (Ramadan)",
+          "notify_on_suhoor": "Notify at Suhoor alarm (Ramadan)",
+          "notify_msg_prayer": "Prayer notification message",
+          "notify_msg_pre_adhan": "Pre-Adhan notification message",
+          "notify_msg_tarhim": "Tarhim notification message",
+          "notify_msg_suhoor": "Suhoor notification message",
+          "notify_critical": "Critical notification — bypasses Do Not Disturb (iOS & Android)"
+        }
+      },
+      "ramadan": {
+        "title": "Ramadan Settings",
+        "description": "Configure Suhoor alarm and Tarhim recitation. These only activate during Ramadan.",
+        "data": {
+          "suhoor_alarm_enabled": "Enable Suhoor alarm",
+          "suhoor_alarm_minutes": "Minutes before Fajr",
+          "suhoor_alarm_sound": "Suhoor alarm sound",
+          "suhoor_alarm_volume": "Suhoor alarm volume",
+          "tarhim_enabled": "Enable Tarhim",
+          "tarhim_sound": "Tarhim sound",
+          "tarhim_speaker": "Tarhim speaker",
+          "tarhim_volume": "Tarhim volume"
         }
       }
     }
