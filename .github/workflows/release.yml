@@ -1,0 +1,30 @@
+name: Release Nida
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create zip
+        run: |
+          cd nida
+          zip -r ../nida.zip . \
+            --exclude "*.pyc" \
+            --exclude "__pycache__/*" \
+            --exclude ".DS_Store"
+          cd ..
+          echo "ZIP inhoud:"
+          unzip -l nida.zip
+
+      - name: Upload zip to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: nida.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
