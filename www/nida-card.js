@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-// NIDA CARD v29 — radius header, progress bar zichtbaar, suhoor middernacht fix
+// NIDA CARD v35 — tandwieltje verborgen tijdens flip via visibility:hidden
 
 // Hijri maandnamen per taal
 // NL/EN/DE/FR/ID/MS nemen de Arabische uitspraak over in Latijns schrift
@@ -128,14 +128,32 @@ class NidaCard extends LitElement {
   _progress() {
     const ents = ['sensor.02_fajr_readable','sensor.04_dhuhr_readable','sensor.05_asr_readable','sensor.07_maghrib_readable','sensor.08_isha_readable'];
     const nowMin = new Date().getHours()*60+new Date().getMinutes();
-    let prev=null, next=null;
+    const times = [];
     for (const e of ents) {
       const t=this._s(e); if(!t||t==='unavailable') continue;
-      const [h,m]=t.split(':').map(Number); const pm=h*60+m;
+      const [h,m]=t.split(':').map(Number); times.push(h*60+m);
+    }
+    if(times.length===0) return 0;
+
+    // Vind prev en next in normale dagvolgorde
+    let prev=null, next=null;
+    for(const pm of times) {
       if(pm<=nowMin) prev=pm; else if(next===null){next=pm;break;}
     }
+
+    // Na Isha (geen next gevonden): next = Fajr morgen (+1440), prev = Isha
+    if(next===null && prev!==null) {
+      next = times[0]+1440; // Fajr morgen
+    }
+    // Voor Fajr (geen prev gevonden): prev = Isha gisteren (-1440 → negatief)
+    if(prev===null && next!==null) {
+      prev = times[times.length-1]-1440; // Isha gisteren
+    }
+
     if(prev===null||next===null) return 0;
-    return Math.min(100,Math.round(((nowMin-prev)/(next-prev))*100));
+    const span = next-prev;
+    if(span<=0) return 0;
+    return Math.min(100,Math.max(0,Math.round(((nowMin-prev)/span)*100)));
   }
 
   _iftarCd() {
@@ -237,7 +255,7 @@ class NidaCard extends LitElement {
         border-radius:var(--ha-card-border-radius,12px);
         overflow:hidden;
       }
-      /* Achterkant: absoluut, zelfde hoogte als voorkant, volledig zwart */
+      /* Achterkant: absoluut, volledig dekkend zwart, hogere z-index */
       .face.back{
         position:absolute;
         top:0; left:0;
@@ -249,6 +267,12 @@ class NidaCard extends LitElement {
         overflow:hidden;
         transform:rotateY(180deg);
         background:#000;
+        z-index:10;
+      }
+      /* Verberg gear-btn zodra de kaart geflipt is */
+      .flipper.flipped .gear-btn{
+        visibility:hidden;
+        pointer-events:none;
       }
 
       /* CARD */
@@ -260,16 +284,28 @@ class NidaCard extends LitElement {
       .hijri-date{font-family:'Amiri',serif;font-size:19px;font-weight:700;line-height:1.2;display:flex;align-items:center;gap:7px;}
       .holiday-name{font-size:11px;font-weight:700;padding:6px 16px 0;}
 
-      /* PROGRESS BAR — 5px, zichtbare track */
-      .progress-bar{height:5px;width:100%;overflow:hidden;margin:0;}
-      .progress-fill{height:100%;transition:width 1s linear;background:linear-gradient(90deg,#c9a84c,#f0d078);}
+      /* HEADER WRAPPER — afgeronde onderkant, bevat next-block + progress bar */
+      .header-block{
+        border-radius:12px;
+        overflow:hidden;
+        margin:8px 8px 8px 8px;
+      }
 
-      /* NEXT PRAYER — afgeronde onderkant, zelfde padding als cellen */
+      /* PROGRESS BAR — 10px, sterke track */
+      .progress-bar{
+        height:10px;
+        width:calc(100% - 24px);
+        margin:0 12px 12px;
+        border-radius:99px;
+        overflow:hidden;
+      }
+      .progress-fill{height:100%;border-radius:99px;transition:width 1s linear;background:linear-gradient(90deg,#c9a84c,#f0d078);}
+
+      /* NEXT PRAYER — padding precies 12px zodat icoon uitlijnt met cellen */
       .next-block{
-        padding:12px 12px 14px;
+        padding:12px 12px 8px;
         width:100%;
         box-sizing:border-box;
-        border-radius:0 0 14px 14px;
       }
       .next-inner{
         display:flex;
@@ -320,9 +356,9 @@ class NidaCard extends LitElement {
         font-family:'Amiri',serif;font-size:28px;font-weight:700;line-height:1.15;
         display:block;
       }
-      /* Datum — gecentreerd op volledige kaartbreedte */
+      /* Datum — gecentreerd, vet */
       .next-date{
-        font-size:10px;font-weight:600;opacity:.45;
+        font-size:10px;font-weight:800;opacity:.55;
         margin-top:6px;
         display:flex;align-items:center;justify-content:center;gap:4px;
         white-space:nowrap;
@@ -333,7 +369,7 @@ class NidaCard extends LitElement {
       .next-table,.next-row-labels,.next-row-values{display:none;}
 
       /* PRAYER GRID */
-      .prayers{padding:10px 12px 10px;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:7px;}
+      .prayers{padding:0 8px 8px;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:7px;}
 
       /* DYNAMIC SLOT */
       .dynamic-slot{position:relative;border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;}
@@ -376,8 +412,10 @@ class NidaCard extends LitElement {
       .prayer-time{font-family:'Amiri',serif;font-size:22px;font-weight:700;}
       .prayer-emoji{position:absolute;right:8px;top:8px;font-size:14px;opacity:.12;}
       .prayer-item.active .prayer-emoji{opacity:.28;}
+      .card.light .prayer-emoji{opacity:.25;}
+      .card.light .prayer-item.active .prayer-emoji{opacity:.45;}
 
-      /* GEAR — halft van next-icon (48px), dus 24px, subtiel */
+      /* GEAR — alleen zichtbaar op voorkant */
       .gear-btn{
         position:absolute;
         right:8px;
@@ -387,12 +425,14 @@ class NidaCard extends LitElement {
         cursor:pointer;
         padding:0;
         font-size:24px;
-        opacity:.11;
+        opacity:.13;
         transition:opacity .2s;
         line-height:1;
         z-index:2;
       }
-      .gear-btn:hover{opacity:.4;}
+      .gear-btn:hover{opacity:.45;}
+      /* Achterkant — tandwieltje niet zichtbaar door de flip */
+      .face.back .gear-btn{display:none;}
 
       /* ── SETTINGS ACHTERKANT ──
          Volledig zwart, zelfde hoogte als voorkant (via height:100%)
@@ -471,9 +511,8 @@ class NidaCard extends LitElement {
       .card.dark .header{border-bottom:none;}
       .card.dark .hijri-date{color:#c9a84c;}
       .card.dark .holiday-name{color:#f0a050;}
-      .card.dark .progress-bar{background:rgba(201,168,76,.25);}
-      .card.light .progress-bar{background:rgba(160,120,48,.3);}
-      .card.dark .next-block{background:rgba(201,168,76,.06);border-bottom:1px solid rgba(201,168,76,.1);}
+      .card.dark .header-block{background:rgba(201,168,76,.06);border-bottom:none;}
+      .card.dark .progress-bar{background:rgba(201,168,76,.35);}
       .card.dark .next-label{color:rgba(201,168,76,.5);}
       .card.dark .countdown-lbl{color:rgba(201,168,76,.4);}
       .card.dark .next-name{color:#f0e6c8;}
@@ -497,7 +536,8 @@ class NidaCard extends LitElement {
       /* LIGHT */
       .card.light .hijri-date{color:#8a6820;}
       .card.light .holiday-name{color:#c05800;}
-      .card.light .next-block{background:rgba(201,168,76,.10);border-bottom:1px solid rgba(160,120,48,.2);}
+      .card.light .header-block{background:rgba(201,168,76,.10);border-bottom:none;}
+      .card.light .progress-bar{background:rgba(160,120,48,.35);}
       .card.light .next-label{color:rgba(138,104,32,.6);}
       .card.light .countdown-lbl{color:rgba(138,104,32,.5);}
       .card.light .next-name{color:#3a2c0a;}
@@ -601,30 +641,32 @@ class NidaCard extends LitElement {
       <div class="face front">
         <div class="card ${themeClass} ${isRtl?'rtl':''}" style="${bgStyle}">
 
-          <!-- NEXT PRAYER -->
-          <div class="next-block">
-            <div class="next-inner">
-              <div class="next-icon">🕌</div>
-              <div class="next-text">
-                <span class="next-label">${this._t('next_prayer')}</span>
-                <span class="next-name">${this._tp(nextKey)}</span>
+          <!-- HEADER BLOCK: next prayer + progress bar, samen afgeronde onderkant -->
+          <div class="header-block">
+            <div class="next-block">
+              <div class="next-inner">
+                <div class="next-icon">🕌</div>
+                <div class="next-text">
+                  <span class="next-label">${this._t('next_prayer')}</span>
+                  <span class="next-name">${this._tp(nextKey)}</span>
+                </div>
+                <div class="next-right-col">
+                  <span class="countdown-lbl">${this._t('remaining')}</span>
+                  <span class="countdown">${this._countdown()}</span>
+                </div>
               </div>
-              <div class="next-right-col">
-                <span class="countdown-lbl">${this._t('remaining')}</span>
-                <span class="countdown">${this._countdown()}</span>
-              </div>
+              ${this._showTitle ? html`
+                <div class="next-date">
+                  <span>${moonEmoji}</span>
+                  <span>${hijriDay} ${hijriMonthLabel} ${hijriYear}</span>
+                  ${holiday==='on' && holidayName ? html`<span class="next-date-sep">·</span><span>${holidayName}</span>` : ''}
+                </div>` : ''}
             </div>
-            ${this._showTitle ? html`
-              <div class="next-date">
-                <span>${moonEmoji}</span>
-                <span>${hijriDay} ${hijriMonthLabel} ${hijriYear}</span>
-                ${holiday==='on' && holidayName ? html`<span class="next-date-sep">·</span><span>${holidayName}</span>` : ''}
-              </div>` : ''}
-          </div>
 
-          <!-- PROGRESS BAR — scheidingslijn -->
-          <div class="progress-bar">
-            <div class="progress-fill" style="width:${progress}%"></div>
+            <!-- PROGRESS BAR binnen header-block -->
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:${progress}%"></div>
+            </div>
           </div>
 
           <!-- GEBEDEN RASTER -->
@@ -707,4 +749,4 @@ class NidaCard extends LitElement {
 }
 
 customElements.define('nida-card', NidaCard);
-console.log('%c NIDA CARD v29 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');
+console.log('%c NIDA CARD v35 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');
