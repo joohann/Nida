@@ -11,7 +11,9 @@ from .const import (
     CONF_FAJR_SPEAKER, CONF_FAJR_VOLUME, CONF_FAJR_SOUND,
     CONF_DAY_SPEAKER, CONF_DAY_VOLUME, CONF_DAY_SOUND,
     CONF_SALAWAT_ENABLED, CONF_SALAWAT_SPEAKER, CONF_SALAWAT_VOLUME, CONF_SALAWAT_SOUND,
-    get_fajr_sounds, get_day_sounds, get_salawat_sounds, get_jingle_sounds, get_suhoor_sounds,
+    # Async versies — geen blocking I/O in event loop
+    async_get_fajr_sounds, async_get_day_sounds,
+    async_get_salawat_sounds, async_get_suhoor_sounds, async_get_jingle_sounds,
     CONF_REMINDER_1_ENABLED, CONF_REMINDER_1_MINUTES, CONF_REMINDER_1_SOUND,
     CONF_REMINDER_1_TTS, CONF_REMINDER_1_LANG,
     CONF_REMINDER_2_ENABLED, CONF_REMINDER_2_MINUTES, CONF_REMINDER_2_SOUND,
@@ -153,7 +155,10 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._data.update(user_input)
             return await self.async_step_fajr()
-        sounds    = {"": "— No sound —", **get_jingle_sounds()}
+
+        # ✅ Async — geen blocking I/O in event loop
+        jingle_sounds = await async_get_jingle_sounds(self.hass)
+        sounds    = {"": "— No sound —", **jingle_sounds}
         sound_sel = selector.selector({"select": {
             "options": [{"value": k, "label": v} for k, v in sounds.items()],
             "mode": "dropdown",
@@ -184,7 +189,9 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._data.update(user_input)
             return await self.async_step_adhan()
-        sounds = get_fajr_sounds()
+
+        # ✅ Async
+        sounds = await async_get_fajr_sounds(self.hass)
         return self.async_show_form(
             step_id="fajr",
             data_schema=vol.Schema({
@@ -200,7 +207,9 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data.update(user_input)
             return await (self.async_step_notify_prayer() if self._use_notify
                           else self._next_after_notify())
-        sounds = get_day_sounds()
+
+        # ✅ Async
+        sounds = await async_get_day_sounds(self.hass)
         return self.async_show_form(
             step_id="adhan",
             data_schema=vol.Schema({
@@ -248,8 +257,14 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data.update(user_input)
             return await (self.async_step_ramadan_notify() if self._use_notify
                           else self._finish())
-        salawat_sounds = get_salawat_sounds()
-        suhoor_sounds  = {"": "— No sound —", **get_suhoor_sounds()}
+
+        # ✅ Async — beide in parallel ophalen
+        salawat_sounds, suhoor_sounds_raw = await asyncio.gather(
+            async_get_salawat_sounds(self.hass),
+            async_get_suhoor_sounds(self.hass),
+        )
+        suhoor_sounds = {"": "— No sound —", **suhoor_sounds_raw}
+
         return self.async_show_form(
             step_id="ramadan_audio",
             data_schema=vol.Schema({
@@ -259,7 +274,7 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_SALAWAT_VOLUME,  default=15):                              _sel_volume(),
                 vol.Optional("suhoor_enabled",     default=True):                            bool,
                 vol.Optional("suhoor_minutes",     default=30):                              _sel_minutes(120),
-                vol.Optional("suhoor_sound",       default=next(iter(get_suhoor_sounds()), "")): _sel_sound(suhoor_sounds),
+                vol.Optional("suhoor_sound",       default=next(iter(suhoor_sounds_raw), "")): _sel_sound(suhoor_sounds),
                 vol.Optional("suhoor_volume",      default=10):                              _sel_volume(),
             }),
         )
@@ -341,7 +356,10 @@ class PrayerTimesOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             self._data.update(user_input)
             return await self.async_step_fajr()
-        sounds   = {"": "— No sound —", **get_jingle_sounds()}
+
+        # ✅ Async
+        jingle_sounds = await async_get_jingle_sounds(self.hass)
+        sounds    = {"": "— No sound —", **jingle_sounds}
         sound_sel = selector.selector({"select": {
             "options": [{"value": k, "label": v} for k, v in sounds.items()],
             "mode": "dropdown",
@@ -371,7 +389,9 @@ class PrayerTimesOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             self._data.update(user_input)
             return await self.async_step_adhan()
-        sounds = get_fajr_sounds()
+
+        # ✅ Async
+        sounds = await async_get_fajr_sounds(self.hass)
         return self.async_show_form(
             step_id="fajr",
             data_schema=vol.Schema({
@@ -386,7 +406,9 @@ class PrayerTimesOptionsFlow(config_entries.OptionsFlow):
             self._data.update(user_input)
             return await (self.async_step_notify_prayer() if self._use_notify
                           else self._next_after_notify())
-        sounds = get_day_sounds()
+
+        # ✅ Async
+        sounds = await async_get_day_sounds(self.hass)
         return self.async_show_form(
             step_id="adhan",
             data_schema=vol.Schema({
@@ -431,8 +453,14 @@ class PrayerTimesOptionsFlow(config_entries.OptionsFlow):
             self._data.update(user_input)
             return await (self.async_step_ramadan_notify() if self._use_notify
                           else self._finish())
-        salawat_sounds = get_salawat_sounds()
-        suhoor_sounds  = {"": "— No sound —", **get_suhoor_sounds()}
+
+        # ✅ Async — in parallel
+        salawat_sounds, suhoor_sounds_raw = await asyncio.gather(
+            async_get_salawat_sounds(self.hass),
+            async_get_suhoor_sounds(self.hass),
+        )
+        suhoor_sounds = {"": "— No sound —", **suhoor_sounds_raw}
+
         return self.async_show_form(
             step_id="ramadan_audio",
             data_schema=vol.Schema({
@@ -442,7 +470,7 @@ class PrayerTimesOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(CONF_SALAWAT_VOLUME,  default=self._get_vol(CONF_SALAWAT_VOLUME, 15)):                             _sel_volume(),
                 vol.Optional("suhoor_enabled",     default=self._get("suhoor_enabled", True)):                                  bool,
                 vol.Optional("suhoor_minutes",     default=self._get("suhoor_minutes", 30)):                                    _sel_minutes(120),
-                vol.Optional("suhoor_sound",       default=self._get("suhoor_sound", next(iter(get_suhoor_sounds()), ""))):     _sel_sound(suhoor_sounds),
+                vol.Optional("suhoor_sound",       default=self._get("suhoor_sound", next(iter(suhoor_sounds_raw), ""))):       _sel_sound(suhoor_sounds),
                 vol.Optional("suhoor_volume",      default=self._get_vol("suhoor_volume", 10)):                                 _sel_volume(),
             }),
         )
