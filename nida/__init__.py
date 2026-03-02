@@ -19,7 +19,7 @@ from .const import (
     DOMAIN, CONF_CITY, CONF_COUNTRY, CONF_METHOD,
     CONF_PLAY_METHOD, CONF_FAJR_SPEAKER, CONF_FAJR_VOLUME, CONF_FAJR_SOUND,
     CONF_DAY_SPEAKER, CONF_DAY_VOLUME, CONF_DAY_SOUND,
-    CONF_SALAWAT_ENABLED, CONF_SALAWAT_SPEAKER, CONF_SALAWAT_VOLUME, CONF_SALAWAT_SOUND,
+    CONF_TARHIM_ENABLED, CONF_TARHIM_SPEAKER, CONF_TARHIM_VOLUME, CONF_TARHIM_SOUND,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -122,7 +122,7 @@ async def async_setup_adhan_scheduler(hass: HomeAssistant, entry: ConfigEntry, c
                 _LOGGER.info("Playing adhan for %s", prayer)
                 hass.async_create_task(play_adhan(hass, entry, prayer_key))
 
-        hass.async_create_task(check_salawat(hass, entry, coordinator, now_ts))
+        hass.async_create_task(check_tarhim(hass, entry, coordinator, now_ts))
         hass.async_create_task(check_reminders(hass, entry, coordinator, now_ts, prayers))
 
     entry.async_on_unload(
@@ -314,7 +314,7 @@ async def async_send_notification(
 ):
     """
     Stuur notificatie op basis van type.
-    notify_type: "prayer" | "pre_adhan" | "salawat" | "suhoor"
+    notify_type: "prayer" | "pre_adhan" | "tarhim" | "suhoor"
 
     Kritische notificaties:
     - iOS:    push.sound.critical=1 — doorbreekt Niet Storen + stil profiel
@@ -439,11 +439,70 @@ async def check_reminders(hass, entry, coordinator, now_ts, prayers):
                 )
 
 
-async def check_salawat(hass: HomeAssistant, entry: ConfigEntry, coordinator, now_ts: float):
-    """Speel salawat voor Fajr tijdens Ramadan."""
+def _get_mp3_duration(path: str) -> float:
+    """
+    Lees MP3 duur in seconden — pure Python, geen externe library nodig.
+    Gebruikt Xing/Info VBR header als beschikbaar, anders filesize/bitrate schatting.
+    """
+    import struct
+    BITRATES    = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320]
+    SAMPLERATES = [44100, 48000, 32000]
+
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+
+        # Skip ID3v2 tag indien aanwezig
+        offset = 0
+        if data[:3] == b"ID3":
+            size = (
+                (data[6] & 0x7f) << 21 | (data[7] & 0x7f) << 14 |
+                (data[8] & 0x7f) << 7  | (data[9] & 0x7f)
+            )
+            offset = size + 10
+
+        # Zoek eerste geldige MPEG frame header
+        for i in range(offset, min(offset + 10000, len(data) - 4)):
+            if data[i] != 0xff or (data[i + 1] & 0xe0) != 0xe0:
+                continue
+            b2 = data[i + 2]
+            bitrate_idx    = (b2 >> 4) & 0xf
+            samplerate_idx = (b2 >> 2) & 0x3
+            if bitrate_idx in (0, 15) or samplerate_idx >= len(SAMPLERATES):
+                continue
+
+            bitrate    = BITRATES[bitrate_idx] * 1000
+            samplerate = SAMPLERATES[samplerate_idx]
+
+            # Xing/Info header aanwezig? → nauwkeurige frame-telling
+            xing_off = i + 36  # MPEG1 stereo offset
+            if len(data) > xing_off + 12 and data[xing_off:xing_off + 4] in (b"Xing", b"Info"):
+                flags = struct.unpack(">I", data[xing_off + 4:xing_off + 8])[0]
+                if flags & 0x1:
+                    frames = struct.unpack(">I", data[xing_off + 8:xing_off + 12])[0]
+                    return round(frames * 1152 / samplerate, 1)
+
+            # Fallback: bestandsgrootte / bitrate
+            frame_size   = 144 * bitrate // samplerate
+            total_frames = (len(data) - i) // frame_size if frame_size else 0
+            return round(total_frames * 1152 / samplerate, 1)
+
+    except Exception as e:
+        _LOGGER.warning("Kon MP3 duur niet lezen van %s: %s", path, e)
+
+    return 0.0
+
+
+async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now_ts: float):
+    """
+    Speel tarhim voor Fajr tijdens Ramadan.
+
+    Starttijd = Fajr - duur_van_mp3 - 5 seconden buffer.
+    De duur wordt eenmalig per run gelezen via _get_mp3_duration() in een executor job.
+    """
     options = entry.options if entry.options else entry.data
 
-    if not options.get(CONF_SALAWAT_ENABLED, True):
+    if not options.get(CONF_TARHIM_ENABLED, True):
         return
 
     try:
@@ -455,30 +514,60 @@ async def check_salawat(hass: HomeAssistant, entry: ConfigEntry, coordinator, no
 
     try:
         timings = coordinator.data["data"]["timings"]
-        today = datetime.now().strftime("%Y-%m-%d")
-        fajr_ts = datetime.strptime(f"{today} {timings['Fajr']}", "%Y-%m-%d %H:%M").timestamp()
-        salawat_ts = fajr_ts - (6.5 * 60)
+        today   = datetime.now().strftime("%Y-%m-%d")
+        fajr_ts = datetime.strptime(
+            f"{today} {timings['Fajr']}", "%Y-%m-%d %H:%M"
+        ).timestamp()
 
-        if abs(now_ts - salawat_ts) < 30:
-            speaker = options.get(CONF_SALAWAT_SPEAKER, ["media_player.adhan_speakers"])
-            if isinstance(speaker, str): speaker = [speaker]
-            volume = _get_volume(options, CONF_SALAWAT_VOLUME, 10)
-            sound = options.get(CONF_SALAWAT_SOUND, "Ramadan [salawat] - Ustaz Hendra.mp3")
+        sound = options.get(CONF_TARHIM_SOUND, "")
+        if not sound:
+            _LOGGER.warning("Geen tarhim sound geconfigureerd — overgeslagen")
+            return
+
+        # MP3 duur ophalen in executor (blocking file I/O)
+        sounds_path = hass.config.path("www/nida/sounds")
+        mp3_path    = os.path.join(sounds_path, sound)
+        duration    = await hass.async_add_executor_job(_get_mp3_duration, mp3_path)
+
+        if duration <= 0:
+            _LOGGER.warning(
+                "Kon duur van %s niet bepalen — tarhim overgeslagen", sound
+            )
+            return
+
+        # Starttijd = Fajr - duur - 5s buffer
+        BUFFER_SECONDS = 5
+        tarhim_ts = fajr_ts - duration - BUFFER_SECONDS
+
+        _LOGGER.debug(
+            "Tarhim timing: Fajr=%s, duur=%.1fs, buffer=%ds → start om %s",
+            timings["Fajr"], duration, BUFFER_SECONDS,
+            datetime.fromtimestamp(tarhim_ts).strftime("%H:%M:%S"),
+        )
+
+        if abs(now_ts - tarhim_ts) < 30:
+            speaker = options.get(CONF_TARHIM_SPEAKER, ["media_player.adhan_speakers"])
+            if isinstance(speaker, str):
+                speaker = [speaker]
+            volume    = _get_volume(options, CONF_TARHIM_VOLUME, 10)
             media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
 
-            _LOGGER.info("Playing salawat: %s", sound)
+            _LOGGER.info(
+                "Tarhim afspelen: %s (%.1fs) — eindigt ~5s voor Fajr om %s",
+                sound, duration, timings["Fajr"],
+            )
             await _play_media_with_volume(
                 hass, speaker, media_url, volume,
                 cover_url=_get_logo_url(hass),
-                restore_delay=float(options.get("salawat_restore_delay", 60)),
+                restore_delay=duration + BUFFER_SECONDS + 5,
             )
             await async_send_notification(
                 hass, entry,
                 message="Tarhim — Fajr begint binnenkort 🌙",
-                notify_type="salawat",
+                notify_type="tarhim",
             )
     except Exception as e:
-        _LOGGER.error("Salawat error: %s", e)
+        _LOGGER.error("Tarhim error: %s", e)
 
 
 async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
@@ -515,16 +604,16 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         prayer = call.data.get("prayer", "dhuhr")
         await play_adhan(hass, entry, prayer)
 
-    async def handle_test_salawat(call):
-        """Test salawat."""
+    async def handle_test_tarhim(call):
+        """Test tarhim."""
         options = entry.options if entry.options else entry.data
-        speaker = call.data.get("speaker", options.get(CONF_SALAWAT_SPEAKER, "media_player.adhan_speakers"))
+        speaker = call.data.get("speaker", options.get(CONF_TARHIM_SPEAKER, "media_player.adhan_speakers"))
         if isinstance(speaker, str):
             speaker = [speaker]
-        raw = call.data.get("volume", options.get(CONF_SALAWAT_VOLUME, 15))
+        raw = call.data.get("volume", options.get(CONF_TARHIM_VOLUME, 15))
         volume = raw / 100 if isinstance(raw, (int, float)) and raw > 1 else float(raw)
         volume = max(0.0, min(1.0, volume))
-        sound = call.data.get("sound", options.get(CONF_SALAWAT_SOUND, "Ramadan [salawat] - Ustaz Hendra.mp3"))
+        sound = call.data.get("sound", options.get(CONF_TARHIM_SOUND, "Ramadan [salawat] - Ustaz Hendra.mp3"))
         media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
         await _play_media_with_volume(
             hass, speaker, media_url, volume,
@@ -594,7 +683,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
     )
 
     hass.services.async_register(
-        DOMAIN, "test_salawat", handle_test_salawat,
+        DOMAIN, "test_tarhim", handle_test_tarhim,
         schema=vol.Schema({
             vol.Optional("sound"): str,
             vol.Optional("speaker"): str,
@@ -679,7 +768,7 @@ async def async_update_services_yaml(hass: HomeAssistant):
         sounds_path = os.path.join(os.path.dirname(__file__), "sounds")
         fajr_options = []
         day_options = []
-        salawat_options = []
+        tarhim_options = []
 
         def _label(f):
             import re
@@ -695,9 +784,9 @@ async def async_update_services_yaml(hass: HomeAssistant):
                 label = _label(f)
                 if "[fajr]" in fl or ("fajr" in fl and "[" not in fl):
                     fajr_options.append({"label": label, "value": f})
-                elif "[salawat]" in fl or "salawat" in fl:
-                    salawat_options.append({"label": label, "value": f})
-                elif "[day]" in fl or ("adhan" in fl and "fajr" not in fl and "salawat" not in fl):
+                elif "[tarhim]" in fl or "tarhim" in fl:
+                    tarhim_options.append({"label": label, "value": f})
+                elif "[day]" in fl or ("adhan" in fl and "fajr" not in fl and "tarhim" not in fl):
                     day_options.append({"label": label, "value": f})
 
         services = {
@@ -747,15 +836,15 @@ async def async_update_services_yaml(hass: HomeAssistant):
                     }
                 }
             },
-            "test_salawat": {
-                "name": "Test Salawat",
-                "description": "Test de Salawat recitatie voor Fajr.",
+            "test_tarhim": {
+                "name": "Test Tarhim",
+                "description": "Test de Tarhim recitatie voor Fajr.",
                 "fields": {
                     "sound": {
                         "name": "Sound",
-                        "description": "Welk salawat wil je afspelen?",
+                        "description": "Welk tarhim wil je afspelen?",
                         "required": False,
-                        "selector": {"select": {"options": salawat_options}}
+                        "selector": {"select": {"options": tarhim_options}}
                     },
                     "speaker": {
                         "name": "Speaker",
