@@ -9,8 +9,8 @@
       "reminders": { "title": "یادآوری قبل از اذان", "description": "قبل از هر نماز صدا و پیام پخش کنید. از [minutes] و [prayer] در پیام استفاده کنید.", "data": { "reminder_1_enabled": "یادآوری اول", "reminder_1_minutes": "دقیقه قبل از اذان", "reminder_1_sound": "صدا", "reminder_1_lang": "زبان", "reminder_1_tts": "پیام", "reminder_2_enabled": "یادآوری دوم", "reminder_2_minutes": "دقیقه قبل از اذان", "reminder_2_sound": "صدا", "reminder_2_lang": "زبان", "reminder_2_tts": "پیام" } },
       "fajr": { "title": "اذان صبح", "description": "اذان صبح را تنظیم کنید — اولین نماز روز.", "data": { "fajr_sound": "صدای صبح", "fajr_speaker": "بلندگو", "fajr_volume": "صدا" } },
       "adhan": { "title": "تنظیمات اذان", "description": "اذان را برای تمام نمازها تنظیم کنید.", "data": { "day_sound": "صدای اذان", "day_speaker": "بلندگو", "day_volume": "صدای روز", "night_volume_enabled": "صدای کمتر در شب", "night_volume": "صدای شب", "night_start_hour": "شب از ساعت" } },
-      "notifications": { "title": "اعلان‌ها", "description": "در هر وقت نماز اعلان ارسال کنید.", "data": { "notify_on_prayer": "اعلان در هر نماز", "notify_target": "سرویس اعلان", "notify_title": "عنوان", "notify_message": "پیام (از {prayer} استفاده کنید)" } },
-      "ramadan": { "title": "رمضان 🌙", "description": "ویژگی‌های خاص برای ماه مبارک رمضان.", "data": { "suhoor_alarm_enabled": "زنگ سحر", "suhoor_alarm_minutes": "دقیقه قبل از صبح", "suhoor_alarm_sound": "صدای سحر", "suhoor_alarm_volume": "صدای سحر", "tarhim_enabled": "تراویح قبل از صبح", "tarhim_sound": "صدای تراویح", "tarhim_speaker": "بلندگو", "tarhim_volume": "صدا" } }
+      "notifications": { "title": "اعلان‌ها", "description": "در هر وقت نماز اعلان ارسال کنید.", "data": { "notify_on_prayer": "اعلان در هر نماز", "notify_target": "سرویس اعلان", "notify_title": "عنوان", "notify_message": "پیام (از {{prayer}} استفاده کنید)" } },
+      "ramadan": { "title": "رمضان 🌙", "description": "ویژگی‌های خاص برای ماه مبارک رمضان.", "data": { "suhoor_alarm_enabled": "زنگ سحر", "suhoor_alarm_minutes": "دقیقه قبل از صبح", "suhoor_alarm_sound": "صدای سحر", "suhoor_alarm_volume": "صدای سحر", "salawat_enabled": "تراویح قبل از صبح", "salawat_sound": "صدای تراویح", "salawat_speaker": "بلندگو", "salawat_volume": "صدا" } }
     },
     "error": { "cannot_connect": "اتصال به AlAdhan API برقرار نشد", "invalid_location": "شهر یا کشور نامعتبر" },
     "abort": { "already_configured": "نداء قبلاً پیکربندی شده است" }
@@ -22,7 +22,7 @@
       "fajr": { "title": "اذان صبح", "data": { "fajr_sound": "صدا", "fajr_speaker": "بلندگو", "fajr_volume": "صدا" } },
       "adhan": { "title": "تنظیمات اذان", "data": { "day_sound": "صدا", "day_speaker": "بلندگو", "day_volume": "روز", "night_volume_enabled": "شب کمتر", "night_volume": "شب", "night_start_hour": "از ساعت" } },
       "notifications": { "title": "اعلان‌ها", "data": { "notify_on_prayer": "اعلان", "notify_target": "سرویس", "notify_title": "عنوان", "notify_message": "پیام" } },
-      "ramadan": { "title": "رمضان 🌙", "data": { "suhoor_alarm_enabled": "سحر", "suhoor_alarm_minutes": "دقیقه قبل", "suhoor_alarm_sound": "صدا", "suhoor_alarm_volume": "صدا", "tarhim_enabled": "تراویح", "tarhim_sound": "صدا", "tarhim_speaker": "بلندگو", "tarhim_volume": "صدا" } }
+      "ramadan": { "title": "رمضان 🌙", "data": { "suhoor_alarm_enabled": "سحر", "suhoor_alarm_minutes": "دقیقه قبل", "suhoor_alarm_sound": "صدا", "suhoor_alarm_volume": "صدا", "salawat_enabled": "تراویح", "salawat_sound": "صدا", "salawat_speaker": "بلندگو", "salawat_volume": "صدا" } }
     }
   }
 }
