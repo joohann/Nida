@@ -789,31 +789,43 @@ async def async_update_services_yaml(hass: HomeAssistant):
                 elif "[day]" in fl or ("adhan" in fl and "fajr" not in fl and "tarhim" not in fl):
                     day_options.append({"label": label, "value": f})
 
+        # Jingle opties toevoegen aan preview
+        jingle_options = []
+        for f in sorted(os.listdir(sounds_path)) if os.path.isdir(sounds_path) else []:
+            if not f.endswith(".mp3"):
+                continue
+            fl = f.lower()
+            if "[jingle]" in fl or "jingle" in fl:
+                jingle_options.append({"label": _label(f), "value": f})
+
+        _volume_field = {
+            "name": "Volume",
+            "description": "Volume (0-100%). Leeg laten voor geconfigureerd volume.",
+            "required": False,
+            "default": 30,
+            "selector": {"number": {"min": 0, "max": 100, "step": 5,
+                                    "unit_of_measurement": "%", "mode": "slider"}}
+        }
+        _speaker_field = {
+            "name": "Speaker",
+            "description": "Welke speaker wil je gebruiken?",
+            "required": False,
+            "selector": {"entity": {"domain": "media_player"}}
+        }
+
         services = {
             "preview_adhan": {
                 "name": "Preview Adhan",
-                "description": "Speel een adhan geluid als preview op een speaker.",
+                "description": "Speel een adhan of jingle als preview op een speaker.",
                 "fields": {
                     "sound": {
                         "name": "Sound",
-                        "description": "Welk adhan wil je afspelen?",
+                        "description": "Welk geluid wil je afspelen?",
                         "required": True,
-                        "selector": {"select": {"options": fajr_options + day_options}}
+                        "selector": {"select": {"options": fajr_options + day_options + tarhim_options + jingle_options}}
                     },
-                    "speaker": {
-                        "name": "Speaker",
-                        "description": "Welke speaker wil je gebruiken?",
-                        "required": True,
-                        "selector": {"entity": {"domain": "media_player"}}
-                    },
-                    "volume": {
-                        "name": "Volume",
-                        "description": "Volume (0-100%). Leeg laten voor geconfigureerd volume.",
-                        "required": False,
-                        "default": 30,
-                        "selector": {"number": {"min": 0, "max": 100, "step": 5,
-                                                "unit_of_measurement": "%", "mode": "slider"}}
-                    }
+                    "speaker": {**_speaker_field, "required": True},
+                    "volume": _volume_field,
                 }
             },
             "test_prayer": {
@@ -826,11 +838,11 @@ async def async_update_services_yaml(hass: HomeAssistant):
                         "required": True,
                         "default": "dhuhr",
                         "selector": {"select": {"options": [
-                            {"label": "Fajr",    "value": "fajr"},
-                            {"label": "Dhuhr",   "value": "dhuhr"},
-                            {"label": "Asr",     "value": "asr"},
-                            {"label": "Maghrib", "value": "maghrib"},
-                            {"label": "Isha",    "value": "isha"},
+                            {"label": "Fajr",            "value": "fajr"},
+                            {"label": "Dhuhr",           "value": "dhuhr"},
+                            {"label": "Asr",             "value": "asr"},
+                            {"label": "Maghrib",         "value": "maghrib"},
+                            {"label": "Isha",            "value": "isha"},
                             {"label": "Jumat (vrijdag)", "value": "jumat"},
                         ]}}
                     }
@@ -846,19 +858,49 @@ async def async_update_services_yaml(hass: HomeAssistant):
                         "required": False,
                         "selector": {"select": {"options": tarhim_options}}
                     },
-                    "speaker": {
-                        "name": "Speaker",
-                        "description": "Welke speaker wil je gebruiken?",
+                    "speaker": _speaker_field,
+                    "volume": _volume_field,
+                }
+            },
+            "test_reminder": {
+                "name": "Test Reminder",
+                "description": "Test een pre-adhan reminder (geluid + TTS).",
+                "fields": {
+                    "reminder": {
+                        "name": "Reminder",
+                        "description": "Welke reminder wil je testen?",
                         "required": False,
-                        "selector": {"entity": {"domain": "media_player"}}
+                        "default": 1,
+                        "selector": {"select": {"options": [
+                            {"label": "Reminder 1", "value": 1},
+                            {"label": "Reminder 2", "value": 2},
+                        ]}}
                     },
-                    "volume": {
-                        "name": "Volume",
-                        "description": "Volume (0-100%). Leeg laten voor geconfigureerd volume.",
+                    "prayer": {
+                        "name": "Gebed",
+                        "description": "Naam van het gebed (voor in de TTS tekst).",
                         "required": False,
-                        "selector": {"number": {"min": 0, "max": 100, "step": 5,
-                                                "unit_of_measurement": "%", "mode": "slider"}}
-                    }
+                        "default": "Dhuhr",
+                        "selector": {"text": {}}
+                    },
+                }
+            },
+            "test_notification": {
+                "name": "Test Notificatie",
+                "description": "Stuur een test notificatie naar geconfigureerde apparaten.",
+                "fields": {
+                    "title": {
+                        "name": "Titel",
+                        "description": "Titel van de notificatie (optioneel).",
+                        "required": False,
+                        "selector": {"text": {}}
+                    },
+                    "message": {
+                        "name": "Bericht",
+                        "description": "Tekst van de notificatie (optioneel).",
+                        "required": False,
+                        "selector": {"text": {}}
+                    },
                 }
             },
         }
