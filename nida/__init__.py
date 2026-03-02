@@ -389,7 +389,9 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         sound = call.data.get("sound")
         options = entry.options if entry.options else entry.data
         speaker = call.data.get("speaker", options.get(CONF_DAY_SPEAKER, "media_player.adhan_speakers"))
-        volume = call.data.get("volume", 0.5)
+        # Fallback naar geconfigureerd volume; converteer % naar float (0.0-1.0)
+        raw = call.data.get("volume", options.get(CONF_DAY_VOLUME, 30))
+        volume = raw / 100 if raw > 1 else raw
         play_method = options.get(CONF_PLAY_METHOD, "media_player")
         media_path = await _get_media_url(hass, f"/local/sounds/{sound}")
 
@@ -424,8 +426,10 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         """Test salawat."""
         options = entry.options if entry.options else entry.data
         speaker = call.data.get("speaker", options.get(CONF_SALAWAT_SPEAKER, "media_player.adhan_speakers"))
-        volume = call.data.get("volume", options.get(CONF_SALAWAT_VOLUME, 0.4))
-        sound = options.get(CONF_SALAWAT_SOUND, "Ramadan [salawat] - Ustaz Hendra.mp3")
+        # Fallback naar geconfigureerd volume; converteer % naar float
+        raw = call.data.get("volume", options.get(CONF_SALAWAT_VOLUME, 15))
+        volume = raw / 100 if raw > 1 else raw
+        sound = call.data.get("sound", options.get(CONF_SALAWAT_SOUND, "Ramadan [salawat] - Ustaz Hendra.mp3"))
         media_path = await _get_media_url(hass, f"/local/sounds/{sound}")
 
         await hass.services.async_call(
