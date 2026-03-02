@@ -38,12 +38,12 @@ CALCULATION_METHODS = {
     15: "Moonsighting Committee Worldwide",
 }
 
-# Salawat settings
-CONF_SALAWAT_ENABLED = "salawat_enabled"
-CONF_SALAWAT_SPEAKER = "salawat_speaker"
-CONF_SALAWAT_VOLUME  = "salawat_volume"
-CONF_SALAWAT_SOUND   = "salawat_sound"
-CONF_SALAWAT_OFFSET  = "salawat_offset"
+# Tarhim settings
+CONF_TARHIM_ENABLED = "tarhim_enabled"
+CONF_TARHIM_SPEAKER = "tarhim_speaker"
+CONF_TARHIM_VOLUME  = "tarhim_volume"
+CONF_TARHIM_SOUND   = "tarhim_sound"
+CONF_TARHIM_OFFSET  = "tarhim_offset"
 
 # Sounds directory op HA systeem
 _SOUNDS_DIR = "/config/www/nida/sounds"
@@ -107,13 +107,13 @@ def get_fajr_sounds() -> dict:
 def get_day_sounds() -> dict:
     result = _scan_sounds(
         keyword_include=["day"],
-        keyword_exclude=["fajr", "salawat", "jingle", "suhoor", "ramadan", "nida"],
+        keyword_exclude=["fajr", "tarhim", "jingle", "suhoor", "ramadan", "nida"],
     )
     return result if result else {"Adhan [day] - Default.mp3": "Default"}
 
 
-def get_salawat_sounds() -> dict:
-    result = _scan_sounds(["salawat"])
+def get_tarhim_sounds() -> dict:
+    result = _scan_sounds(["tarhim"])
     return result if result else {"Ramadan [salawat] - Default.mp3": "Default"}
 
 
@@ -124,7 +124,7 @@ def get_suhoor_sounds() -> dict:
 
 def get_jingle_sounds() -> dict:
     result = _scan_sounds(["jingle"],
-                          keyword_exclude=["adhan", "fajr", "salawat", "suhoor"])
+                          keyword_exclude=["adhan", "fajr", "tarhim", "suhoor"])
     return result
 
 
@@ -142,9 +142,9 @@ async def async_get_day_sounds(hass) -> dict:
     return result
 
 
-async def async_get_salawat_sounds(hass) -> dict:
-    """Async-safe versie van get_salawat_sounds — gebruik in config flow steps."""
-    result = await hass.async_add_executor_job(get_salawat_sounds)
+async def async_get_tarhim_sounds(hass) -> dict:
+    """Async-safe versie van get_tarhim_sounds — gebruik in config flow steps."""
+    result = await hass.async_add_executor_job(get_tarhim_sounds)
     return result
 
 
