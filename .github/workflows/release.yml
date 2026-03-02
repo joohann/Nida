@@ -3,6 +3,9 @@ name: Release Nida
 on:
   release:
     types: [published, edited]
+  push:
+    tags:
+      - "v*"
 
 permissions:
   contents: write
