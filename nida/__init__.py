@@ -123,6 +123,7 @@ async def async_setup_adhan_scheduler(hass: HomeAssistant, entry: ConfigEntry, c
                 hass.async_create_task(play_adhan(hass, entry, prayer_key))
 
         hass.async_create_task(check_tarhim(hass, entry, coordinator, now_ts))
+        hass.async_create_task(check_suhoor(hass, entry, coordinator, now_ts))
         hass.async_create_task(check_reminders(hass, entry, coordinator, now_ts, prayers))
 
     entry.async_on_unload(
@@ -570,7 +571,67 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
         _LOGGER.error("Tarhim error: %s", e)
 
 
-async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
+async def check_suhoor(hass: HomeAssistant, entry: ConfigEntry, coordinator, now_ts: float):
+    """
+    Speel suhoor alarm X minuten voor Fajr tijdens Ramadan.
+    Tijd is instelbaar via 'suhoor_minutes' (default: 30 min voor Fajr).
+    """
+    options = entry.options if entry.options else entry.data
+
+    if not options.get("suhoor_enabled", True):
+        return
+
+    # Alleen tijdens Ramadan
+    try:
+        hijri_month = coordinator.data["data"]["date"]["hijri"]["month"]["en"]
+        if "Rama" not in hijri_month:
+            return
+    except Exception:
+        return
+
+    try:
+        timings = coordinator.data["data"]["timings"]
+        today   = datetime.now().strftime("%Y-%m-%d")
+        fajr_ts = datetime.strptime(
+            f"{today} {timings['Fajr']}", "%Y-%m-%d %H:%M"
+        ).timestamp()
+
+        minutes   = int(options.get("suhoor_minutes", 30))
+        suhoor_ts = fajr_ts - (minutes * 60)
+
+        _LOGGER.debug(
+            "Suhoor timing: %d min voor Fajr (%s) → alarm om %s",
+            minutes, timings["Fajr"],
+            datetime.fromtimestamp(suhoor_ts).strftime("%H:%M:%S"),
+        )
+
+        if abs(now_ts - suhoor_ts) < 30:
+            sound   = options.get("suhoor_sound", "")
+            speaker = options.get("suhoor_speaker", options.get(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"]))
+            if isinstance(speaker, str):
+                speaker = [speaker]
+            volume  = _get_volume(options, "suhoor_volume", 50)
+
+            _LOGGER.info("Suhoor alarm: %d min voor Fajr", minutes)
+
+            if sound:
+                media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+                await _play_media_with_volume(
+                    hass, speaker, media_url, volume,
+                    cover_url=_get_logo_url(hass),
+                    restore_delay=30.0,
+                )
+
+            await async_send_notification(
+                hass, entry,
+                message=options.get("notify_msg_suhoor", "Last chance for Suhoor 🍽️"),
+                notify_type="suhoor",
+            )
+    except Exception as e:
+        _LOGGER.error("Suhoor error: %s", e)
+
+
+
     """Registreer services."""
 
     async def handle_preview(call):
