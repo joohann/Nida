@@ -38,7 +38,7 @@ CALCULATION_METHODS = {
     15: "Moonsighting Committee Worldwide",
 }
 
-# Salawat settings (voorheen: Tarhim)
+# Salawat settings
 CONF_SALAWAT_ENABLED = "salawat_enabled"
 CONF_SALAWAT_SPEAKER = "salawat_speaker"
 CONF_SALAWAT_VOLUME  = "salawat_volume"
@@ -70,8 +70,13 @@ def _format_sound_label(filename: str) -> str:
     return name.replace('-', ' ').replace('_', ' ').title()
 
 
+# ── Synchrone versie (alleen gebruiken in executor / buiten event loop) ────────
+
 def _scan_sounds(keyword_include: list, keyword_exclude: list = None) -> dict:
-    """Scan sounds map voor mp3s op basis van [categorie] in bestandsnaam."""
+    """
+    Scan sounds map voor mp3s op basis van [categorie] in bestandsnaam.
+    SYNC — uitsluitend aanroepen via hass.async_add_executor_job() of in _do_* blokken.
+    """
     import os
     result = {}
     keyword_exclude = keyword_exclude or []
@@ -113,8 +118,8 @@ def get_salawat_sounds() -> dict:
 
 
 def get_suhoor_sounds() -> dict:
-    result = _scan_sounds(["suhoor"])
-    return result if result else {"Ramadan [suhoor] - Default.mp3": "Default"}
+    # Geen fallback naar fictief bestand — lege dict als er geen suhoor sounds zijn
+    return _scan_sounds(["suhoor"])
 
 
 def get_jingle_sounds() -> dict:
@@ -123,7 +128,40 @@ def get_jingle_sounds() -> dict:
     return result
 
 
-# Pre-adhan reminders
+# ── Async versies (gebruik deze vanuit config flow / event loop) ───────────────
+
+async def async_get_fajr_sounds(hass) -> dict:
+    """Async-safe versie van get_fajr_sounds — gebruik in config flow steps."""
+    result = await hass.async_add_executor_job(get_fajr_sounds)
+    return result
+
+
+async def async_get_day_sounds(hass) -> dict:
+    """Async-safe versie van get_day_sounds — gebruik in config flow steps."""
+    result = await hass.async_add_executor_job(get_day_sounds)
+    return result
+
+
+async def async_get_salawat_sounds(hass) -> dict:
+    """Async-safe versie van get_salawat_sounds — gebruik in config flow steps."""
+    result = await hass.async_add_executor_job(get_salawat_sounds)
+    return result
+
+
+async def async_get_suhoor_sounds(hass) -> dict:
+    """Async-safe versie van get_suhoor_sounds — gebruik in config flow steps."""
+    result = await hass.async_add_executor_job(get_suhoor_sounds)
+    return result
+
+
+async def async_get_jingle_sounds(hass) -> dict:
+    """Async-safe versie van get_jingle_sounds — gebruik in config flow steps."""
+    result = await hass.async_add_executor_job(get_jingle_sounds)
+    return result
+
+
+# ── Pre-adhan reminders ────────────────────────────────────────────────────────
+
 CONF_REMINDER_1_ENABLED = "reminder_1_enabled"
 CONF_REMINDER_1_MINUTES = "reminder_1_minutes"
 CONF_REMINDER_1_SOUND   = "reminder_1_sound"
