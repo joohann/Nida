@@ -1,90 +1,85 @@
 preview_adhan:
-  description: Speel een adhan geluid af als preview
+  name: Preview Adhan
+  description: Play an adhan sound as a preview on a speaker.
   fields:
     sound:
-      description: Welke adhan wil je afspelen?
-      name: Geluid
+      name: Sound
+      description: Which adhan do you want to play?
       required: true
       selector:
         select:
-          options:
-          - label: 01 Adhan Fajr
-            value: 01-adhan-fajr.mp3
-          - label: 02 Adhan Fajr
-            value: 02-adhan-fajr.mp3
-          - label: 03 Adhan Fajr
-            value: 03-adhan-fajr.mp3
+          options: []
+          custom_value: true
     speaker:
-      description: Op welke speaker wil je afspelen?
       name: Speaker
+      description: Which speaker do you want to use?
       required: true
       selector:
         entity:
           domain: media_player
     volume:
-      default: 0.5
-      description: Volume tussen 0.0 en 1.0
       name: Volume
+      description: Volume (0–100%). Leave empty to use the configured volume.
       required: false
+      default: 30
       selector:
         number:
-          max: 1.0
-          min: 0.0
+          min: 0
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
           mode: slider
-          step: 0.05
-  name: Preview Adhan
+
 test_prayer:
-  description: Test de adhan voor een specifiek gebed
+  name: Test Prayer
+  description: Test the adhan for a specific prayer.
   fields:
     prayer:
-      default: dhuhr
-      description: Welk gebed wil je testen?
-      name: Gebed
+      name: Prayer
+      description: Which prayer do you want to test?
       required: true
+      default: dhuhr
       selector:
         select:
           options:
-          - label: Fajr
-            value: fajr
-          - label: Dhuhr
-            value: dhuhr
-          - label: Asr
-            value: asr
-          - label: Maghrib
-            value: maghrib
-          - label: Isha
-            value: isha
-  name: Test Gebed
-test_tarhim:
-  description: Test de tarhim recitatie
+            - label: Fajr
+              value: fajr
+            - label: Dhuhr
+              value: dhuhr
+            - label: Asr
+              value: asr
+            - label: Maghrib
+              value: maghrib
+            - label: Isha
+              value: isha
+
+test_salawat:
+  name: Test Salawat
+  description: Test the Salawat recitation before Fajr.
   fields:
     sound:
-      description: Welke tarhim wil je afspelen?
-      name: Tarhim Geluid
+      name: Sound
+      description: Which Salawat do you want to play?
       required: false
       selector:
         select:
-          options:
-          - label: 01 Tarhim
-            value: 01-tarhim.mp3
-          - label: 02 Tarhim
-            value: 02-tarhim.mp3
+          options: []
+          custom_value: true
     speaker:
-      description: Op welke speaker wil je afspelen?
       name: Speaker
+      description: Which speaker do you want to use?
       required: false
       selector:
         entity:
           domain: media_player
     volume:
-      default: 0.4
-      description: Volume tussen 0.0 en 1.0
       name: Volume
+      description: Volume (0–100%). Leave empty to use the configured volume.
       required: false
       selector:
         number:
-          max: 1.0
-          min: 0.0
+          min: 0
+          max: 100
+          step: 5
+          unit_of_measurement: "%"
           mode: slider
-          step: 0.05
-  name: Test Tarhim
