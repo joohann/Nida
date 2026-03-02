@@ -9,8 +9,8 @@
       "reminders": { "title": "Pengingat Sebelum Adzan", "description": "Putar suara dan pesan sebelum setiap sholat. Gunakan [minutes] dan [prayer] dalam pesan Anda.", "data": { "reminder_1_enabled": "Pengingat pertama", "reminder_1_minutes": "Menit sebelum adzan", "reminder_1_sound": "Suara", "reminder_1_lang": "Bahasa", "reminder_1_tts": "Pesan", "reminder_2_enabled": "Pengingat kedua", "reminder_2_minutes": "Menit sebelum adzan", "reminder_2_sound": "Suara", "reminder_2_lang": "Bahasa", "reminder_2_tts": "Pesan" } },
       "fajr": { "title": "Adzan Subuh", "description": "Konfigurasi adzan Subuh — sholat pertama hari ini.", "data": { "fajr_sound": "Suara Subuh", "fajr_speaker": "Speaker", "fajr_volume": "Volume" } },
       "adhan": { "title": "Pengaturan Adzan", "description": "Konfigurasi adzan untuk semua sholat.", "data": { "day_sound": "Suara Adzan", "day_speaker": "Speaker", "day_volume": "Volume siang", "night_volume_enabled": "Volume rendah malam hari", "night_volume": "Volume malam", "night_start_hour": "Malam mulai pukul" } },
-      "notifications": { "title": "Notifikasi", "description": "Kirim notifikasi di setiap waktu sholat.", "data": { "notify_on_prayer": "Notifikasi setiap sholat", "notify_target": "Layanan notifikasi", "notify_title": "Judul", "notify_message": "Pesan (gunakan {prayer})" } },
-      "ramadan": { "title": "Ramadan 🌙", "description": "Fitur khusus untuk bulan Ramadan yang penuh berkah.", "data": { "suhoor_alarm_enabled": "Aktifkan alarm Sahur", "suhoor_alarm_minutes": "Menit sebelum Subuh", "suhoor_alarm_sound": "Suara Sahur", "suhoor_alarm_volume": "Volume Sahur", "tarhim_enabled": "Aktifkan Tarhim sebelum Subuh", "tarhim_sound": "Suara Tarhim", "tarhim_speaker": "Speaker", "tarhim_volume": "Volume" } }
+      "notifications": { "title": "Notifikasi", "description": "Kirim notifikasi di setiap waktu sholat.", "data": { "notify_on_prayer": "Notifikasi setiap sholat", "notify_target": "Layanan notifikasi", "notify_title": "Judul", "notify_message": "Pesan (gunakan {{prayer}})" } },
+      "ramadan": { "title": "Ramadan 🌙", "description": "Fitur khusus untuk bulan Ramadan yang penuh berkah.", "data": { "suhoor_alarm_enabled": "Aktifkan alarm Sahur", "suhoor_alarm_minutes": "Menit sebelum Subuh", "suhoor_alarm_sound": "Suara Sahur", "suhoor_alarm_volume": "Volume Sahur", "salawat_enabled": "Aktifkan Tarhim sebelum Subuh", "salawat_sound": "Suara Tarhim", "salawat_speaker": "Speaker", "salawat_volume": "Volume" } }
     },
     "error": { "cannot_connect": "Tidak dapat terhubung ke AlAdhan API", "invalid_location": "Kota atau negara tidak valid" },
     "abort": { "already_configured": "Nida sudah dikonfigurasi" }
@@ -22,7 +22,7 @@
       "fajr": { "title": "Adzan Subuh", "data": { "fajr_sound": "Suara Subuh", "fajr_speaker": "Speaker", "fajr_volume": "Volume" } },
       "adhan": { "title": "Pengaturan Adzan", "data": { "day_sound": "Suara Adzan", "day_speaker": "Speaker", "day_volume": "Volume siang", "night_volume_enabled": "Volume rendah malam", "night_volume": "Volume malam", "night_start_hour": "Malam mulai" } },
       "notifications": { "title": "Notifikasi", "data": { "notify_on_prayer": "Notifikasi setiap sholat", "notify_target": "Layanan", "notify_title": "Judul", "notify_message": "Pesan" } },
-      "ramadan": { "title": "Ramadan 🌙", "data": { "suhoor_alarm_enabled": "Alarm Sahur", "suhoor_alarm_minutes": "Menit sebelum Subuh", "suhoor_alarm_sound": "Suara Sahur", "suhoor_alarm_volume": "Volume", "tarhim_enabled": "Tarhim", "tarhim_sound": "Suara Tarhim", "tarhim_speaker": "Speaker", "tarhim_volume": "Volume" } }
+      "ramadan": { "title": "Ramadan 🌙", "data": { "suhoor_alarm_enabled": "Alarm Sahur", "suhoor_alarm_minutes": "Menit sebelum Subuh", "suhoor_alarm_sound": "Suara Sahur", "suhoor_alarm_volume": "Volume", "salawat_enabled": "Tarhim", "salawat_sound": "Suara Tarhim", "salawat_speaker": "Speaker", "salawat_volume": "Volume" } }
     }
   }
 }

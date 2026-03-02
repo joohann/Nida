@@ -58,7 +58,7 @@
           "notify_on_prayer": "Bei jedem Gebet benachrichtigen",
           "notify_target": "Benachrichtigungsdienst(e)",
           "notify_title": "Benachrichtigungstitel",
-          "notify_message": "Benachrichtigungsnachricht (verwende {prayer})"
+          "notify_message": "Benachrichtigungsnachricht (verwende {{prayer}})"
         }
       },
       "ramadan": {
@@ -69,10 +69,10 @@
           "suhoor_alarm_minutes": "Minuten vor Fajr",
           "suhoor_alarm_sound": "Suhoor-Ton",
           "suhoor_alarm_volume": "Suhoor-Lautstärke",
-          "tarhim_enabled": "Tarhim vor Fajr aktivieren",
-          "tarhim_sound": "Tarhim-Ton",
-          "tarhim_speaker": "Lautsprecher",
-          "tarhim_volume": "Lautstärke"
+          "salawat_enabled": "Tarhim vor Fajr aktivieren",
+          "salawat_sound": "Tarhim-Ton",
+          "salawat_speaker": "Lautsprecher",
+          "salawat_volume": "Lautstärke"
         }
       }
     },
@@ -102,7 +102,7 @@
       "fajr": { "title": "Fajr Adhan", "data": { "fajr_sound": "Fajr-Ton", "fajr_speaker": "Lautsprecher", "fajr_volume": "Lautstärke" } },
       "adhan": { "title": "Adhan-Einstellungen", "data": { "day_sound": "Adhan-Ton", "day_speaker": "Lautsprecher", "day_volume": "Tageslautstärke", "night_volume_enabled": "Niedrigere Lautstärke nachts", "night_volume": "Nachtlautstärke", "night_start_hour": "Nacht beginnt um" } },
       "notifications": { "title": "Benachrichtigungen", "data": { "notify_on_prayer": "Bei jedem Gebet benachrichtigen", "notify_target": "Dienst(e)", "notify_title": "Titel", "notify_message": "Nachricht" } },
-      "ramadan": { "title": "Ramadan 🌙", "data": { "suhoor_alarm_enabled": "Suhoor-Alarm", "suhoor_alarm_minutes": "Minuten vor Fajr", "suhoor_alarm_sound": "Suhoor-Ton", "suhoor_alarm_volume": "Lautstärke", "tarhim_enabled": "Tarhim aktivieren", "tarhim_sound": "Tarhim-Ton", "tarhim_speaker": "Lautsprecher", "tarhim_volume": "Lautstärke" } }
+      "ramadan": { "title": "Ramadan 🌙", "data": { "suhoor_alarm_enabled": "Suhoor-Alarm", "suhoor_alarm_minutes": "Minuten vor Fajr", "suhoor_alarm_sound": "Suhoor-Ton", "suhoor_alarm_volume": "Lautstärke", "salawat_enabled": "Tarhim aktivieren", "salawat_sound": "Tarhim-Ton", "salawat_speaker": "Lautsprecher", "salawat_volume": "Lautstärke" } }
     }
   }
 }

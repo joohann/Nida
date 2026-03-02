@@ -41,31 +41,31 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_copy_sounds(hass: HomeAssistant):
-    """Copy sounds from integration to /config/www/sounds/ on install/update."""
+    """Copy sounds from integration to /config/www/nida/sounds/ on install/update."""
 
-    # Sounds staan in custom_components/nida/sounds/ (meegeleverd via HACS)
-    sounds_src = os.path.join(os.path.dirname(__file__), "sounds")
-    sounds_dst = hass.config.path("www/sounds")
+    def _do_copy():
+        sounds_src = os.path.join(os.path.dirname(__file__), "sounds")
+        sounds_dst = hass.config.path("www/nida/sounds")
+        if not os.path.isdir(sounds_src):
+            _LOGGER.warning(f"Sounds source directory not found: {sounds_src}")
+            return 0
+        os.makedirs(sounds_dst, exist_ok=True)
+        copied = 0
+        for f in sorted(os.listdir(sounds_src)):
+            if f.endswith(".mp3"):
+                src = os.path.join(sounds_src, f)
+                dst = os.path.join(sounds_dst, f)
+                if not os.path.exists(dst):
+                    shutil.copy2(src, dst)
+                    copied += 1
+                    _LOGGER.info(f"Copied sound: {f}")
+        return copied
 
-    if not os.path.isdir(sounds_src):
-        _LOGGER.warning(f"Sounds source directory not found: {sounds_src}")
-        return
-
-    os.makedirs(sounds_dst, exist_ok=True)
-    copied = 0
-    for f in sorted(os.listdir(sounds_src)):
-        if f.endswith(".mp3"):
-            src = os.path.join(sounds_src, f)
-            dst = os.path.join(sounds_dst, f)
-            if not os.path.exists(dst):
-                shutil.copy2(src, dst)
-                copied += 1
-                _LOGGER.info(f"Copied sound: {f}")
-
+    copied = await hass.async_add_executor_job(_do_copy)
     if copied:
-        _LOGGER.info(f"Copied {copied} sound(s) to {sounds_dst}")
+        _LOGGER.info(f"Copied {copied} sound(s) to www/nida/sounds")
     else:
-        _LOGGER.debug(f"All sounds already present in {sounds_dst}")
+        _LOGGER.debug("All sounds already present")
 
 
 async def async_setup_adhan_scheduler(hass: HomeAssistant, entry: ConfigEntry, coordinator):
@@ -494,7 +494,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         schema=vol.Schema({
             vol.Required("sound"): str,
             vol.Optional("speaker"): str,
-            vol.Optional("volume", default=0.5): vol.Coerce(float),
+            vol.Optional("volume"): vol.Any(None, vol.Coerce(int)),
         })
     )
 
@@ -510,7 +510,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         schema=vol.Schema({
             vol.Optional("sound"): str,
             vol.Optional("speaker"): str,
-            vol.Optional("volume", default=0.4): vol.Coerce(float),
+            vol.Optional("volume"): vol.Any(None, vol.Coerce(int)),
         })
     )
 
@@ -586,97 +586,108 @@ async def async_update_services_yaml(hass: HomeAssistant):
     """Dynamically update services.yaml based on available sounds."""
     import yaml
 
-    sounds_path = os.path.join(os.path.dirname(__file__), "sounds")
-    fajr_options = []
-    day_options = []
-    salawat_options = []
+    def _build_and_write():
+        sounds_path = os.path.join(os.path.dirname(__file__), "sounds")
+        fajr_options = []
+        day_options = []
+        salawat_options = []
 
-    if os.path.isdir(sounds_path):
-        for f in sorted(os.listdir(sounds_path)):
-            if not f.endswith(".mp3"):
-                continue
-            label = f.replace(".mp3", "").replace("-", " ").title()
-            if "fajr" in f.lower():
-                fajr_options.append({"label": label, "value": f})
-            elif "salawat" in f.lower():
-                salawat_options.append({"label": label, "value": f})
-            elif "adhan" in f.lower():
-                day_options.append({"label": label, "value": f})
+        def _label(f):
+            import re
+            name = f.replace(".mp3", "")
+            m = re.match(r'^.+?\[.+?\]\s*-\s*(.+)$', name)
+            return m.group(1).strip() if m else name.replace("-", " ").title()
 
-    services = {
-        "preview_adhan": {
-            "name": "Preview Adhan",
-            "description": "Speel een adhan geluid af als preview",
-            "fields": {
-                "sound": {
-                    "name": "Geluid",
-                    "description": "Welke adhan wil je afspelen?",
-                    "required": True,
-                    "selector": {"select": {"options": fajr_options + day_options}}
-                },
-                "speaker": {
-                    "name": "Speaker",
-                    "description": "Op welke speaker wil je afspelen?",
-                    "required": True,
-                    "selector": {"entity": {"domain": "media_player"}}
-                },
-                "volume": {
-                    "name": "Volume",
-                    "description": "Volume tussen 0.0 en 1.0",
-                    "required": False,
-                    "default": 0.5,
-                    "selector": {"number": {"min": 0.0, "max": 1.0, "step": 0.05, "mode": "slider"}}
+        if os.path.isdir(sounds_path):
+            for f in sorted(os.listdir(sounds_path)):
+                if not f.endswith(".mp3"):
+                    continue
+                fl = f.lower()
+                label = _label(f)
+                if "[fajr]" in fl or ("fajr" in fl and "[" not in fl):
+                    fajr_options.append({"label": label, "value": f})
+                elif "[salawat]" in fl or "salawat" in fl:
+                    salawat_options.append({"label": label, "value": f})
+                elif "[day]" in fl or ("adhan" in fl and "fajr" not in fl and "salawat" not in fl):
+                    day_options.append({"label": label, "value": f})
+
+        services = {
+            "preview_adhan": {
+                "name": "Preview Adhan",
+                "description": "Play an adhan sound as a preview on a speaker.",
+                "fields": {
+                    "sound": {
+                        "name": "Sound",
+                        "description": "Which adhan do you want to play?",
+                        "required": True,
+                        "selector": {"select": {"options": fajr_options + day_options}}
+                    },
+                    "speaker": {
+                        "name": "Speaker",
+                        "description": "Which speaker do you want to use?",
+                        "required": True,
+                        "selector": {"entity": {"domain": "media_player"}}
+                    },
+                    "volume": {
+                        "name": "Volume",
+                        "description": "Volume (0-100%). Leave empty to use the configured volume.",
+                        "required": False,
+                        "default": 30,
+                        "selector": {"number": {"min": 0, "max": 100, "step": 5,
+                                                "unit_of_measurement": "%", "mode": "slider"}}
+                    }
                 }
-            }
-        },
-        "test_prayer": {
-            "name": "Test Gebed",
-            "description": "Test de adhan voor een specifiek gebed",
-            "fields": {
-                "prayer": {
-                    "name": "Gebed",
-                    "description": "Welk gebed wil je testen?",
-                    "required": True,
-                    "default": "dhuhr",
-                    "selector": {"select": {"options": [
-                        {"label": "Fajr", "value": "fajr"},
-                        {"label": "Dhuhr", "value": "dhuhr"},
-                        {"label": "Asr", "value": "asr"},
-                        {"label": "Maghrib", "value": "maghrib"},
-                        {"label": "Isha", "value": "isha"},
-                        {"label": "Jumat (vrijdag)", "value": "jumat"},
-                    ]}}
+            },
+            "test_prayer": {
+                "name": "Test Prayer",
+                "description": "Test the adhan for a specific prayer.",
+                "fields": {
+                    "prayer": {
+                        "name": "Prayer",
+                        "description": "Which prayer do you want to test?",
+                        "required": True,
+                        "default": "dhuhr",
+                        "selector": {"select": {"options": [
+                            {"label": "Fajr",    "value": "fajr"},
+                            {"label": "Dhuhr",   "value": "dhuhr"},
+                            {"label": "Asr",     "value": "asr"},
+                            {"label": "Maghrib", "value": "maghrib"},
+                            {"label": "Isha",    "value": "isha"},
+                            {"label": "Jumat (Friday)", "value": "jumat"},
+                        ]}}
+                    }
                 }
-            }
-        },
-        "test_salawat": {
-            "name": "Test Tarhim",
-            "description": "Test de salawat recitatie",
-            "fields": {
-                "sound": {
-                    "name": "Tarhim Geluid",
-                    "description": "Welke salawat wil je afspelen?",
-                    "required": False,
-                    "selector": {"select": {"options": salawat_options}}
-                },
-                "speaker": {
-                    "name": "Speaker",
-                    "description": "Op welke speaker wil je afspelen?",
-                    "required": False,
-                    "selector": {"entity": {"domain": "media_player"}}
-                },
-                "volume": {
-                    "name": "Volume",
-                    "description": "Volume tussen 0.0 en 1.0",
-                    "required": False,
-                    "default": 0.4,
-                    "selector": {"number": {"min": 0.0, "max": 1.0, "step": 0.05, "mode": "slider"}}
+            },
+            "test_salawat": {
+                "name": "Test Salawat",
+                "description": "Test the Salawat recitation before Fajr.",
+                "fields": {
+                    "sound": {
+                        "name": "Sound",
+                        "description": "Which Salawat do you want to play?",
+                        "required": False,
+                        "selector": {"select": {"options": salawat_options}}
+                    },
+                    "speaker": {
+                        "name": "Speaker",
+                        "description": "Which speaker do you want to use?",
+                        "required": False,
+                        "selector": {"entity": {"domain": "media_player"}}
+                    },
+                    "volume": {
+                        "name": "Volume",
+                        "description": "Volume (0-100%). Leave empty to use the configured volume.",
+                        "required": False,
+                        "selector": {"number": {"min": 0, "max": 100, "step": 5,
+                                                "unit_of_measurement": "%", "mode": "slider"}}
+                    }
                 }
             }
         }
-    }
 
-    services_path = os.path.join(os.path.dirname(__file__), "services.yaml")
-    with open(services_path, "w") as f:
-        yaml.dump(services, f, allow_unicode=True, default_flow_style=False)
+        services_path = os.path.join(os.path.dirname(__file__), "services.yaml")
+        with open(services_path, "w") as f:
+            yaml.dump(services, f, allow_unicode=True, default_flow_style=False)
+
+    await hass.async_add_executor_job(_build_and_write)
     _LOGGER.info("services.yaml updated with available sounds")
