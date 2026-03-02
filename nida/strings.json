@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "intro": {
-        "title": "Welcome to Nida 🕌",
+        "title": "Welcome to Nida",
         "description": "Nida brings Islamic prayer times to your home. Choose which features you want to set up.",
         "data": {
           "use_reminders": "Pre-adhan reminders",
@@ -68,7 +68,7 @@
       },
       "notify_pre_adhan": {
         "title": "Notifications — Pre-Adhan",
-        "description": "Send a notification before each prayer. Use {prayer} and {minutes} in the message.",
+        "description": "Send a notification before each prayer. Use {{prayer}} and {{minutes}} in the message.",
         "data": {
           "notify_on_pre_adhan": "Enabled",
           "notify_target_pre_adhan": "Device(s)",
@@ -122,13 +122,91 @@
           "use_notify": "Notifications"
         }
       },
-      "reminders": { "$ref": "config/step/reminders" },
-      "fajr":      { "$ref": "config/step/fajr" },
-      "adhan":     { "$ref": "config/step/adhan" },
-      "notify_prayer":    { "$ref": "config/step/notify_prayer" },
-      "notify_pre_adhan": { "$ref": "config/step/notify_pre_adhan" },
-      "ramadan_audio":    { "$ref": "config/step/ramadan_audio" },
-      "ramadan_notify":   { "$ref": "config/step/ramadan_notify" }
+      "reminders": {
+        "title": "Pre-Adhan Reminders",
+        "description": "Play a sound or TTS message before each prayer.",
+        "data": {
+          "reminder_1_enabled": "Reminder 1 — enabled",
+          "reminder_1_minutes": "Minutes before prayer",
+          "reminder_1_sound": "Sound",
+          "reminder_1_lang": "Language",
+          "reminder_1_tts": "Message",
+          "reminder_2_enabled": "Reminder 2 — enabled",
+          "reminder_2_minutes": "Minutes before prayer",
+          "reminder_2_sound": "Sound",
+          "reminder_2_lang": "Language",
+          "reminder_2_tts": "Message"
+        }
+      },
+      "fajr": {
+        "title": "Fajr Adhan",
+        "description": "Configure the Fajr (dawn) adhan.",
+        "data": {
+          "fajr_sound": "Sound",
+          "fajr_speaker": "Speaker(s)",
+          "fajr_volume": "Volume"
+        }
+      },
+      "adhan": {
+        "title": "Adhan",
+        "description": "Configure the adhan for Dhuhr, Asr, Maghrib and Isha.",
+        "data": {
+          "day_sound": "Sound",
+          "day_speaker": "Speaker(s)",
+          "day_volume": "Volume",
+          "night_volume_enabled": "Reduced night volume",
+          "night_volume": "Night volume",
+          "night_start_hour": "Night starts at"
+        }
+      },
+      "notify_prayer": {
+        "title": "Notifications — Adhan",
+        "description": "Send a notification when it is time for prayer.",
+        "data": {
+          "notify_on_prayer": "Enabled",
+          "notify_target_prayer": "Device(s)",
+          "notify_msg_prayer": "Message",
+          "notify_critical_prayer": "Critical — bypasses Do Not Disturb"
+        }
+      },
+      "notify_pre_adhan": {
+        "title": "Notifications — Pre-Adhan",
+        "description": "Send a notification before each prayer. Use {{prayer}} and {{minutes}} in the message.",
+        "data": {
+          "notify_on_pre_adhan": "Enabled",
+          "notify_target_pre_adhan": "Device(s)",
+          "notify_msg_pre_adhan": "Message",
+          "notify_critical_pre_adhan": "Critical — bypasses Do Not Disturb"
+        }
+      },
+      "ramadan_audio": {
+        "title": "Ramadan — Audio",
+        "description": "Configure Salawat before Fajr and the Suhoor alarm during Ramadan.",
+        "data": {
+          "salawat_enabled": "Salawat enabled",
+          "salawat_sound": "Salawat sound",
+          "salawat_speaker": "Speaker(s)",
+          "salawat_volume": "Volume",
+          "suhoor_enabled": "Suhoor alarm enabled",
+          "suhoor_minutes": "Minutes before Fajr",
+          "suhoor_sound": "Suhoor sound",
+          "suhoor_volume": "Volume"
+        }
+      },
+      "ramadan_notify": {
+        "title": "Ramadan — Notifications",
+        "description": "Send notifications for Salawat and Suhoor.",
+        "data": {
+          "notify_on_salawat": "Salawat — enabled",
+          "notify_target_salawat": "Device(s)",
+          "notify_msg_salawat": "Message",
+          "notify_critical_salawat": "Critical — bypasses Do Not Disturb",
+          "notify_on_suhoor": "Suhoor — enabled",
+          "notify_target_suhoor": "Device(s)",
+          "notify_msg_suhoor": "Message",
+          "notify_critical_suhoor": "Critical — bypasses Do Not Disturb"
+        }
+      }
     }
   }
 }

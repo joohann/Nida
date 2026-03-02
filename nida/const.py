@@ -118,7 +118,7 @@ def get_suhoor_sounds() -> dict:
 
 
 def get_jingle_sounds() -> dict:
-    result = _scan_sounds(["jingle", "nida"],
+    result = _scan_sounds(["jingle"],
                           keyword_exclude=["adhan", "fajr", "salawat", "suhoor"])
     return result
 
