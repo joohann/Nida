@@ -30,7 +30,7 @@ jobs:
             "$SOUNDS/Adhan [fajr] - Amer Marei.mp3"
             "$SOUNDS/Adhan [fajr] - Hafiz Fahad Shah.mp3"
             "$SOUNDS/Nida [jingle] - Announcement.mp3"
-            "$SOUNDS/Ramadan [salawat] - Ustaz Hendra.mp3"
+            "$SOUNDS/Ramadan [tarhim] - Ustaz Hendra.mp3"
           )
           for f in "${BASE_FILES[@]}"; do
             if [ -f "$f" ]; then
@@ -81,7 +81,7 @@ jobs:
             echo "✅ pack-adhan.zip: ${#ADHAN[@]} bestanden"
           fi
 
-          # pack-ramadan.zip — alle [salawat] en [suhoor] bestanden
+          # pack-ramadan.zip — alle [tarhim] en [suhoor] bestanden
           mapfile -t RAMADAN < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "\[(salawat|suhoor)\]" | sort)
           if [ ${#RAMADAN[@]} -gt 0 ]; then
             zip pack-ramadan.zip "${RAMADAN[@]}"
