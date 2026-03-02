@@ -10,6 +10,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,10 +36,9 @@ jobs:
               echo "⚠️  Niet gevonden: $f"
             fi
           done
-          # Sla lijst op voor hergebruik
           printf '%s\n' "${BASE_FILES[@]}" > /tmp/base_sounds.txt
 
-      # ── nida.zip — integratie inclusief basis sounds ────────────────────────
+      # ── nida.zip — integratie inclusief kaart en basis sounds ──────────────
       - name: Create nida.zip
         run: |
           # Integratie bestanden (zonder sounds map)
@@ -50,13 +50,21 @@ jobs:
             --exclude "sounds/*"
           cd ..
 
+          # Voeg Lovelace kaart toe onder www/ pad in de zip
+          if [ -f "www/nida-card.js" ]; then
+            zip nida.zip www/nida-card.js
+            echo "✅ www/nida-card.js toegevoegd"
+          else
+            echo "⚠️  www/nida-card.js niet gevonden"
+          fi
+
           # Voeg basis sounds toe
           while IFS= read -r f; do
             [ -f "$f" ] && zip nida.zip "$f" && echo "➕ $f"
           done < /tmp/base_sounds.txt
 
-          echo "=== nida.zip inhoud (sounds) ==="
-          unzip -l nida.zip | grep sounds
+          echo "=== nida.zip inhoud ==="
+          unzip -l nida.zip
 
       # ── Uitbreiding packs (automatisch op basis van [categorie]) ───────────
       - name: Create extension packs
