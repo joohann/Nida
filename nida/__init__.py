@@ -1,4 +1,19 @@
-"""Nida Integration."""
+"""Nida Integration — v0.5.0"""
+# Changelog:
+# v0.5.0 - cover art URL via HA network module (geen lege base URL meer)
+# v0.4.9 - cover.jpg, debug log voor cover art URL
+# v0.4.8 - Sonos cover art metadata (title, artist, album, images)
+# v0.4.7 - cover art metadata voor Sonos + andere players
+# v0.4.6 - logo.png → cover.jpg voor cover art
+# v0.4.5 - cover.jpg altijd kopiëren voor cover art
+# v0.4.4 - service descriptions in English
+# v0.4.3 - test_pre_adhan sound+speaker+volume, test_notification defaults
+# v0.4.2 - test_adhan speaker+volume fix
+# v0.4.1 - reminder string fix, services.yaml parse fix
+# v0.4.0 - check_suhoor, tarhim overlap fix, placeholder fix, service namen clean
+# v0.3.0 - async_setup_services, tarhim auto-timing, volume handling
+# v0.2.0 - cover art, salawat→tarhim rename
+# v0.1.0 - initiële release
 from __future__ import annotations
 
 from datetime import timedelta, datetime
@@ -26,6 +41,138 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor"]
 
 
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Schrijf services.yaml synchroon zodat HA hem correct leest bij load."""
+    import yaml
+
+    def _write_services_yaml():
+        sounds_path = hass.config.path("www/nida/sounds")
+
+        def _label(f):
+            import re
+            name = f.replace(".mp3", "")
+            m = re.match(r'^.+?\[.+?\]\s*-\s*(.+)$', name)
+            return m.group(1).strip() if m else name.replace("-", " ").title()
+
+        fajr_opts = []
+        day_opts = []
+        tarhim_opts = []
+        suhoor_opts = []
+        jingle_opts = []
+
+        if os.path.isdir(sounds_path):
+            for f in sorted(os.listdir(sounds_path)):
+                if not f.endswith(".mp3"):
+                    continue
+                fl = f.lower()
+                lbl = _label(f)
+                if "[fajr]" in fl:
+                    fajr_opts.append({"label": lbl, "value": f})
+                elif "[tarhim]" in fl or "tarhim" in fl:
+                    tarhim_opts.append({"label": lbl, "value": f})
+                elif "[suhoor]" in fl or "suhoor" in fl:
+                    suhoor_opts.append({"label": lbl, "value": f})
+                elif "[jingle]" in fl or "jingle" in fl:
+                    jingle_opts.append({"label": lbl, "value": f})
+                elif "[day]" in fl or "adhan" in fl:
+                    day_opts.append({"label": lbl, "value": f})
+
+        _spk = {"name": "Speaker", "description": "Which speaker do you want to use?", "required": False,
+                "selector": {"entity": {"domain": "media_player"}}}
+        _vol = {"name": "Volume", "description": "Volume (0-100%)", "required": False,
+                "default": 30, "selector": {"number": {"min": 0, "max": 100, "step": 5,
+                "unit_of_measurement": "%", "mode": "slider"}}}
+
+        services = {
+            "test_pre_adhan": {
+                "name": "Test Pre-adhan",
+                "description": "Test a pre-adhan reminder (sound + TTS).",
+                "fields": {
+                    "reminder": {"name": "Reminder", "required": False, "default": "1",
+                        "selector": {"select": {"options": [
+                            {"label": "Reminder 1", "value": "1"},
+                            {"label": "Reminder 2", "value": "2"},
+                        ]}}},
+                    "prayer": {"name": "Prayer", "required": False, "default": "Dhuhr",
+                        "selector": {"text": {}}},
+                    "sound": {"name": "Jingle", "required": False,
+                        "selector": {"select": {"options": jingle_opts}}},
+                    "speaker": dict(_spk),
+                    "volume": dict(_vol),
+                }
+            },
+            "test_adhan": {
+                "name": "Test Adhan",
+                "description": "Test the adhan for a specific prayer.",
+                "fields": {
+                    "prayer": {"name": "Prayer", "required": True, "default": "dhuhr",
+                        "selector": {"select": {"options": [
+                            {"label": "Fajr", "value": "fajr"},
+                            {"label": "Dhuhr", "value": "dhuhr"},
+                            {"label": "Asr", "value": "asr"},
+                            {"label": "Maghrib", "value": "maghrib"},
+                            {"label": "Isha", "value": "isha"},
+                            {"label": "Jumat (vrijdag)", "value": "jumat"},
+                        ]}}},
+                    "speaker": dict(_spk),
+                    "volume": dict(_vol),
+                }
+            },
+            "test_tarhim": {
+                "name": "Test Tarhim",
+                "description": "Test the Tarhim recitation before Fajr.",
+                "fields": {
+                    "sound": {"name": "Sound", "required": False,
+                        "selector": {"select": {"options": tarhim_opts}}},
+                    "speaker": dict(_spk),
+                    "volume": dict(_vol),
+                }
+            },
+            "test_suhoor": {
+                "name": "Test Suhoor",
+                "description": "Test the Suhoor alarm.",
+                "fields": {
+                    "sound": {"name": "Sound", "required": False,
+                        "selector": {"select": {"options": suhoor_opts}}},
+                    "speaker": dict(_spk),
+                    "volume": dict(_vol),
+                }
+            },
+            "test_notification": {
+                "name": "Test Notificatie",
+                "description": "Send a test notification.",
+                "fields": {
+                    "title": {"name": "Title", "required": False, "default": "Nida 🕌",
+                        "selector": {"text": {}}},
+                    "message": {"name": "Message", "required": False, "default": "Test notification from Nida",
+                        "selector": {"text": {}}},
+                }
+            },
+            "preview": {
+                "name": "Preview",
+                "description": "Play a sound as preview.",
+                "fields": {
+                    "sound": {"name": "Sound", "required": True,
+                        "selector": {"select": {"options": fajr_opts + day_opts + tarhim_opts + suhoor_opts + jingle_opts}}},
+                    "speaker": {**dict(_spk), "required": True},
+                    "volume": dict(_vol),
+                }
+            },
+        }
+
+        class NoAliasDumper(yaml.Dumper):
+            def ignore_aliases(self, data):
+                return True
+
+        services_path = os.path.join(os.path.dirname(__file__), "services.yaml")
+        with open(services_path, "w") as f:
+            yaml.dump(services, f, allow_unicode=True, default_flow_style=False, Dumper=NoAliasDumper)
+        _LOGGER.info("Nida services.yaml geschreven bij async_setup")
+
+    await hass.async_add_executor_job(_write_services_yaml)
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = PrayerTimesCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
@@ -37,6 +184,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await async_setup_adhan_scheduler(hass, entry, coordinator)
     await async_update_services_yaml(hass)
     await async_setup_services(hass, entry)
+    # Herlaad services zodat HA de nieuwe yaml oppikt
+    await hass.services.async_call("homeassistant", "reload_custom_templates", blocking=False)
     return True
 
 
@@ -50,12 +199,27 @@ async def async_copy_sounds(hass: HomeAssistant):
         sounds_dst = hass.config.path("www/nida/sounds")
         www_nida    = hass.config.path("www/nida")
 
-        if not os.path.isdir(sounds_src):
-            _LOGGER.warning("Sounds source directory not found: %s", sounds_src)
-            return 0
-
         os.makedirs(sounds_dst, exist_ok=True)
         os.makedirs(www_nida, exist_ok=True)
+
+        # Logo kopiëren voor cover art
+        cover_dst = os.path.join(www_nida, "cover.jpg")
+        if not os.path.exists(cover_dst):
+            for candidate in [
+                os.path.join(integration_dir, "brand", "logo.png"),
+                os.path.join(integration_dir, "images", "logo.png"),
+                os.path.join(integration_dir, "logo.png"),
+            ]:
+                if os.path.exists(candidate):
+                    shutil.copy2(candidate, cover_dst)
+                    _LOGGER.info("Nida logo gekopieerd naar www/nida/cover.jpg")
+                    break
+            else:
+                _LOGGER.debug("Geen cover.jpg gevonden in integration map")
+
+        if not os.path.isdir(sounds_src):
+            _LOGGER.debug("Geen sounds in integration map %s — sounds worden beheerd via www/nida/sounds", sounds_src)
+            return 0
 
         copied = 0
 
@@ -68,21 +232,6 @@ async def async_copy_sounds(hass: HomeAssistant):
                     shutil.copy2(src, dst)
                     copied += 1
                     _LOGGER.info("Copied sound: %s", f)
-
-        # Logo kopiëren voor cover art — zoek in brand/ of images/
-        logo_dst = os.path.join(www_nida, "logo.png")
-        if not os.path.exists(logo_dst):
-            for candidate in [
-                os.path.join(integration_dir, "images", "logo.png"),
-                os.path.join(integration_dir, "brand", "logo.png"),
-                os.path.join(integration_dir, "logo.png"),
-            ]:
-                if os.path.exists(candidate):
-                    shutil.copy2(candidate, logo_dst)
-                    _LOGGER.info("Nida logo gekopieerd naar www/nida/logo.png")
-                    break
-            else:
-                _LOGGER.debug("Geen logo.png gevonden — cover art niet beschikbaar")
 
         return copied
 
@@ -174,6 +323,9 @@ async def _play_media_with_volume(
     volume: float,
     cover_url: str | None = None,
     restore_delay: float = 30.0,
+    title: str = "Nida",
+    artist: str = "",
+    album: str = "Nida Prayer Times",
 ) -> None:
     """
     Speel media af met correcte volume-handling voor alle player-types.
@@ -210,9 +362,15 @@ async def _play_media_with_volume(
     # Stap 4: afspelen — extra bevat cover art voor compatibele players
     extra: dict = {}
     if cover_url:
-        # thumbnail = Cast/Google Home, media_image_url = generieke players
+        _LOGGER.debug("Cover art URL: %s", cover_url)
         extra["thumbnail"] = cover_url
         extra["media_image_url"] = cover_url
+        extra["metadata"] = {
+            "title": title,
+            "artist": artist,
+            "album": album,
+            "images": [{"url": cover_url}],
+        }
 
     try:
         await hass.services.async_call(
@@ -243,12 +401,38 @@ async def _play_media_with_volume(
 
     hass.async_create_task(_restore())
 
-
-def _get_logo_url(hass) -> str:
-    """Geef de volledige URL van het Nida logo terug voor cover art."""
-    base_url = hass.config.internal_url or hass.config.external_url or ""
+async def _get_cover_url(hass) -> str:
+    """Geef de volledige URL van de Nida cover art terug."""
+    try:
+        from homeassistant.components.network import async_get_url
+        base_url = await async_get_url(hass, allow_internal=True, allow_external=False)
+    except Exception:
+        base_url = (
+            hass.config.internal_url
+            or hass.config.external_url
+            or "http://homeassistant.local:8123"
+        )
     base_url = base_url.rstrip("/")
-    return f"{base_url}/local/nida/logo.png"
+    return f"{base_url}/local/nida/cover.jpg"
+
+
+def _parse_sound_meta(filename: str) -> tuple[str, str, str]:
+    """Haal title, artist en album uit bestandsnaam.
+
+    Formaat: 'Type [tag] - Artiest.mp3'
+    Returns: (title, artist, album)
+    """
+    import re
+    name = filename.replace(".mp3", "")
+    m = re.match(r'^(.+?)\s*\[(.+?)\]\s*-\s*(.+)$', name)
+    if m:
+        sound_type = m.group(1).strip()   # bijv. "Adhan", "Ramadan"
+        tag = m.group(2).strip()           # bijv. "fajr", "tarhim"
+        artist = m.group(3).strip()
+        title = f"{sound_type} ({tag.capitalize()})"
+        album = "Nida Prayer Times"
+        return title, artist, album
+    return name, "Nida", "Nida Prayer Times"
 
 
 async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
@@ -277,7 +461,7 @@ async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
 
     play_method = options.get(CONF_PLAY_METHOD, "media_player")
     media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
-    cover_url = _get_logo_url(hass)
+    cover_url = await _get_cover_url(hass)
 
     _LOGGER.info("Adhan %s: %s op %s (volume %.0f%%)", prayer_type, sound, speaker, volume * 100)
 
@@ -292,10 +476,12 @@ async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
             }
         )
     else:
+        title, artist, album = _parse_sound_meta(sound)
         await _play_media_with_volume(
             hass, speaker, media_url, volume,
             cover_url=cover_url,
             restore_delay=float(options.get("adhan_restore_delay", 30)),
+            title=title, artist=artist, album=album,
         )
 
     prayer_display = prayer_type.capitalize()
@@ -431,10 +617,12 @@ async def check_reminders(hass, entry, coordinator, now_ts, prayers):
                 if sound and not skip_audio:
                     media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
                     try:
+                        _t, _a, _al = _parse_sound_meta(sound)
                         await _play_media_with_volume(
                             hass, speaker, media_url, volume,
-                            cover_url=_get_logo_url(hass),
+                            cover_url=await _get_cover_url(hass),
                             restore_delay=10.0,
+                            title=_t, artist=_a, album=_al,
                         )
                         await asyncio.sleep(3)
                     except Exception as e:
@@ -592,10 +780,12 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
                 "Tarhim afspelen: %s (%.1fs) — eindigt ~5s voor Fajr om %s",
                 sound, duration, timings["Fajr"],
             )
+            _t, _a, _al = _parse_sound_meta(sound)
             await _play_media_with_volume(
                 hass, speaker, media_url, volume,
-                cover_url=_get_logo_url(hass),
+                cover_url=await _get_cover_url(hass),
                 restore_delay=duration + BUFFER_SECONDS + 5,
+                title=_t, artist=_a, album=_al,
             )
             await async_send_notification(
                 hass, entry,
@@ -651,10 +841,12 @@ async def check_suhoor(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
 
             if sound:
                 media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+                _t, _a, _al = _parse_sound_meta(sound)
                 await _play_media_with_volume(
                     hass, speaker, media_url, volume,
-                    cover_url=_get_logo_url(hass),
+                    cover_url=await _get_cover_url(hass),
                     restore_delay=30.0,
+                    title=_t, artist=_a, album=_al,
                 )
 
             await async_send_notification(
@@ -688,16 +880,60 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
                  "volume_level": volume, "announce": True}
             )
         else:
+            _t, _a, _al = _parse_sound_meta(sound)
             await _play_media_with_volume(
                 hass, speaker, media_url, volume,
-                cover_url=_get_logo_url(hass),
+                cover_url=await _get_cover_url(hass),
                 restore_delay=30.0,
+                title=_t, artist=_a, album=_al,
             )
 
     async def handle_test_prayer(call):
         """Test adhan voor een specifiek gebed."""
         prayer = call.data.get("prayer", "dhuhr")
-        await play_adhan(hass, entry, prayer)
+        options = entry.options if entry.options else entry.data
+
+        # Bepaal sound op basis van gebed
+        if prayer == "fajr":
+            default_sound = options.get(CONF_FAJR_SOUND, "")
+        elif prayer == "jumat":
+            default_sound = options.get("jumat_sound", options.get(CONF_DAY_SOUND, ""))
+        else:
+            default_sound = options.get(CONF_DAY_SOUND, "")
+
+        if not default_sound:
+            _LOGGER.warning("Geen sound geconfigureerd voor %s", prayer)
+            return
+
+        # Speaker: gebruik override of geconfigureerde waarde
+        speaker_override = call.data.get("speaker")
+        if speaker_override:
+            speakers = [speaker_override]
+        elif prayer == "fajr":
+            speakers = options.get(CONF_FAJR_SPEAKER, ["media_player.adhan_speakers"])
+        else:
+            speakers = options.get(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"])
+        if isinstance(speakers, str):
+            speakers = [speakers]
+
+        # Volume: gebruik override (0-100) of geconfigureerde waarde
+        volume_override = call.data.get("volume")
+        if volume_override is not None:
+            raw = float(volume_override)
+        elif prayer == "fajr":
+            raw = float(options.get(CONF_FAJR_VOLUME, 20))
+        else:
+            raw = float(options.get(CONF_DAY_VOLUME, 50))
+        volume = raw / 100.0  # altijd 0-100 → 0.0-1.0
+
+        media_url = await _get_media_url(hass, f"/local/nida/sounds/{default_sound}")
+        _t, _a, _al = _parse_sound_meta(default_sound)
+        await _play_media_with_volume(
+            hass, speakers, media_url, volume,
+            cover_url=await _get_cover_url(hass),
+            restore_delay=60.0,
+            title=_t, artist=_a, album=_al,
+        )
 
     async def handle_test_tarhim(call):
         """Test tarhim."""
@@ -713,33 +949,51 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
             _LOGGER.warning("Geen tarhim sound geconfigureerd")
             return
         media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+        _t, _a, _al = _parse_sound_meta(sound)
         await _play_media_with_volume(
             hass, speaker, media_url, volume,
-            cover_url=_get_logo_url(hass),
+            cover_url=await _get_cover_url(hass),
             restore_delay=60.0,
+            title=_t, artist=_a, album=_al,
         )
 
     async def handle_test_reminder(call):
         """Test pre-adhan reminder (sound + TTS)."""
         options = entry.options if entry.options else entry.data
-        r_num = call.data.get("reminder", 1)
+        r_num = int(call.data.get("reminder", 1))
         minutes = options.get(f"reminder_{r_num}_minutes", 10)
         prayer = call.data.get("prayer", "Dhuhr")
-        sound = options.get(f"reminder_{r_num}_sound", "")
         lang = options.get(f"reminder_{r_num}_lang", "nl")
         text = options.get(f"reminder_{r_num}_tts", "Over [minutes] minuten is het tijd voor [prayer]")
         text = text.replace("[minutes]", str(int(minutes))).replace("[prayer]", prayer)
-        speaker = options.get(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"])
-        if isinstance(speaker, str):
-            speaker = [speaker]
-        volume = _get_volume(options, CONF_DAY_VOLUME, 50)
+
+        # Sound: gebruik override of geconfigureerde jingle
+        sound = call.data.get("sound") or options.get(f"reminder_{r_num}_sound", "")
+
+        # Speaker: gebruik override of geconfigureerde waarde
+        speaker_override = call.data.get("speaker")
+        if speaker_override:
+            speaker = [speaker_override]
+        else:
+            speaker = options.get(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"])
+            if isinstance(speaker, str):
+                speaker = [speaker]
+
+        # Volume: gebruik override (0-100) of geconfigureerde waarde
+        volume_override = call.data.get("volume")
+        if volume_override is not None:
+            volume = float(volume_override) / 100.0
+        else:
+            volume = _get_volume(options, CONF_DAY_VOLUME, 50)
 
         if sound:
             media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+            _t, _a, _al = _parse_sound_meta(sound)
             await _play_media_with_volume(
                 hass, speaker, media_url, volume,
-                cover_url=_get_logo_url(hass),
+                cover_url=await _get_cover_url(hass),
                 restore_delay=10.0,
+                title=_t, artist=_a, album=_al,
             )
             await asyncio.sleep(3)
 
@@ -778,10 +1032,12 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
             _LOGGER.warning("Geen suhoor sound geconfigureerd")
             return
         media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+        _t, _a, _al = _parse_sound_meta(sound)
         await _play_media_with_volume(
             hass, speaker, media_url, volume,
-            cover_url=_get_logo_url(hass),
+            cover_url=await _get_cover_url(hass),
             restore_delay=30.0,
+            title=_t, artist=_a, album=_al,
         )
         await async_send_notification(
             hass, entry,
@@ -789,52 +1045,12 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
             notify_type="suhoor",
         )
 
-    hass.services.async_register(
-        DOMAIN, "6_preview", handle_preview,
-        schema=vol.Schema({
-            vol.Required("sound"): str,
-            vol.Optional("speaker"): str,
-            vol.Optional("volume"): vol.Any(None, vol.Coerce(int)),
-        })
-    )
-    hass.services.async_register(
-        DOMAIN, "2_adhan", handle_test_prayer,
-        schema=vol.Schema({
-            vol.Optional("prayer", default="dhuhr"): vol.In(
-                ["fajr", "dhuhr", "asr", "maghrib", "isha", "jumat"]
-            ),
-        })
-    )
-    hass.services.async_register(
-        DOMAIN, "3_tarhim", handle_test_tarhim,
-        schema=vol.Schema({
-            vol.Optional("sound"): str,
-            vol.Optional("speaker"): str,
-            vol.Optional("volume"): vol.Any(None, vol.Coerce(int)),
-        })
-    )
-    hass.services.async_register(
-        DOMAIN, "4_suhoor", handle_test_suhoor,
-        schema=vol.Schema({
-            vol.Optional("sound"): str,
-            vol.Optional("speaker"): str,
-            vol.Optional("volume"): vol.Any(None, vol.Coerce(int)),
-        })
-    )
-    hass.services.async_register(
-        DOMAIN, "1_pre_adhan", handle_test_reminder,
-        schema=vol.Schema({
-            vol.Optional("reminder", default=1): vol.In([1, 2]),
-            vol.Optional("prayer", default="Dhuhr"): str,
-        })
-    )
-    hass.services.async_register(
-        DOMAIN, "5_notification", handle_test_notification,
-        schema=vol.Schema({
-            vol.Optional("title"): str,
-            vol.Optional("message"): str,
-        })
-    )
+    hass.services.async_register(DOMAIN, "preview",          handle_preview)
+    hass.services.async_register(DOMAIN, "test_adhan",        handle_test_prayer)
+    hass.services.async_register(DOMAIN, "test_tarhim",       handle_test_tarhim)
+    hass.services.async_register(DOMAIN, "test_suhoor",       handle_test_suhoor)
+    hass.services.async_register(DOMAIN, "test_pre_adhan",    handle_test_reminder)
+    hass.services.async_register(DOMAIN, "test_notification", handle_test_notification)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -932,7 +1148,7 @@ async def async_update_services_yaml(hass: HomeAssistant):
 
         _volume_field = {
             "name": "Volume",
-            "description": "Volume (0-100%). Leeg laten voor geconfigureerd volume.",
+            "description": "Volume (0-100%). Leave empty to use configured volume.",
             "required": False,
             "default": 30,
             "selector": {"number": {"min": 0, "max": 100, "step": 5,
@@ -940,19 +1156,19 @@ async def async_update_services_yaml(hass: HomeAssistant):
         }
         _speaker_field = {
             "name": "Speaker",
-            "description": "Welke speaker wil je gebruiken?",
+            "description": "Which speaker do you want to use?",
             "required": False,
             "selector": {"entity": {"domain": "media_player"}}
         }
 
         services = {
-            "6_preview": {
-                "name": "6. Preview",
-                "description": "Speel een adhan of jingle als preview op een speaker.",
+            "preview": {
+                "name": "Preview",
+                "description": "Play an adhan or jingle as preview on a speaker.",
                 "fields": {
                     "sound": {
                         "name": "Sound",
-                        "description": "Welk geluid wil je afspelen?",
+                        "description": "Which sound do you want to play?",
                         "required": True,
                         "selector": {"select": {"options": fajr_options + day_options + tarhim_options + jingle_options}}
                     },
@@ -960,13 +1176,13 @@ async def async_update_services_yaml(hass: HomeAssistant):
                     "volume": _volume_field,
                 }
             },
-            "2_adhan": {
-                "name": "2. Adhan",
-                "description": "Test de adhan voor een specifiek gebed.",
+            "test_adhan": {
+                "name": "Test Adhan",
+                "description": "Test the adhan for a specific prayer.",
                 "fields": {
                     "prayer": {
                         "name": "Prayer",
-                        "description": "Welk gebed wil je testen?",
+                        "description": "Which prayer do you want to test?",
                         "required": True,
                         "default": "dhuhr",
                         "selector": {"select": {"options": [
@@ -977,16 +1193,18 @@ async def async_update_services_yaml(hass: HomeAssistant):
                             {"label": "Isha",            "value": "isha"},
                             {"label": "Jumat (vrijdag)", "value": "jumat"},
                         ]}}
-                    }
+                    },
+                    "speaker": _speaker_field,
+                    "volume": _volume_field,
                 }
             },
-            "3_tarhim": {
-                "name": "3. Tarhim",
-                "description": "Test de Tarhim recitatie voor Fajr.",
+            "test_tarhim": {
+                "name": "Test Tarhim",
+                "description": "Test the Tarhim recitation before Fajr.",
                 "fields": {
                     "sound": {
                         "name": "Sound",
-                        "description": "Welk tarhim wil je afspelen?",
+                        "description": "Which tarhim do you want to play?",
                         "required": False,
                         "selector": {"select": {"options": tarhim_options}}
                     },
@@ -994,13 +1212,13 @@ async def async_update_services_yaml(hass: HomeAssistant):
                     "volume": _volume_field,
                 }
             },
-            "4_suhoor": {
-                "name": "4. Suhoor",
-                "description": "Test het suhoor alarm.",
+            "test_suhoor": {
+                "name": "Test Suhoor",
+                "description": "Test the Suhoor alarm.",
                 "fields": {
                     "sound": {
                         "name": "Sound",
-                        "description": "Welk suhoor geluid wil je afspelen?",
+                        "description": "Which suhoor sound do you want to play?",
                         "required": False,
                         "selector": {"select": {"options": suhoor_options}}
                     },
@@ -1008,43 +1226,53 @@ async def async_update_services_yaml(hass: HomeAssistant):
                     "volume": _volume_field,
                 }
             },
-            "1_pre_adhan": {
-                "name": "1. Pre-adhan reminder",
-                "description": "Test een pre-adhan reminder (geluid + TTS).",
+            "test_pre_adhan": {
+                "name": "Test Pre-adhan",
+                "description": "Test a pre-adhan reminder (sound + TTS).",
                 "fields": {
                     "reminder": {
                         "name": "Reminder",
-                        "description": "Welke reminder wil je testen?",
+                        "description": "Which reminder do you want to test?",
                         "required": False,
-                        "default": 1,
+                        "default": "1",
                         "selector": {"select": {"options": [
-                            {"label": "Reminder 1", "value": 1},
-                            {"label": "Reminder 2", "value": 2},
+                            {"label": "Reminder 1", "value": "1"},
+                            {"label": "Reminder 2", "value": "2"},
                         ]}}
                     },
                     "prayer": {
-                        "name": "Gebed",
-                        "description": "Naam van het gebed (voor in de TTS tekst).",
+                        "name": "Prayer",
+                        "description": "Name of the prayer (used in TTS text).",
                         "required": False,
                         "default": "Dhuhr",
                         "selector": {"text": {}}
                     },
+                    "sound": {
+                        "name": "Jingle",
+                        "description": "Which jingle do you want to play?",
+                        "required": False,
+                        "selector": {"select": {"options": jingle_options}}
+                    },
+                    "speaker": _speaker_field,
+                    "volume": _volume_field,
                 }
             },
-            "5_notification": {
-                "name": "5. Notificatie",
-                "description": "Stuur een test notificatie naar geconfigureerde apparaten.",
+            "test_notification": {
+                "name": "Test Notificatie",
+                "description": "Send a test notification to configured devices.",
                 "fields": {
                     "title": {
-                        "name": "Titel",
-                        "description": "Titel van de notificatie (optioneel).",
+                        "name": "Title",
+                        "description": "Title of the notification.",
                         "required": False,
+                        "default": "Nida 🕌",
                         "selector": {"text": {}}
                     },
                     "message": {
-                        "name": "Bericht",
-                        "description": "Tekst van de notificatie (optioneel).",
+                        "name": "Message",
+                        "description": "Text of the notification.",
                         "required": False,
+                        "default": "Test notification from Nida",
                         "selector": {"text": {}}
                     },
                 }
@@ -1053,7 +1281,12 @@ async def async_update_services_yaml(hass: HomeAssistant):
 
         services_path = os.path.join(os.path.dirname(__file__), "services.yaml")
         with open(services_path, "w") as f:
-            yaml.dump(services, f, allow_unicode=True, default_flow_style=False)
+            # Gebruik custom dumper zonder YAML anchors — HA parser heeft daar moeite mee
+            class NoAliasDumper(yaml.Dumper):
+                def ignore_aliases(self, data):
+                    return True
+
+            yaml.dump(services, f, allow_unicode=True, default_flow_style=False, Dumper=NoAliasDumper)
 
     await hass.async_add_executor_job(_build_and_write)
     _LOGGER.info("services.yaml bijgewerkt met beschikbare geluiden")
