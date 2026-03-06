@@ -225,6 +225,9 @@ Nida includes a beautiful custom Lovelace card (`nida-card.js`) with a live coun
 
 The card is automatically copied to `/www/nida/nida-card.js` on installation.
 
+![Image](https://github.com/user-attachments/assets/8d4f679b-e885-4b49-9712-1ba9cc77a805)
+![Image](https://github.com/user-attachments/assets/f9dd210f-f15e-4d0c-b599-de69e2fa169a)
+
 **Step 1 — Add the resource** (once):
 
 Go to **Settings → Dashboards → ⋮ → Resources → Add Resource**
