@@ -19,6 +19,40 @@
           "method": "Calculation method"
         }
       },
+      "speakers": {
+        "title": "Speakers",
+        "description": "Select which speakers to use for each audio type.",
+        "data": {
+          "fajr_speaker": "Fajr speaker(s)",
+          "day_speaker": "Adhan speaker(s)",
+          "tarhim_speaker": "Tarhim speaker(s)",
+          "suhoor_speaker": "Suhoor speaker(s)"
+        }
+      },
+      "volumes": {
+        "title": "Volumes",
+        "description": "Configure volume levels. Night volume applies to Tarhim and all adhans between night start and end time.",
+        "data": {
+          "fajr_volume": "Fajr volume",
+          "day_volume": "Adhan volume",
+          "suhoor_volume": "Suhoor volume (alarm — not affected by night mode)",
+          "night_volume_enabled": "Enable night volume",
+          "night_volume": "Night volume",
+          "night_start_hour": "Night starts at",
+          "night_end_mode": "Night ends at",
+          "night_end_hour": "Night end time (only when 'Fixed time' is selected)"
+        }
+      },
+      "sounds": {
+        "title": "Sounds",
+        "description": "Select the audio files for each prayer type.",
+        "data": {
+          "fajr_sound": "Fajr sound",
+          "day_sound": "Adhan sound",
+          "tarhim_sound": "Tarhim sound",
+          "suhoor_sound": "Suhoor sound"
+        }
+      },
       "reminders": {
         "title": "Pre-Adhan Reminders",
         "description": "Play a sound or TTS message before each prayer.",
@@ -33,27 +67,6 @@
           "reminder_2_sound": "Sound",
           "reminder_2_lang": "Language",
           "reminder_2_tts": "Message"
-        }
-      },
-      "fajr": {
-        "title": "Fajr Adhan",
-        "description": "Configure the Fajr (dawn) adhan.",
-        "data": {
-          "fajr_sound": "Sound",
-          "fajr_speaker": "Speaker(s)",
-          "fajr_volume": "Volume"
-        }
-      },
-      "adhan": {
-        "title": "Adhan",
-        "description": "Configure the adhan for Dhuhr, Asr, Maghrib and Isha.",
-        "data": {
-          "day_sound": "Sound",
-          "day_speaker": "Speaker(s)",
-          "day_volume": "Volume",
-          "night_volume_enabled": "Reduced night volume",
-          "night_volume": "Night volume",
-          "night_start_hour": "Night starts at"
         }
       },
       "notify_prayer": {
@@ -78,16 +91,11 @@
       },
       "ramadan_audio": {
         "title": "Ramadan — Audio",
-        "description": "Configure Salawat before Fajr and the Suhoor alarm during Ramadan.",
+        "description": "Configure Tarhim before Fajr and the Suhoor alarm during Ramadan. Sounds and speakers are configured in the Sounds and Speakers steps.",
         "data": {
-          "salawat_enabled": "Salawat enabled",
-          "salawat_sound": "Salawat sound",
-          "salawat_speaker": "Speaker(s)",
-          "salawat_volume": "Volume",
+          "tarhim_enabled": "Tarhim enabled",
           "suhoor_enabled": "Suhoor alarm enabled",
-          "suhoor_minutes": "Minutes before Fajr",
-          "suhoor_sound": "Suhoor sound",
-          "suhoor_volume": "Volume"
+          "suhoor_minutes": "Minutes before Fajr"
         }
       },
       "ramadan_notify": {
@@ -122,6 +130,40 @@
           "use_notify": "Notifications"
         }
       },
+      "speakers": {
+        "title": "Speakers",
+        "description": "Select which speakers to use for each audio type.",
+        "data": {
+          "fajr_speaker": "Fajr speaker(s)",
+          "day_speaker": "Adhan speaker(s)",
+          "tarhim_speaker": "Tarhim speaker(s)",
+          "suhoor_speaker": "Suhoor speaker(s)"
+        }
+      },
+      "volumes": {
+        "title": "Volumes",
+        "description": "Configure volume levels. Night volume applies to Tarhim and all adhans between night start and end time.",
+        "data": {
+          "fajr_volume": "Fajr volume",
+          "day_volume": "Adhan volume",
+          "suhoor_volume": "Suhoor volume (alarm — not affected by night mode)",
+          "night_volume_enabled": "Enable night volume",
+          "night_volume": "Night volume",
+          "night_start_hour": "Night starts at",
+          "night_end_mode": "Night ends at",
+          "night_end_hour": "Night end time (only when 'Fixed time' is selected)"
+        }
+      },
+      "sounds": {
+        "title": "Sounds",
+        "description": "Select the audio files for each prayer type.",
+        "data": {
+          "fajr_sound": "Fajr sound",
+          "day_sound": "Adhan sound",
+          "tarhim_sound": "Tarhim sound",
+          "suhoor_sound": "Suhoor sound"
+        }
+      },
       "reminders": {
         "title": "Pre-Adhan Reminders",
         "description": "Play a sound or TTS message before each prayer.",
@@ -136,27 +178,6 @@
           "reminder_2_sound": "Sound",
           "reminder_2_lang": "Language",
           "reminder_2_tts": "Message"
-        }
-      },
-      "fajr": {
-        "title": "Fajr Adhan",
-        "description": "Configure the Fajr (dawn) adhan.",
-        "data": {
-          "fajr_sound": "Sound",
-          "fajr_speaker": "Speaker(s)",
-          "fajr_volume": "Volume"
-        }
-      },
-      "adhan": {
-        "title": "Adhan",
-        "description": "Configure the adhan for Dhuhr, Asr, Maghrib and Isha.",
-        "data": {
-          "day_sound": "Sound",
-          "day_speaker": "Speaker(s)",
-          "day_volume": "Volume",
-          "night_volume_enabled": "Reduced night volume",
-          "night_volume": "Night volume",
-          "night_start_hour": "Night starts at"
         }
       },
       "notify_prayer": {
@@ -181,16 +202,11 @@
       },
       "ramadan_audio": {
         "title": "Ramadan — Audio",
-        "description": "Configure Salawat before Fajr and the Suhoor alarm during Ramadan.",
+        "description": "Configure Tarhim before Fajr and the Suhoor alarm during Ramadan. Sounds and speakers are configured in the Sounds and Speakers steps.",
         "data": {
-          "salawat_enabled": "Salawat enabled",
-          "salawat_sound": "Salawat sound",
-          "salawat_speaker": "Speaker(s)",
-          "salawat_volume": "Volume",
+          "tarhim_enabled": "Tarhim enabled",
           "suhoor_enabled": "Suhoor alarm enabled",
-          "suhoor_minutes": "Minutes before Fajr",
-          "suhoor_sound": "Suhoor sound",
-          "suhoor_volume": "Volume"
+          "suhoor_minutes": "Minutes before Fajr"
         }
       },
       "ramadan_notify": {
