@@ -9,25 +9,6 @@
           "country": "Land",
           "method": "Berekenings Methode"
         }
-      },
-      "adhan": {
-        "title": "Adhan Instellingen",
-        "description": "Stel de adhan in voor dagelijkse gebeden",
-        "data": {
-          "play_method": "Afspeelmethode",
-          "day_sound": "Adhan Geluid",
-          "day_speaker": "Speaker",
-          "day_volume": "Volume"
-        }
-      },
-      "fajr": {
-        "title": "Fajr Instellingen",
-        "description": "Stel de adhan in specifiek voor Fajr",
-        "data": {
-          "fajr_sound": "Fajr Adhan Geluid",
-          "fajr_speaker": "Fajr Speaker",
-          "fajr_volume": "Fajr Volume"
-        }
       }
     },
     "error": {
@@ -48,23 +29,38 @@
           "method": "Berekenings Methode"
         }
       },
-      "adhan": {
-        "title": "Adhan Instellingen",
-        "description": "Stel de adhan in voor dagelijkse gebeden",
+      "speakers": {
+        "title": "Luidsprekers",
+        "description": "Selecteer welke luidsprekers je wilt gebruiken voor elk audiotype.",
         "data": {
-          "play_method": "Afspeelmethode",
-          "day_sound": "Adhan Geluid",
-          "day_speaker": "Speaker",
-          "day_volume": "Volume"
+          "fajr_speaker": "Fajr luidspreker(s)",
+          "day_speaker": "Adhan luidspreker(s)",
+          "tarhim_speaker": "Tarhim luidspreker(s)",
+          "suhoor_speaker": "Suhoor luidspreker(s)"
         }
       },
-      "fajr": {
-        "title": "Fajr Instellingen",
-        "description": "Stel de adhan in specifiek voor Fajr",
+      "volumes": {
+        "title": "Volumes",
+        "description": "Stel de volumelevels in. Nachtvolume geldt voor Tarhim en alle adhans tussen begin en eindtijd van de nacht.",
         "data": {
-          "fajr_sound": "Fajr Adhan Geluid",
-          "fajr_speaker": "Fajr Speaker",
-          "fajr_volume": "Fajr Volume"
+          "fajr_volume": "Fajr volume",
+          "day_volume": "Adhan volume",
+          "suhoor_volume": "Suhoor volume (wekker — niet beïnvloed door nachtmodus)",
+          "night_volume_enabled": "Nachtvolume inschakelen",
+          "night_volume": "Nachtvolume",
+          "night_start_hour": "Nacht begint om",
+          "night_end_mode": "Nacht eindigt",
+          "night_end_hour": "Eindtijd nacht (alleen bij 'Vaste tijd')"
+        }
+      },
+      "sounds": {
+        "title": "Geluiden",
+        "description": "Selecteer de audiobestanden voor elk gebedtype.",
+        "data": {
+          "fajr_sound": "Fajr geluid",
+          "day_sound": "Adhan geluid",
+          "tarhim_sound": "Tarhim geluid",
+          "suhoor_sound": "Suhoor geluid"
         }
       }
     }
