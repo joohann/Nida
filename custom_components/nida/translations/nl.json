@@ -33,6 +33,10 @@
           "fajr_speaker": "Fajr Speaker",
           "fajr_volume": "Fajr Volume"
         }
+      },
+      "intro": {
+        "title": "Nida",
+        "description": "Welkom bij Nida — uw islamitische gebedsbegeleider voor Home Assistant. 🕌\n\nTijdens de installatie configureert u:\n\n1. 📍 Locatie & berekeningsmethode\n2. 🔔 Pre-adhan herinneringen (5 of 10 min van tevoren)\n3. 🕋 Fajr adhan speaker & geluid\n4. 📢 Dagelijkse adhan speaker & geluid\n5. 📱 Meldingen (optioneel)\n6. 🌙 Ramadan instellingen — tarhim & suhoor alarm (optioneel)\n\nDruk op Volgende om te beginnen."
       }
     },
     "error": {
