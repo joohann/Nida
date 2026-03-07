@@ -3,7 +3,7 @@
     "step": {
       "intro": {
         "title": "Nida — Heures de prière islamiques",
-        "description": "**بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ**\n\n**Assalāmu ʿAlaykum wa Raḥmatullāhi wa Barakātuh** 🌙\n\nBienvenue sur **Nida** pour Home Assistant — un compagnon de prière islamique complet pour votre maison intelligente.\n\nQu'Allah ﷻ accepte vos prières et fasse de cette intégration une source de bien dans votre foyer.\n\n---\n\n🕌 Heures de prière basées sur votre localisation via AlAdhan API\n🔔 Rappels avant l'Adhan avec son et message vocal\n🌅 Adhan du Fajr avec audio dédié\n📢 Adhan pour toutes les prières\n📱 Notifications sur vos appareils\n🌙 Fonctionnalités Ramadan — alarme Suhoor et Tarhim\n📅 Calendrier Hijri avec jours fériés islamiques\n\n---\n\nQu'Allah récompense généreusement l'équipe d'aladhan.com. Ameen. 🤲\n\n*— Iftikhar Farzan Izz Al Din Muhsin*"
+        "description": "Bienvenue dans Nida — votre compagnon de prière islamique pour Home Assistant. 🕌\n\nPendant la configuration vous allez paramétrer:\n\n1. 📍 Localisation & méthode de calcul\n2. 🔔 Rappels pré-adhan (5 ou 10 min avant)\n3. 🕋 Enceinte & son de l'adhan Fajr\n4. 📢 Enceinte & son de l'adhan quotidien\n5. 📱 Notifications (optionnel)\n6. 🌙 Paramètres Ramadan — tarhim & alarme suhoor (optionnel)\n\nAppuyez sur Suivant pour commencer."
       },
       "location": {
         "title": "Localisation & Méthode de calcul",

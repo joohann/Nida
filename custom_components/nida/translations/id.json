@@ -3,7 +3,7 @@
     "step": {
       "intro": {
         "title": "Nida — Waktu Sholat Islam",
-        "description": "**بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ**\n\n**Assalāmu ʿAlaykum wa Raḥmatullāhi wa Barakātuh** 🌙\n\nSelamat datang di **Nida** untuk Home Assistant — pendamping sholat Islam lengkap untuk rumah pintar Anda.\n\nSemoga Allah ﷻ menerima sholat Anda dan menjadikan integrasi ini sumber kebaikan di rumah Anda.\n\n---\n\n🕌 Waktu Sholat berdasarkan lokasi via AlAdhan API\n🔔 Pengingat sebelum Adzan dengan suara dan pesan\n🌅 Adzan Subuh dengan audio khusus\n📢 Adzan untuk semua sholat\n📱 Notifikasi ke perangkat Anda\n🌙 Fitur Ramadan — alarm Sahur dan Tarhim\n📅 Kalender Hijriyah dengan hari besar Islam\n\n---\n\nSemoga Allah membalas tim aladhan.com dengan sebaik-baik balasan. Ameen. 🤲\n\n*— Iftikhar Farzan Izz Al Din Muhsin*"
+        "description": "Selamat datang di Nida — pendamping shalat Islam Anda untuk Home Assistant. 🕌\n\nSelama pengaturan Anda akan mengkonfigurasi:\n\n1. 📍 Lokasi & metode perhitungan\n2. 🔔 Pengingat pra-adzan (5 atau 10 menit sebelumnya)\n3. 🕋 Speaker & suara adzan Fajr\n4. 📢 Speaker & suara adzan harian\n5. 📱 Notifikasi (opsional)\n6. 🌙 Pengaturan Ramadan — tarhim & alarm sahur (opsional)\n\nTekan Lanjut untuk memulai."
       },
       "location": {
         "title": "Lokasi & Metode Perhitungan",

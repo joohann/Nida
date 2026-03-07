@@ -3,7 +3,7 @@
     "step": {
       "intro": {
         "title": "Nida — Islamische Gebetszeiten",
-        "description": "**بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ**\n\n**Assalāmu ʿAlaykum wa Raḥmatullāhi wa Barakātuh** 🌙\n\nWillkommen bei **Nida** für Home Assistant — ein vollständiger islamischer Gebetsbegleiter für Ihr Smart Home.\n\nMöge Allah ﷻ Ihre Gebete annehmen und diese Integration zu einer Quelle des Khayr in Ihrem Haushalt machen.\n\n---\n\n🕌 Standortbasierte Gebetszeiten via AlAdhan API\n🔔 Vor-Adhan Erinnerungen mit Ton und Sprachnachricht\n🌅 Fajr-Adhan mit eigenem Audio\n📢 Adhan für alle Gebete mit Tag- und Nachtlautstärke\n📱 Gerätebenachrichtigungen\n🌙 Ramadan-Funktionen — Suhoor-Alarm und Tarhim\n📅 Hijri-Kalender mit islamischen Feiertagen\n\n---\n\nMöge Allah das Team von aladhan.com reichlich belohnen. Ameen. 🤲\n\n*— Iftikhar Farzan Izz Al Din Muhsin*"
+        "description": "Willkommen bei Nida — Ihr islamischer Gebetsbegleiter für Home Assistant. 🕌\n\nWährend der Einrichtung konfigurieren Sie:\n\n1. 📍 Standort & Berechnungsmethode\n2. 🔔 Vor-Adhan-Erinnerungen (5 oder 10 Min. vorher)\n3. 🕋 Fajr-Adhan-Lautsprecher & Ton\n4. 📢 Täglicher Adhan-Lautsprecher & Ton\n5. 📱 Benachrichtigungen (optional)\n6. 🌙 Ramadan-Einstellungen — Tarhim & Suhoor-Alarm (optional)\n\nDrücken Sie Weiter, um zu beginnen."
       },
       "location": {
         "title": "Standort & Berechnungsmethode",
