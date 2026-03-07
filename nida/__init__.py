@@ -1,5 +1,6 @@
-"""Nida Integration — v0.6.3"""
+"""Nida Integration — v0.6.4"""
 # Changelog:
+# v0.6.4 - busy-guard: reminders onderbreken lopende adhan/tarhim niet meer
 # v0.6.3 - adhan restore op echte MP3 duur, jingle restore wacht ook TTS
 # v0.6.2 - wacht echte MP3 duur voor TTS (geen overlap meer)
 # v0.6.1 - TTS volume gelijk aan jingle volume
@@ -45,6 +46,10 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor"]
+
+# Guard: bijhouden welke speakers momenteel een adhan/tarhim spelen
+# zodat reminders en andere audio een lopende adhan niet onderbreken
+_PLAYING_SPEAKERS: set[str] = set()
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -346,18 +351,38 @@ async def _play_media_with_volume(
     title: str = "Nida",
     artist: str = "",
     album: str = "Nida Prayer Times",
+    priority: bool = False,
 ) -> None:
     """
     Speel media af met correcte volume-handling voor alle player-types.
 
+    priority=True: adhan/tarhim — negeert de busy-guard en onderbreekt niets.
+    priority=False: reminders, previews — sla over als speaker al bezig is.
+
     Aanpak:
-      1. Sla huidig volume op per speaker
-      2. Zet volume via volume_set (werkt bij Sonos, Google, generic)
-      3. Wacht 0.5s zodat volume is ingesteld
-      4. Speel af (zonder announce — dat overschrijft volume bij veel players)
-      5. Restore volume na restore_delay seconden
+      1. Check of speaker al bezig is (tenzij priority=True)
+      2. Sla huidig volume op per speaker
+      3. Zet volume via volume_set (werkt bij Sonos, Google, generic)
+      4. Wacht 0.5s zodat volume is ingesteld
+      5. Speel af (zonder announce — dat overschrijft volume bij veel players)
+      6. Restore volume na restore_delay seconden
     """
-    # Stap 1: huidig volume opslaan
+    global _PLAYING_SPEAKERS
+
+    # Stap 1: busy-guard voor niet-prioritaire audio
+    if not priority:
+        busy = [s for s in speakers if s in _PLAYING_SPEAKERS]
+        if busy:
+            _LOGGER.info(
+                "Audio overgeslagen — speakers zijn al bezig: %s", busy
+            )
+            return
+
+    # Stap 1b: markeer speakers als bezig
+    for s in speakers:
+        _PLAYING_SPEAKERS.add(s)
+
+    # Stap 2: huidig volume opslaan
     original_volumes: dict[str, float | None] = {}
     for speaker in speakers:
         state = hass.states.get(speaker)
@@ -404,10 +429,13 @@ async def _play_media_with_volume(
         _LOGGER.error("Afspelen mislukt: %s", e)
         return
 
-    # Stap 5: restore volume na restore_delay (niet-blokkerend)
+    # Stap 6: restore volume na restore_delay (niet-blokkerend)
     async def _restore():
+        global _PLAYING_SPEAKERS
         await asyncio.sleep(restore_delay)
         for speaker, orig_vol in original_volumes.items():
+            # Verwijder uit busy-set zodat volgende audio weer kan spelen
+            _PLAYING_SPEAKERS.discard(speaker)
             if orig_vol is not None:
                 try:
                     await hass.services.async_call(
@@ -416,6 +444,7 @@ async def _play_media_with_volume(
                     )
                 except Exception as e:
                     _LOGGER.debug("Volume restore mislukt voor %s: %s", speaker, e)
+        _LOGGER.debug("Audio klaar — speakers vrijgegeven: %s", list(original_volumes.keys()))
 
     hass.async_create_task(_restore())
 
@@ -505,6 +534,7 @@ async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str, 
             cover_url=cover_url,
             restore_delay=restore,
             title=title, artist=artist, album=album,
+            priority=True,  # adhan onderbreekt altijd — ook lopende reminders
         )
 
     prayer_display = prayer_type.capitalize()
@@ -821,6 +851,7 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
                 cover_url=await _get_cover_url(hass),
                 restore_delay=duration + BUFFER_SECONDS + 5,
                 title=_t, artist=_a, album=_al,
+                priority=True,  # tarhim is hoge prioriteit
             )
             await async_send_notification(
                 hass, entry,
