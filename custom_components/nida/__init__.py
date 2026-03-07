@@ -15,6 +15,9 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers.event import async_track_time_change
 
+import homeassistant.helpers.config_validation as cv
+CONFIG_SCHEMA = cv.config_entry_only_config_schema("nida")
+
 from .const import (
     DOMAIN, CONF_CITY, CONF_COUNTRY, CONF_METHOD,
     CONF_PLAY_METHOD, CONF_FAJR_SPEAKER, CONF_FAJR_VOLUME, CONF_FAJR_SOUND,

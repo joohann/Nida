@@ -5,7 +5,7 @@
     "@joohann"
   ],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": ["network"],
   "documentation": "https://github.com/joohann/Nida",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/joohann/Nida/issues",
@@ -13,5 +13,5 @@
     "nida"
   ],
   "requirements": [],
-  "version": "1.0.1"
+  "version": "1.0.8"
 }
