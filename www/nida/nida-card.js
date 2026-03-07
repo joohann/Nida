@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-// NIDA CARD v41 — intro in 10 talen, standaardtaal Engels
+// NIDA CARD v42 — fix: nextAction toont altijd eerstvolgende actie (ook na Isha)
 
 // Hijri maandnamen per taal
 const HIJRI_MONTHS = {
@@ -299,29 +299,47 @@ class NidaCard extends LitElement {
     const nowMin=new Date().getHours()*60+new Date().getMinutes();
     const isRam=this._isRamadan();
     const acts=[];
+
+    const _fmt = (min) => {
+      const m = ((min % 1440) + 1440) % 1440;
+      return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+    };
+
     const pmap=[{k:'fajr',e:'sensor.02_fajr_readable'},{k:'dhuhr',e:'sensor.04_dhuhr_readable'},{k:'asr',e:'sensor.05_asr_readable'},{k:'maghrib',e:'sensor.07_maghrib_readable'},{k:'isha',e:'sensor.08_isha_readable'}];
     for(const p of pmap){
       const t=this._s(p.e); if(!t||t==='unavailable') continue;
-      const[h,m]=t.split(':').map(Number); const pm=h*60+m;
-      for(const off of[10,5]){const r=pm-off;if(r>nowMin)acts.push({type:'tadkir',prayerKey:p.k,min:r,time:`${String(Math.floor(r/60)).padStart(2,'0')}:${String(r%60).padStart(2,'0')}`});}
-      if(pm>nowMin)acts.push({type:'adhan',prayerKey:p.k,min:pm,time:t});
+      const[h,m]=t.split(':').map(Number);
+      // Als gebed al voorbij is vandaag → voeg toe als morgen (+1440)
+      let pm=h*60+m;
+      if(pm<=nowMin) pm+=1440;
+      // Pre-adhan reminders (10 en 5 min voor)
+      for(const off of[10,5]){
+        const r=pm-off;
+        if(r>nowMin) acts.push({type:'tadkir',prayerKey:p.k,min:r,time:_fmt(r)});
+      }
+      acts.push({type:'adhan',prayerKey:p.k,min:pm,time:_fmt(pm)});
     }
+
+    // Suhoor: altijd tonen als sensor beschikbaar is (ook buiten Ramadan)
+    const imsak=this._s('sensor.01_imsak_readable');
+    if(imsak && imsak!=='unavailable'){
+      const[ih,im]=imsak.split(':').map(Number);
+      let sm=ih*60+im;
+      if(sm<=nowMin) sm+=1440;
+      acts.push({type:'suhoor',prayerKey:null,min:sm,time:_fmt(sm)});
+    }
+
+    // Tarhim: alleen tijdens Ramadan
     if(isRam){
       const f=this._s('sensor.02_fajr_readable');
-      if(f){
-        const[h,m]=f.split(':').map(Number);
-        let tm=h*60+m-30;
+      if(f && f!=='unavailable'){
+        const[fh,fm]=f.split(':').map(Number);
+        let tm=fh*60+fm-30;
         if(tm<=nowMin) tm+=1440;
-        acts.push({type:'tarhim',prayerKey:null,min:tm,time:`${String(Math.floor((tm%1440)/60)).padStart(2,'0')}:${String(tm%60).padStart(2,'0')}`});
-        const im=this._s('sensor.01_imsak_readable');
-        if(im){
-          const[ih,im2]=im.split(':').map(Number);
-          let sm=ih*60+im2;
-          if(sm<=nowMin) sm+=1440;
-          acts.push({type:'suhoor',prayerKey:null,min:sm,time:`${String(Math.floor((sm%1440)/60)).padStart(2,'0')}:${String(sm%60).padStart(2,'0')}`});
-        }
+        acts.push({type:'tarhim',prayerKey:null,min:tm,time:_fmt(tm)});
       }
     }
+
     if(!acts.length) return null;
     acts.sort((a,b)=>a.min-b.min);
     return acts[0];
@@ -1080,6 +1098,4 @@ class NidaCard extends LitElement {
 }
 
 customElements.define('nida-card', NidaCard);
-console.log('%c NIDA CARD v41 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');
-
-
+console.log('%c NIDA CARD v42 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');
