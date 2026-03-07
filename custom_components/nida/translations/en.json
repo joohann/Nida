@@ -54,11 +54,7 @@
           "night_volume": "Night Volume",
           "night_start_hour": "Night starts at (hour)"
         },
-        "data_description": {
-          "open_sensor_enabled": "Reduce volume when a window or door is open",
-          "open_sensor_entities": "Select one or more window/door sensors (binary_sensor). If any sensor is 'open', the reduced volume will be used.",
-          "open_sensor_volume": "Volume (%) used when a window or door is open"
-        }
+        "data_description": {}
       },
       "notifications": {
         "title": "Notifications",
