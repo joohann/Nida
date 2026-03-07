@@ -151,7 +151,9 @@
           "name": "Gebed",
           "description": "Welk gebed?"
         }
-      }
+      },
+      "name": "Common",
+      "description": "Common service fields shared across Nida services."
     },
     "preview_adhan": {
       "name": "Preview Adhan",

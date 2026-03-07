@@ -3,7 +3,7 @@
     "step": {
       "intro": {
         "title": "Nida",
-        "description": "<p><img src=\"https://raw.githubusercontent.com/joohann/Nida/main/brand/icon.png\" width=\"140\" align=\"right\"></p>\n\n<b>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</b><br><br>\n\n<b>Assalamu Alaikum wa Rahmatullahi wa Barakatuh</b> 🌙<br><br>\n\nWelcome to <b>Nida</b> for Home Assistant — a complete and customizable Islamic prayer companion for your smart home.<br><br>\n\nMay Allah ﷻ accept your prayers and make this integration a means of khayr (goodness) in your household.\n\n<hr>\n\n🕌 Location-Based prayer times via AlAdhan API<br>\n🔔 Pre-Adhan reminders with sound and spoken message<br>\n🌅 Dedicated Fajr Adhan audio<br>\n📢 Adhan for all prayers with day & night volume control<br>\n📱 Device notifications to mobile and speakers<br>\n🌙 Ramadan features — Suhoor alarm and Tarhim<br>\n📅 Hijri calendar with Islamic holidays\n\n<hr>\n\nMay Allah reward the team at aladhan.com abundantly. Ameen. 🤲<br><br>\n\n<i>— Iftikhar Farzan Izz Al Din Muhsin</i>"
+        "description": "Welcome to Nida - Islamic prayer companion for Home Assistant. Configure your location and preferences to get started."
       },
       "location": {
         "title": "Location & Calculation Method",
@@ -195,7 +195,9 @@
           "name": "Prayer",
           "description": "Which prayer?"
         }
-      }
+      },
+      "name": "Common",
+      "description": "Common service fields shared across Nida services."
     },
     "preview_adhan": {
       "name": "Preview Adhan",
