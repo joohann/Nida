@@ -1,14 +1,12 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-// NIDA CARD v35 — tandwieltje verborgen tijdens flip via visibility:hidden
+// NIDA CARD v41 — intro in 10 talen, standaardtaal Engels
 
 // Hijri maandnamen per taal
-// NL/EN/DE/FR/ID/MS nemen de Arabische uitspraak over in Latijns schrift
 const HIJRI_MONTHS = {
   ar: ['محرم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'],
   ur: ['محرم','صفر','ربیع الاول','ربیع الثانی','جمادی الاول','جمادی الثانی','رجب','شعبان','رمضان','شوال','ذوالقعدہ','ذوالحجہ'],
   tr: ['Muharrem','Safer','Rebiülevvel','Rebiülahir','Cemaziyelevvel','Cemaziyelahir','Recep','Şaban','Ramazan','Şevval','Zilkade','Zilhicce'],
   fa: ['محرم','صفر','ربیع‌الاول','ربیع‌الثانی','جمادی‌الاول','جمادی‌الثانی','رجب','شعبان','رمضان','شوال','ذیقعده','ذیحجه'],
-  // alle andere talen: Arabische uitspraak, Latijns schrift
   _latin: ['Muḥarram','Ṣafar','Rabīʿ al-Awwal','Rabīʿ al-Ākhir','Jumādā al-Ūlā','Jumādā al-Ākhira','Rajab','Shaʿbān','Ramaḍān','Shawwāl','Dhū al-Qaʿda','Dhū al-Ḥijja'],
 };
 
@@ -31,6 +29,104 @@ const TRANSLATIONS = {
   fa: { next_prayer:'نماز بعدی', remaining:'باقی‌مانده', tadkir:'تذکیر', pre_adhan:'پیش از اذان', adhan:'اذان', tarhim:'ترحیم', suhoor:'سحر', ramadan:'رمضان', dag:'روز', imsak:'امساک', iftar:'افطار', settings:'تنظیمات', show_title:'نمایش تاریخ', language:'زبان', no_action:'هیچ عملی', theme:'پوسته', brightness:'روشنایی', close_settings:'بستن کارت', prayers:{ fajr:'صبح', dhuhr:'ظهر', asr:'عصر', maghrib:'مغرب', isha:'عشاء' } },
 };
 
+
+const INTRO_TRANSLATIONS = {
+  en: {
+    step1_title: 'Tap to collapse',
+    step1_body:  'Tap the top section to hide prayer times for a compact view.',
+    step1_btn:   'Show me ▶',
+    step1_skip:  'skip',
+    step2_title: 'Settings',
+    step2_body:  'Tap the gear icon at the bottom right to adjust language, theme and brightness.',
+    step2_btn:   'Got it ✓',
+  },
+  nl: {
+    step1_title: 'Tik om in te klappen',
+    step1_body:  'Tik op het bovenste vlak om de gebedstijden te verbergen.',
+    step1_btn:   'Laat zien ▶',
+    step1_skip:  'overslaan',
+    step2_title: 'Instellingen',
+    step2_body:  'Tik op het tandwieltje rechtsonder om taal, thema en helderheid aan te passen.',
+    step2_btn:   'Begrepen ✓',
+  },
+  ar: {
+    step1_title: 'اضغط للطي',
+    step1_body:  'اضغط على الجزء العلوي لإخفاء أوقات الصلاة للحصول على عرض مضغوط.',
+    step1_btn:   'أرني ▶',
+    step1_skip:  'تخطي',
+    step2_title: 'الإعدادات',
+    step2_body:  'اضغط على أيقونة الترس في أسفل اليمين لضبط اللغة والمظهر والسطوع.',
+    step2_btn:   'فهمت ✓',
+  },
+  de: {
+    step1_title: 'Tippen zum Einklappen',
+    step1_body:  'Tippe auf den oberen Bereich, um die Gebetszeiten auszublenden.',
+    step1_btn:   'Zeig mir ▶',
+    step1_skip:  'überspringen',
+    step2_title: 'Einstellungen',
+    step2_body:  'Tippe auf das Zahnrad-Symbol unten rechts, um Sprache, Design und Helligkeit anzupassen.',
+    step2_btn:   'Verstanden ✓',
+  },
+  fr: {
+    step1_title: 'Appuyez pour réduire',
+    step1_body:  'Appuyez sur la section supérieure pour masquer les heures de prière.',
+    step1_btn:   'Montrer ▶',
+    step1_skip:  'passer',
+    step2_title: 'Paramètres',
+    step2_body:  "Appuyez sur l'icône d'engrenage en bas à droite pour régler la langue, le thème et la luminosité.",
+    step2_btn:   'Compris ✓',
+  },
+  id: {
+    step1_title: 'Ketuk untuk menyembunyikan',
+    step1_body:  'Ketuk bagian atas untuk menyembunyikan waktu sholat agar lebih ringkas.',
+    step1_btn:   'Tunjukkan ▶',
+    step1_skip:  'lewati',
+    step2_title: 'Pengaturan',
+    step2_body:  'Ketuk ikon roda gigi di kanan bawah untuk mengatur bahasa, tema, dan kecerahan.',
+    step2_btn:   'Mengerti ✓',
+  },
+  ms: {
+    step1_title: 'Ketik untuk lipat',
+    step1_body:  'Ketik bahagian atas untuk menyembunyikan waktu solat bagi paparan ringkas.',
+    step1_btn:   'Tunjuk ▶',
+    step1_skip:  'langkau',
+    step2_title: 'Tetapan',
+    step2_body:  'Ketik ikon gear di kanan bawah untuk melaraskan bahasa, tema dan kecerahan.',
+    step2_btn:   'Faham ✓',
+  },
+  tr: {
+    step1_title: 'Katlamak için dokun',
+    step1_body:  'Namaz vakitlerini gizlemek için üst bölüme dokun.',
+    step1_btn:   'Göster ▶',
+    step1_skip:  'atla',
+    step2_title: 'Ayarlar',
+    step2_body:  'Dil, tema ve parlaklığı ayarlamak için sağ alttaki dişli simgesine dokun.',
+    step2_btn:   'Anladım ✓',
+  },
+  ur: {
+    step1_title: 'تہ کرنے کے لیے ٹیپ کریں',
+    step1_body:  'نماز کے اوقات چھپانے کے لیے اوپری حصے پر ٹیپ کریں۔',
+    step1_btn:   'دکھائیں ▶',
+    step1_skip:  'چھوڑیں',
+    step2_title: 'ترتیبات',
+    step2_body:  'زبان، تھیم اور روشنی ایڈجسٹ کرنے کے لیے نیچے دائیں طرف گیئر آئیکن ٹیپ کریں۔',
+    step2_btn:   'سمجھ گیا ✓',
+  },
+  fa: {
+    step1_title: 'برای جمع کردن ضربه بزنید',
+    step1_body:  'برای پنهان کردن اوقات نماز، روی بخش بالایی ضربه بزنید.',
+    step1_btn:   'نشان بده ▶',
+    step1_skip:  'رد شدن',
+    step2_title: 'تنظیمات',
+    step2_body:  'برای تنظیم زبان، پوسته و روشنایی، روی آیکون چرخ‌دنده در پایین راست ضربه بزنید.',
+    step2_btn:   'فهمیدم ✓',
+  },
+};
+
+function getIntroT(lang, key) {
+  return (INTRO_TRANSLATIONS[lang] || INTRO_TRANSLATIONS.en)[key] || INTRO_TRANSLATIONS.en[key] || '';
+}
+
 const LANG_LABELS = { nl:'Nederlands', en:'English', ar:'العربية', de:'Deutsch', fr:'Français', id:'Indonesia', ms:'Melayu', tr:'Türkçe', ur:'اردو', fa:'فارسی' };
 const RTL_LANGS = new Set(['ar','ur','fa']);
 const HA_LANG_MAP = { nl:'nl', en:'en', de:'de', fr:'fr', id:'id', ms:'ms', tr:'tr', ar:'ar' };
@@ -44,7 +140,13 @@ function moonPhaseEmoji(day) {
 
 class NidaCard extends LitElement {
   static get properties() {
-    return { hass:{}, _config:{}, _dark:{}, _flipped:{}, _lang:{}, _showTitle:{}, _brightness:{}, _theme:{} };
+    return {
+      hass:{}, _config:{}, _dark:{}, _flipped:{}, _lang:{}, _showTitle:{},
+      _brightness:{}, _theme:{},
+      _collapsed:{ type: Boolean },
+      _introStep:{ type: Number },
+      _introDemo:{ type: Boolean },
+    };
   }
 
   setConfig(config) {
@@ -54,6 +156,35 @@ class NidaCard extends LitElement {
     this._brightness = config.brightness !== undefined ? config.brightness : 50;
     this._lang = config.language || null;
     this._flipped = false;
+    this._collapsed = false;
+    const seen = localStorage.getItem('nida-intro-seen');
+    this._introStep = seen ? 0 : 1;
+    this._introDemo = false;
+  }
+
+  _startIntroDemo() {
+    this._introDemo = true;
+    this._collapsed = true;
+    this.requestUpdate();
+    setTimeout(() => {
+      this._collapsed = false;
+      this.requestUpdate();
+      setTimeout(() => {
+        this._introDemo = false;
+        this.requestUpdate();
+      }, 700);
+    }, 900);
+  }
+
+  _introNext() {
+    if (this._introStep === 1) {
+      this._introStep = 2;
+      this.requestUpdate();
+    } else {
+      this._introStep = 0;
+      localStorage.setItem('nida-intro-seen', '1');
+      this.requestUpdate();
+    }
   }
 
   _t(key) { return (TRANSLATIONS[this._lang] || TRANSLATIONS.en)[key] || key; }
@@ -88,10 +219,9 @@ class NidaCard extends LitElement {
   }
 
   _detectLang() {
+    // Standaard altijd Engels, tenzij expliciet ingesteld in config
     if (this._config?.language) return this._config.language;
-    const haLang = this.hass?.language || this.hass?.locale?.language || 'en';
-    const base = haLang.split('-')[0];
-    return TRANSLATIONS[base] ? base : (HA_LANG_MAP[haLang] || 'en');
+    return 'en';
   }
 
   _s(e) { return this.hass?.states[e]?.state; }
@@ -134,22 +264,12 @@ class NidaCard extends LitElement {
       const [h,m]=t.split(':').map(Number); times.push(h*60+m);
     }
     if(times.length===0) return 0;
-
-    // Vind prev en next in normale dagvolgorde
     let prev=null, next=null;
     for(const pm of times) {
       if(pm<=nowMin) prev=pm; else if(next===null){next=pm;break;}
     }
-
-    // Na Isha (geen next gevonden): next = Fajr morgen (+1440), prev = Isha
-    if(next===null && prev!==null) {
-      next = times[0]+1440; // Fajr morgen
-    }
-    // Voor Fajr (geen prev gevonden): prev = Isha gisteren (-1440 → negatief)
-    if(prev===null && next!==null) {
-      prev = times[times.length-1]-1440; // Isha gisteren
-    }
-
+    if(next===null && prev!==null) { next = times[0]+1440; }
+    if(prev===null && next!==null) { prev = times[times.length-1]-1440; }
     if(prev===null||next===null) return 0;
     const span = next-prev;
     if(span<=0) return 0;
@@ -190,11 +310,9 @@ class NidaCard extends LitElement {
       const f=this._s('sensor.02_fajr_readable');
       if(f){
         const[h,m]=f.split(':').map(Number);
-        // tarhim = 30 min voor fajr — als al voorbij, reken volgende dag (+1440)
         let tm=h*60+m-30;
         if(tm<=nowMin) tm+=1440;
         acts.push({type:'tarhim',prayerKey:null,min:tm,time:`${String(Math.floor((tm%1440)/60)).padStart(2,'0')}:${String(tm%60).padStart(2,'0')}`});
-        // suhoor = imsak tijd
         const im=this._s('sensor.01_imsak_readable');
         if(im){
           const[ih,im2]=im.split(':').map(Number);
@@ -209,8 +327,6 @@ class NidaCard extends LitElement {
     return acts[0];
   }
 
-  // Label voor de actie in het dynamic slot
-  // tadkir → "Pre-adhan Dhuhr" (met ellipsis via CSS als te lang)
   _actionLabel(action) {
     if (!action) return '';
     if (action.type === 'tadkir') return `${this._t('pre_adhan')} ${this._tp(action.prayerKey)}`;
@@ -231,6 +347,13 @@ class NidaCard extends LitElement {
     }
   }
 
+  // Toggle ingeklapt / uitgeklapt
+  _toggleCollapse(e) {
+    e.stopPropagation();
+    this._collapsed = !this._collapsed;
+    this.requestUpdate();
+  }
+
   static get styles() {
     return css`
       :host{display:block;width:100%;box-sizing:border-box;font-family:'Cairo',sans-serif;}
@@ -246,7 +369,6 @@ class NidaCard extends LitElement {
       }
       .flipper.flipped{transform:rotateY(180deg);}
 
-      /* Voorkant in normale flow → bepaalt hoogte van flipper */
       .face.front{
         position:relative;
         width:100%;
@@ -255,7 +377,6 @@ class NidaCard extends LitElement {
         border-radius:var(--ha-card-border-radius,12px);
         overflow:hidden;
       }
-      /* Achterkant: absoluut, volledig dekkend zwart, hogere z-index */
       .face.back{
         position:absolute;
         top:0; left:0;
@@ -269,41 +390,79 @@ class NidaCard extends LitElement {
         background:#000;
         z-index:10;
       }
-      /* Verberg gear-btn zodra de kaart geflipt is */
       .flipper.flipped .gear-btn{
         visibility:hidden;
         pointer-events:none;
       }
 
-      /* CARD */
-      .card{width:100%;border-radius:var(--ha-card-border-radius,12px);overflow:hidden;transition:background 0.4s;}
+      /* CARD — min-height zodat kaart overeenkomt met klok-kaart hoogte */
+      .card{width:100%;border-radius:var(--ha-card-border-radius,12px);overflow:hidden;transition:background 0.4s;min-height:120px;box-sizing:border-box;}
 
-      /* HEADER — verborgen als datum in next-block zit, of toon holiday */
       .header{padding:0;}
       .header-top{display:none;}
       .hijri-date{font-family:'Amiri',serif;font-size:19px;font-weight:700;line-height:1.2;display:flex;align-items:center;gap:7px;}
       .holiday-name{font-size:11px;font-weight:700;padding:6px 16px 0;}
 
-      /* HEADER WRAPPER — afgeronde onderkant, bevat next-block + progress bar */
+      /* HEADER BLOCK — klikbaar voor collapse */
       .header-block{
         border-radius:12px;
         overflow:hidden;
         margin:8px 8px 8px 8px;
+        cursor:pointer;
+        user-select:none;
+        -webkit-tap-highlight-color:transparent;
+        transition:transform 0.1s ease;
+      }
+      .header-block:active{
+        transform:scale(0.995);
       }
 
-      /* PROGRESS BAR — 10px, sterke track */
+      /* Geen collapse indicator — pijltje verwijderd */
+
+      /* PROGRESS BAR */
       .progress-bar{
         height:10px;
         width:calc(100% - 24px);
-        margin:0 12px 12px;
+        margin:0 12px 4px;
         border-radius:99px;
         overflow:hidden;
+        position:relative;
       }
-      .progress-fill{height:100%;border-radius:99px;transition:width 1s linear;background:linear-gradient(90deg,#c9a84c,#f0d078);}
+      .progress-fill{
+        height:100%;
+        border-radius:99px;
+        transition:width 1s linear;
+        background:linear-gradient(90deg,#c9a84c,#f0d078);
+        position:relative;
+        overflow:hidden;
+        animation:progress-glow 3s ease-in-out infinite;
+      }
 
-      /* NEXT PRAYER — padding precies 12px zodat icoon uitlijnt met cellen */
+      /* Shimmer blijft BINNEN de fill via overflow:hidden op de parent */
+      .progress-fill::after{
+        content:'';
+        position:absolute;
+        top:0;
+        left:-100%;
+        width:60%;
+        height:100%;
+        background:linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+        animation:progress-shimmer 3s ease-in-out infinite;
+      }
+
+      @keyframes progress-glow{
+        0%,100% { box-shadow: 0 0 3px rgba(201,168,76,0.2); }
+        50%      { box-shadow: 0 0 8px rgba(201,168,76,0.6); }
+      }
+
+      @keyframes progress-shimmer{
+        0%   { left:-100%; }
+        100% { left:160%; }
+      }
+
+      /* NEXT PRAYER — compact padding */
       .next-block{
-        padding:12px 12px 8px;
+        padding:10px 12px 6px;
         width:100%;
         box-sizing:border-box;
       }
@@ -321,7 +480,6 @@ class NidaCard extends LitElement {
         font-size:24px;
         flex-shrink:0;
       }
-      /* Linkerkolom: naam links uitgelijnd */
       .next-text{
         flex:1;
         min-width:0;
@@ -337,7 +495,6 @@ class NidaCard extends LitElement {
         font-family:'Amiri',serif;font-size:28px;font-weight:700;line-height:1.15;
         display:block;
       }
-      /* Rechterkolom: absoluut rechts uitgelijnd */
       .next-right-col{
         position:absolute;
         right:0; top:0;
@@ -352,11 +509,14 @@ class NidaCard extends LitElement {
         display:block;
         margin-bottom:2px;
       }
+
+      /* Countdown — geen puls hier, puls zit op de progress bar */
       .countdown{
         font-family:'Amiri',serif;font-size:28px;font-weight:700;line-height:1.15;
         display:block;
       }
-      /* Datum — gecentreerd, vet */
+
+      /* Datum */
       .next-date{
         font-size:10px;font-weight:800;opacity:.55;
         margin-top:6px;
@@ -368,6 +528,27 @@ class NidaCard extends LitElement {
       .next-info,.countdown-col,.next-row-top,.next-row-main,.next-right,
       .next-table,.next-row-labels,.next-row-values{display:none;}
 
+      /* ── INKLAPBARE PRAYERS WRAPPER ── */
+      .prayers-wrapper{
+        display:grid;
+        grid-template-rows:1fr;
+        transition:grid-template-rows 0.4s cubic-bezier(0.4,0,0.2,1),
+                   opacity 0.35s ease,
+                   transform 0.35s cubic-bezier(0.4,0,0.2,1);
+        opacity:1;
+        transform:translateY(0);
+        overflow:hidden;
+      }
+      .prayers-wrapper.collapsed{
+        grid-template-rows:0fr;
+        opacity:0;
+        transform:translateY(-6px);
+      }
+      .prayers-wrapper-inner{
+        min-height:0;
+        overflow:hidden;
+      }
+
       /* PRAYER GRID */
       .prayers{padding:0 8px 8px;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:7px;}
 
@@ -376,7 +557,6 @@ class NidaCard extends LitElement {
       .dynamic-sub{display:flex;flex-direction:column;gap:2px;margin-top:4px;font-size:11px;font-weight:600;opacity:.85;}
       .dynamic-countdown{font-family:'Amiri',serif;font-size:14px;font-weight:700;margin-top:5px;}
 
-      /* Actie rij: TIJD links, LABEL rechts met ellipsis */
       .nida-action-row{
         display:flex;
         align-items:baseline;
@@ -415,7 +595,7 @@ class NidaCard extends LitElement {
       .card.light .prayer-emoji{opacity:.25;}
       .card.light .prayer-item.active .prayer-emoji{opacity:.45;}
 
-      /* GEAR — alleen zichtbaar op voorkant */
+      /* GEAR */
       .gear-btn{
         position:absolute;
         right:8px;
@@ -431,12 +611,9 @@ class NidaCard extends LitElement {
         z-index:2;
       }
       .gear-btn:hover{opacity:.45;}
-      /* Achterkant — tandwieltje niet zichtbaar door de flip */
       .face.back .gear-btn{display:none;}
 
-      /* ── SETTINGS ACHTERKANT ──
-         Volledig zwart, zelfde hoogte als voorkant (via height:100%)
-      ── */
+      /* ── SETTINGS ACHTERKANT ── */
       .settings-back{
         padding:20px 16px 16px;
         display:flex;
@@ -445,8 +622,6 @@ class NidaCard extends LitElement {
         background:#000;
         color:#e8dcc8;
       }
-
-      /* Sluitknop bovenaan — "✕ Kaart sluiten" */
       .close-btn{
         display:flex;
         align-items:center;
@@ -472,7 +647,6 @@ class NidaCard extends LitElement {
         font-size:12px;color:#c9a84c;
         flex-shrink:0;
       }
-
       .settings-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px;color:rgba(201,168,76,.45);}
       .settings-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font-size:12px;font-weight:600;gap:10px;color:#e8dcc8;}
       .settings-row label{opacity:.7;flex-shrink:0;}
@@ -518,6 +692,7 @@ class NidaCard extends LitElement {
       .card.dark .next-name{color:#f0e6c8;}
       .card.dark .countdown{color:#f0e6c8;}
       .card.dark .next-date{color:#c9a84c;}
+      .card.dark .collapse-indicator{color:#c9a84c;}
       .card.dark .prayer-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);}
       .card.dark .prayer-item.active{background:rgba(201,168,76,.09);border-color:rgba(201,168,76,.25);}
       .card.dark .prayer-item.active::before{background:linear-gradient(180deg,#c9a84c,#a07830);}
@@ -543,6 +718,7 @@ class NidaCard extends LitElement {
       .card.light .next-name{color:#3a2c0a;}
       .card.light .countdown{color:#3a2c0a;}
       .card.light .next-date{color:#8a6820;}
+      .card.light .collapse-indicator{color:#8a6820;}
       .card.light .prayer-item{background:rgba(255,255,255,.75);border:1px solid rgba(160,120,48,.12);}
       .card.light .prayer-item.active{background:rgba(201,168,76,.15);border-color:rgba(160,120,48,.35);}
       .card.light .prayer-item.active::before{background:linear-gradient(180deg,#c9a84c,#a07830);}
@@ -557,6 +733,125 @@ class NidaCard extends LitElement {
       .card.light .gear-btn{color:#3a2c0a;}
       .card.light .nida-action-time{color:#2a1e04;}
       .card.light .nida-action-label{color:#3a2c0a;}
+      /* ── INTRO OVERLAY ── */
+      .intro-overlay{
+        position:absolute;
+        inset:0;
+        z-index:100;
+        border-radius:var(--ha-card-border-radius,12px);
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        padding:18px 20px 16px;
+        text-align:center;
+        backdrop-filter:blur(3px);
+        -webkit-backdrop-filter:blur(3px);
+        background:rgba(0,0,0,0.72);
+        animation:intro-fade-in 0.4s ease;
+        gap:10px;
+      }
+      @keyframes intro-fade-in{
+        from{ opacity:0; transform:scale(0.97); }
+        to  { opacity:1; transform:scale(1); }
+      }
+      .intro-icon{
+        font-size:32px;
+        line-height:1;
+        animation:intro-icon-bounce 0.6s cubic-bezier(0.36,0.07,0.19,0.97) both;
+      }
+      @keyframes intro-icon-bounce{
+        0%,100%{ transform:translateY(0); }
+        30%    { transform:translateY(-8px); }
+        60%    { transform:translateY(-3px); }
+      }
+      .intro-title{
+        font-family:'Cairo',sans-serif;
+        font-size:13px;
+        font-weight:800;
+        color:#f0e6c8;
+        letter-spacing:0.3px;
+        line-height:1.3;
+      }
+      .intro-body{
+        font-family:'Cairo',sans-serif;
+        font-size:11px;
+        font-weight:500;
+        color:rgba(240,230,200,0.75);
+        line-height:1.5;
+        max-width:240px;
+      }
+      .intro-demo-bar{
+        width:80%;
+        height:7px;
+        border-radius:99px;
+        background:rgba(201,168,76,0.25);
+        overflow:hidden;
+        margin:2px 0;
+      }
+      .intro-demo-fill{
+        height:100%;
+        border-radius:99px;
+        background:linear-gradient(90deg,#c9a84c,#f0d078);
+        width:60%;
+      }
+      .intro-demo-rows{
+        display:flex;
+        flex-direction:column;
+        gap:3px;
+        width:80%;
+        overflow:hidden;
+        transition:max-height 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease;
+        max-height:60px;
+        opacity:1;
+      }
+      .intro-demo-rows.collapsed{
+        max-height:0;
+        opacity:0;
+      }
+      .intro-demo-row{
+        height:8px;
+        border-radius:6px;
+        background:rgba(240,230,200,0.15);
+      }
+      .intro-step-dots{
+        display:flex;
+        gap:5px;
+        margin-top:2px;
+      }
+      .intro-dot{
+        width:6px; height:6px;
+        border-radius:50%;
+        background:rgba(201,168,76,0.3);
+        transition:background 0.2s;
+      }
+      .intro-dot.active{ background:#c9a84c; }
+      .intro-btn{
+        background:linear-gradient(135deg,#c9a84c,#a07830);
+        border:none;
+        border-radius:8px;
+        color:#1a1200;
+        font-family:'Cairo',sans-serif;
+        font-size:12px;
+        font-weight:800;
+        padding:7px 20px;
+        cursor:pointer;
+        letter-spacing:0.3px;
+        transition:opacity 0.2s;
+        margin-top:2px;
+      }
+      .intro-btn:hover{ opacity:0.85; }
+      .intro-skip{
+        font-size:10px;
+        color:rgba(240,230,200,0.35);
+        cursor:pointer;
+        text-decoration:underline;
+        background:none;
+        border:none;
+        font-family:'Cairo',sans-serif;
+        padding:0;
+      }
+      .intro-skip:hover{ color:rgba(240,230,200,0.6); }
     `;
   }
 
@@ -623,7 +918,6 @@ class NidaCard extends LitElement {
           <div class="dynamic-sub"><span>dagen</span></div>
         </div>`;
     } else {
-      // Default slot: geen "Tadkir" label — de actietekst IS direct de naam
       dynamicSlot = html`
         <div class="dynamic-slot default-slot">
           <div class="prayer-emoji">🔔</div>
@@ -639,10 +933,10 @@ class NidaCard extends LitElement {
     // FRONT FACE
     const front = html`
       <div class="face front">
-        <div class="card ${themeClass} ${isRtl?'rtl':''}" style="${bgStyle}">
+        <div class="card ${themeClass} ${isRtl?'rtl':''}${this._collapsed?' collapsed':''}" style="${bgStyle}">
 
-          <!-- HEADER BLOCK: next prayer + progress bar, samen afgeronde onderkant -->
-          <div class="header-block">
+          <!-- HEADER BLOCK: klikbaar, bevat next prayer + progress bar -->
+          <div class="header-block" @click=${this._toggleCollapse}>
             <div class="next-block">
               <div class="next-inner">
                 <div class="next-icon">🕌</div>
@@ -663,41 +957,45 @@ class NidaCard extends LitElement {
                 </div>` : ''}
             </div>
 
-            <!-- PROGRESS BAR binnen header-block -->
+            <!-- PROGRESS BAR -->
             <div class="progress-bar">
               <div class="progress-fill" style="width:${progress}%"></div>
             </div>
+
           </div>
 
-          <!-- GEBEDEN RASTER -->
-          <div class="prayers">
-            ${dynamicSlot}
-            ${prayers.map((p,i) => {
-              const t=this._s(p.entity); if(!t||t==='unavailable') return '';
-              const[h,m]=t.split(':').map(Number); const pm=h*60+m;
-              const isActive=p.key===nextKey;
-              const isPast=!isActive&&pm<nowMin;
-              const isLast = i === prayers.length - 1;
-              return html`
-                <div class="prayer-item ${isActive?'active':isPast?'past':''}">
-                  <div class="prayer-emoji">${p.icon}</div>
-                  <div class="prayer-name">${this._tp(p.key)}</div>
-                  <div class="prayer-time">${t}</div>
-                  ${isLast ? html`
-                    <button class="gear-btn" @click=${()=>{this._flipped=true;this.requestUpdate();}}>⚙</button>` : ''}
-                </div>`;
-            })}
+          <!-- INKLAPBARE WRAPPER om de gebedsrijen -->
+          <div class="prayers-wrapper${this._collapsed?' collapsed':''}">
+            <div class="prayers-wrapper-inner">
+              <!-- GEBEDEN RASTER -->
+              <div class="prayers">
+                ${dynamicSlot}
+                ${prayers.map((p,i) => {
+                  const t=this._s(p.entity); if(!t||t==='unavailable') return '';
+                  const[h,m]=t.split(':').map(Number); const pm=h*60+m;
+                  const isActive=p.key===nextKey;
+                  const isPast=!isActive&&pm<nowMin;
+                  const isLast = i === prayers.length - 1;
+                  return html`
+                    <div class="prayer-item ${isActive?'active':isPast?'past':''}">
+                      <div class="prayer-emoji">${p.icon}</div>
+                      <div class="prayer-name">${this._tp(p.key)}</div>
+                      <div class="prayer-time">${t}</div>
+                      ${isLast ? html`
+                        <button class="gear-btn" @click=${(e)=>{e.stopPropagation();this._flipped=true;this.requestUpdate();}}>⚙</button>` : ''}
+                    </div>`;
+                })}
+              </div>
+            </div>
           </div>
 
         </div>
       </div>`;
 
-    // BACK FACE — volledig zwart, hoogte = voorkant hoogte via height:100%
+    // BACK FACE
     const back = html`
       <div class="face back">
         <div class="settings-back">
-
-          <!-- Sluitknop bovenaan: intuïtiever dan "← Settings" -->
           <button class="close-btn" @click=${()=>{this._flipped=false;this.requestUpdate();}}>
             <span class="close-btn-icon">✕</span>
             ${this._t('close_settings')}
@@ -737,16 +1035,51 @@ class NidaCard extends LitElement {
         </div>
       </div>`;
 
+    // INTRO OVERLAY
+    const introOverlay = this._introStep > 0 ? html`
+      <div class="intro-overlay">
+        ${this._introStep === 1 ? html`
+          <div class="intro-icon">👆</div>
+          <div class="intro-title">${getIntroT(this._lang,'step1_title')}</div>
+          <div class="intro-body">${getIntroT(this._lang,'step1_body')}</div>
+          <!-- Mini demo animatie -->
+          <div class="intro-demo-bar"><div class="intro-demo-fill"></div></div>
+          <div class="intro-demo-rows ${this._introDemo?'collapsed':''}">
+            <div class="intro-demo-row"></div>
+            <div class="intro-demo-row" style="width:85%"></div>
+            <div class="intro-demo-row" style="width:70%"></div>
+          </div>
+          <div class="intro-step-dots">
+            <div class="intro-dot active"></div>
+            <div class="intro-dot"></div>
+          </div>
+          <button class="intro-btn" @click=${()=>{ this._startIntroDemo(); setTimeout(()=>this._introNext(), 1800); }}>${getIntroT(this._lang,'step1_btn')}</button>
+          <button class="intro-skip" @click=${()=>{ this._introStep=0; localStorage.setItem('nida-intro-seen','1'); this.requestUpdate(); }}>${getIntroT(this._lang,'step1_skip')}</button>
+        ` : html`
+          <div class="intro-icon">⚙️</div>
+          <div class="intro-title">${getIntroT(this._lang,'step2_title')}</div>
+          <div class="intro-body">${getIntroT(this._lang,'step2_body')}</div>
+          <div class="intro-step-dots">
+            <div class="intro-dot"></div>
+            <div class="intro-dot active"></div>
+          </div>
+          <button class="intro-btn" @click=${()=>this._introNext()}>${getIntroT(this._lang,'step2_btn')}</button>
+        `}
+      </div>` : '';
+
     return html`
       <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-      <div class="flip-container">
+      <div class="flip-container" style="position:relative;">
         <div class="flipper ${this._flipped?'flipped':''}">
           ${front}
           ${back}
         </div>
+        ${introOverlay}
       </div>`;
   }
 }
 
 customElements.define('nida-card', NidaCard);
-console.log('%c NIDA CARD v35 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');
+console.log('%c NIDA CARD v41 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');
+
+
