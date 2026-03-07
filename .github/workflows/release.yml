@@ -1,27 +1,21 @@
 name: Release Nida
-
 on:
   release:
     types: [published, edited]
   push:
     tags:
       - "v*"
-
 permissions:
   contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      # ── Basis sounds (vaste selectie) ──────────────────────────────────────
       - name: Define base sounds
         run: |
-          SOUNDS="nida/sounds"
+          SOUNDS="www/nida/sounds"
           BASE_FILES=(
             "$SOUNDS/Adhan [day] - Ahmed Saeed Al-Omrany.mp3"
             "$SOUNDS/Adhan [day] - Amer Marei.mp3"
@@ -40,62 +34,43 @@ jobs:
             fi
           done
           printf '%s\n' "${BASE_FILES[@]}" > /tmp/base_sounds.txt
-
-      # ── nida.zip — integratie inclusief kaart en basis sounds ──────────────
       - name: Create nida.zip
         run: |
-          # Integratie bestanden (zonder sounds map)
-          cd nida
-          zip -r ../nida.zip . \
+          cd custom_components/nida
+          zip -r ../../nida.zip . \
             --exclude "*.pyc" \
             --exclude "__pycache__/*" \
-            --exclude ".DS_Store" \
-            --exclude "sounds/*"
-          cd ..
-
-          # Voeg Lovelace kaart toe onder www/ pad in de zip
-          if [ -f "www/nida-card.js" ]; then
-            zip nida.zip www/nida-card.js
-            echo "✅ www/nida-card.js toegevoegd"
+            --exclude ".DS_Store"
+          cd ../..
+          if [ -f "www/nida/nida-card.js" ]; then
+            zip nida.zip www/nida/nida-card.js
+            echo "✅ www/nida/nida-card.js toegevoegd"
           else
-            echo "⚠️  www/nida-card.js niet gevonden"
+            echo "⚠️  www/nida/nida-card.js niet gevonden"
           fi
-
-          # Voeg basis sounds toe
           while IFS= read -r f; do
             [ -f "$f" ] && zip nida.zip "$f" && echo "➕ $f"
           done < /tmp/base_sounds.txt
-
           echo "=== nida.zip inhoud ==="
           unzip -l nida.zip
-
-      # ── Uitbreiding packs (automatisch op basis van [categorie]) ───────────
       - name: Create extension packs
         run: |
-          SOUNDS="nida/sounds"
-
-          # pack-adhan.zip — alle [day] en [fajr] bestanden
+          SOUNDS="www/nida/sounds"
           mapfile -t ADHAN < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "\[(day|fajr)\]" | sort)
           if [ ${#ADHAN[@]} -gt 0 ]; then
             zip pack-adhan.zip "${ADHAN[@]}"
             echo "✅ pack-adhan.zip: ${#ADHAN[@]} bestanden"
           fi
-
-          # pack-ramadan.zip — alle [tarhim] en [suhoor] bestanden
           mapfile -t RAMADAN < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "\[(salawat|suhoor)\]" | sort)
           if [ ${#RAMADAN[@]} -gt 0 ]; then
             zip pack-ramadan.zip "${RAMADAN[@]}"
             echo "✅ pack-ramadan.zip: ${#RAMADAN[@]} bestanden"
           fi
-
-          # pack-jingles.zip — alle [jingle] bestanden
           mapfile -t JINGLES < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "\[jingle\]" | sort)
           if [ ${#JINGLES[@]} -gt 0 ]; then
             zip pack-jingles.zip "${JINGLES[@]}"
             echo "✅ pack-jingles.zip: ${#JINGLES[@]} bestanden"
           fi
-
-      # ── Upload naar release ─────────────────────────────────────────────────
       - name: Upload to release
         uses: softprops/action-gh-release@v1
         with:
