@@ -47,7 +47,6 @@ async def async_copy_sounds(hass: HomeAssistant):
     """Kopieer sounds van integration naar /config/www/nida/sounds/ bij install/update."""
 
     def _do_copy():
-        # ✅ Alle I/O zit in dit blok — wordt uitgevoerd in thread executor
         integration_dir = os.path.dirname(__file__)
         sounds_src = os.path.join(integration_dir, "sounds")
         sounds_dst = hass.config.path("www/nida/sounds")
@@ -62,7 +61,6 @@ async def async_copy_sounds(hass: HomeAssistant):
 
         copied = 0
 
-        # Sounds kopiëren
         for f in sorted(os.listdir(sounds_src)):
             if f.endswith(".mp3"):
                 src = os.path.join(sounds_src, f)
@@ -72,7 +70,6 @@ async def async_copy_sounds(hass: HomeAssistant):
                     copied += 1
                     _LOGGER.info("Copied sound: %s", f)
 
-        # Logo kopiëren voor cover art — zoek in brand/ of images/
         logo_dst = os.path.join(www_nida, "logo.png")
         if not os.path.exists(logo_dst):
             for candidate in [
@@ -114,7 +111,6 @@ async def async_setup_adhan_scheduler(hass: HomeAssistant, entry: ConfigEntry, c
         current_time = now.strftime("%H:%M")
         now_ts = now.timestamp()
 
-        # Op vrijdag: Dhuhr vervangen door Jumat
         is_friday = now.weekday() == 4
         if is_friday and "Dhuhr" in prayers:
             prayers["Jumat"] = prayers.pop("Dhuhr")
@@ -154,7 +150,6 @@ async def _get_media_url(hass, local_path: str) -> str:
 def _get_volume(options, base_vol_key, base_default):
     """Geef het juiste volume terug (0.0–1.0) op basis van dag/nacht instelling."""
     raw = options.get(base_vol_key, base_default)
-    # Sla % op als int (0-100), converteer hier naar float
     volume = raw / 100 if isinstance(raw, (int, float)) and raw > 1 else float(raw)
     volume = max(0.0, min(1.0, volume))
 
@@ -176,19 +171,18 @@ async def _play_media_with_volume(
     media_url: str,
     volume: float,
     cover_url: str | None = None,
-    restore_delay: float = 30.0,
+    restore_delay: float = 300.0,
 ) -> None:
     """
     Speel media af met correcte volume-handling voor alle player-types.
 
     Aanpak:
       1. Sla huidig volume op per speaker
-      2. Zet volume via volume_set (werkt bij Sonos, Google, generic)
+      2. Zet volume via volume_set
       3. Wacht 0.5s zodat volume is ingesteld
-      4. Speel af (zonder announce — dat overschrijft volume bij veel players)
+      4. Speel af
       5. Restore volume na restore_delay seconden
     """
-    # Stap 1: huidig volume opslaan
     original_volumes: dict[str, float | None] = {}
     for speaker in speakers:
         state = hass.states.get(speaker)
@@ -198,7 +192,6 @@ async def _play_media_with_volume(
         else:
             original_volumes[speaker] = None
 
-    # Stap 2: volume instellen
     try:
         await hass.services.async_call(
             "media_player", "volume_set",
@@ -207,13 +200,10 @@ async def _play_media_with_volume(
     except Exception as e:
         _LOGGER.warning("Volume set mislukt: %s", e)
 
-    # Stap 3: wacht op settle
     await asyncio.sleep(0.5)
 
-    # Stap 4: afspelen — extra bevat cover art voor compatibele players
     extra: dict = {}
     if cover_url:
-        # thumbnail = Cast/Google Home, media_image_url = generieke players
         extra["thumbnail"] = cover_url
         extra["media_image_url"] = cover_url
 
@@ -231,7 +221,6 @@ async def _play_media_with_volume(
         _LOGGER.error("Afspelen mislukt: %s", e)
         return
 
-    # Stap 5: restore volume na restore_delay (niet-blokkerend)
     async def _restore():
         await asyncio.sleep(restore_delay)
         for speaker, orig_vol in original_volumes.items():
@@ -252,6 +241,56 @@ def _get_logo_url(hass) -> str:
     base_url = hass.config.internal_url or hass.config.external_url or ""
     base_url = base_url.rstrip("/")
     return f"{base_url}/local/nida/logo.png"
+
+
+def _get_mp3_duration(path: str) -> float:
+    """
+    Lees MP3 duur in seconden — pure Python, geen externe library nodig.
+    Gebruikt Xing/Info VBR header als beschikbaar, anders filesize/bitrate schatting.
+    """
+    import struct
+    BITRATES    = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320]
+    SAMPLERATES = [44100, 48000, 32000]
+
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+
+        offset = 0
+        if data[:3] == b"ID3":
+            size = (
+                (data[6] & 0x7f) << 21 | (data[7] & 0x7f) << 14 |
+                (data[8] & 0x7f) << 7  | (data[9] & 0x7f)
+            )
+            offset = size + 10
+
+        for i in range(offset, min(offset + 10000, len(data) - 4)):
+            if data[i] != 0xff or (data[i + 1] & 0xe0) != 0xe0:
+                continue
+            b2 = data[i + 2]
+            bitrate_idx    = (b2 >> 4) & 0xf
+            samplerate_idx = (b2 >> 2) & 0x3
+            if bitrate_idx in (0, 15) or samplerate_idx >= len(SAMPLERATES):
+                continue
+
+            bitrate    = BITRATES[bitrate_idx] * 1000
+            samplerate = SAMPLERATES[samplerate_idx]
+
+            xing_off = i + 36
+            if len(data) > xing_off + 12 and data[xing_off:xing_off + 4] in (b"Xing", b"Info"):
+                flags = struct.unpack(">I", data[xing_off + 4:xing_off + 8])[0]
+                if flags & 0x1:
+                    frames = struct.unpack(">I", data[xing_off + 8:xing_off + 12])[0]
+                    return round(frames * 1152 / samplerate, 1)
+
+            frame_size   = 144 * bitrate // samplerate
+            total_frames = (len(data) - i) // frame_size if frame_size else 0
+            return round(total_frames * 1152 / samplerate, 1)
+
+    except Exception as e:
+        _LOGGER.warning("Kon MP3 duur niet lezen van %s: %s", path, e)
+
+    return 0.0
 
 
 async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
@@ -278,11 +317,34 @@ async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
         _LOGGER.warning("Geen sound geconfigureerd voor %s — adhan overgeslagen", prayer_type)
         return
 
+    # ✅ FIX: Bepaal werkelijke MP3-duur voor correcte restore_delay
+    sounds_path = hass.config.path("www/nida/sounds")
+    mp3_path = os.path.join(sounds_path, sound)
+    duration = await hass.async_add_executor_job(_get_mp3_duration, mp3_path)
+
+    if duration > 0:
+        # 5 seconden buffer na einde adhan voordat volume wordt hersteld
+        restore_delay = duration + 5.0
+        _LOGGER.info(
+            "Adhan duur: %.1fs → volume restore na %.1fs",
+            duration, restore_delay,
+        )
+    else:
+        # Fallback: handmatig ingestelde waarde, anders 300s (5 min)
+        restore_delay = float(options.get("adhan_restore_delay", 300))
+        _LOGGER.warning(
+            "Kon duur niet lezen van '%s' — gebruik fallback restore_delay: %.0fs",
+            sound, restore_delay,
+        )
+
     play_method = options.get(CONF_PLAY_METHOD, "media_player")
     media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
     cover_url = _get_logo_url(hass)
 
-    _LOGGER.info("Adhan %s: %s op %s (volume %.0f%%)", prayer_type, sound, speaker, volume * 100)
+    _LOGGER.info(
+        "Adhan %s: %s op %s (volume %.0f%%, restore na %.0fs)",
+        prayer_type, sound, speaker, volume * 100, restore_delay,
+    )
 
     if play_method == "chime_tts":
         await hass.services.async_call(
@@ -298,7 +360,7 @@ async def play_adhan(hass: HomeAssistant, entry: ConfigEntry, prayer_type: str):
         await _play_media_with_volume(
             hass, speaker, media_url, volume,
             cover_url=cover_url,
-            restore_delay=float(options.get("adhan_restore_delay", 30)),
+            restore_delay=restore_delay,
         )
 
     prayer_display = prayer_type.capitalize()
@@ -319,10 +381,6 @@ async def async_send_notification(
     """
     Stuur notificatie op basis van type.
     notify_type: "prayer" | "pre_adhan" | "tarhim" | "suhoor"
-
-    Kritische notificaties:
-    - iOS:    push.sound.critical=1 — doorbreekt Niet Storen + stil profiel
-    - Android: channel=alarm_stream  — doorbreekt Niet Storen
     """
     options = entry.options if entry.options else entry.data
 
@@ -330,7 +388,6 @@ async def async_send_notification(
     if not options.get(type_key, notify_type == "prayer"):
         return
 
-    # Per-type target ophalen (notify_target_prayer, notify_target_pre_adhan, etc.)
     target_key = f"notify_target_{notify_type}"
     target = options.get(target_key, options.get("notify_target", entry.data.get("notify_target", "")))
     if not target:
@@ -351,8 +408,6 @@ async def async_send_notification(
             data: dict = {"title": title, "message": message}
 
             if critical:
-                # iOS + Android kritisch — beide payloads tegelijk
-                # Elk platform negeert de velden van de ander — geen conflict
                 data["data"] = {
                     "push": {
                         "sound": {
@@ -431,7 +486,6 @@ async def check_reminders(hass, entry, coordinator, now_ts, prayers):
                     except Exception as e:
                         _LOGGER.warning("Could not play TTS reminder: %s", e)
 
-                # Pre-adhan notificatie met ingevulde tekst
                 notify_msg = options.get(
                     "notify_msg_pre_adhan",
                     f"{prayer_name} in {int(minutes)} minutes"
@@ -443,66 +497,10 @@ async def check_reminders(hass, entry, coordinator, now_ts, prayers):
                 )
 
 
-def _get_mp3_duration(path: str) -> float:
-    """
-    Lees MP3 duur in seconden — pure Python, geen externe library nodig.
-    Gebruikt Xing/Info VBR header als beschikbaar, anders filesize/bitrate schatting.
-    """
-    import struct
-    BITRATES    = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320]
-    SAMPLERATES = [44100, 48000, 32000]
-
-    try:
-        with open(path, "rb") as f:
-            data = f.read()
-
-        # Skip ID3v2 tag indien aanwezig
-        offset = 0
-        if data[:3] == b"ID3":
-            size = (
-                (data[6] & 0x7f) << 21 | (data[7] & 0x7f) << 14 |
-                (data[8] & 0x7f) << 7  | (data[9] & 0x7f)
-            )
-            offset = size + 10
-
-        # Zoek eerste geldige MPEG frame header
-        for i in range(offset, min(offset + 10000, len(data) - 4)):
-            if data[i] != 0xff or (data[i + 1] & 0xe0) != 0xe0:
-                continue
-            b2 = data[i + 2]
-            bitrate_idx    = (b2 >> 4) & 0xf
-            samplerate_idx = (b2 >> 2) & 0x3
-            if bitrate_idx in (0, 15) or samplerate_idx >= len(SAMPLERATES):
-                continue
-
-            bitrate    = BITRATES[bitrate_idx] * 1000
-            samplerate = SAMPLERATES[samplerate_idx]
-
-            # Xing/Info header aanwezig? → nauwkeurige frame-telling
-            xing_off = i + 36  # MPEG1 stereo offset
-            if len(data) > xing_off + 12 and data[xing_off:xing_off + 4] in (b"Xing", b"Info"):
-                flags = struct.unpack(">I", data[xing_off + 4:xing_off + 8])[0]
-                if flags & 0x1:
-                    frames = struct.unpack(">I", data[xing_off + 8:xing_off + 12])[0]
-                    return round(frames * 1152 / samplerate, 1)
-
-            # Fallback: bestandsgrootte / bitrate
-            frame_size   = 144 * bitrate // samplerate
-            total_frames = (len(data) - i) // frame_size if frame_size else 0
-            return round(total_frames * 1152 / samplerate, 1)
-
-    except Exception as e:
-        _LOGGER.warning("Kon MP3 duur niet lezen van %s: %s", path, e)
-
-    return 0.0
-
-
 async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now_ts: float):
     """
     Speel tarhim voor Fajr tijdens Ramadan.
-
     Starttijd = Fajr - duur_van_mp3 - 5 seconden buffer.
-    De duur wordt eenmalig per run gelezen via _get_mp3_duration() in een executor job.
     """
     options = entry.options if entry.options else entry.data
 
@@ -528,7 +526,6 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
             _LOGGER.warning("Geen tarhim sound geconfigureerd — overgeslagen")
             return
 
-        # MP3 duur ophalen in executor (blocking file I/O)
         sounds_path = hass.config.path("www/nida/sounds")
         mp3_path    = os.path.join(sounds_path, sound)
         duration    = await hass.async_add_executor_job(_get_mp3_duration, mp3_path)
@@ -539,7 +536,6 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
             )
             return
 
-        # Starttijd = Fajr - duur - 5s buffer
         BUFFER_SECONDS = 5
         tarhim_ts = fajr_ts - duration - BUFFER_SECONDS
 
@@ -577,14 +573,12 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
 async def check_suhoor(hass: HomeAssistant, entry: ConfigEntry, coordinator, now_ts: float):
     """
     Speel suhoor alarm X minuten voor Fajr tijdens Ramadan.
-    Tijd is instelbaar via 'suhoor_minutes' (default: 30 min voor Fajr).
     """
     options = entry.options if entry.options else entry.data
 
     if not options.get("suhoor_enabled", True):
         return
 
-    # Alleen tijdens Ramadan
     try:
         hijri_month = coordinator.data["data"]["date"]["hijri"]["month"]["en"]
         if "Rama" not in hijri_month:
@@ -632,144 +626,6 @@ async def check_suhoor(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
             )
     except Exception as e:
         _LOGGER.error("Suhoor error: %s", e)
-
-
-
-    """Registreer services."""
-
-    async def handle_preview(call):
-        """Preview een adhan geluid."""
-        sound = call.data.get("sound")
-        options = entry.options if entry.options else entry.data
-        speaker = call.data.get("speaker", options.get(CONF_DAY_SPEAKER, "media_player.adhan_speakers"))
-        if isinstance(speaker, str):
-            speaker = [speaker]
-        raw = call.data.get("volume", options.get(CONF_DAY_VOLUME, 30))
-        volume = raw / 100 if isinstance(raw, (int, float)) and raw > 1 else float(raw)
-        volume = max(0.0, min(1.0, volume))
-        play_method = options.get(CONF_PLAY_METHOD, "media_player")
-        media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
-
-        if play_method == "chime_tts":
-            await hass.services.async_call(
-                "chime_tts", "say",
-                {"entity_id": speaker, "chime_path": media_url,
-                 "volume_level": volume, "announce": True}
-            )
-        else:
-            await _play_media_with_volume(
-                hass, speaker, media_url, volume,
-                cover_url=_get_logo_url(hass),
-                restore_delay=30.0,
-            )
-
-    async def handle_test_prayer(call):
-        """Test adhan voor een specifiek gebed."""
-        prayer = call.data.get("prayer", "dhuhr")
-        await play_adhan(hass, entry, prayer)
-
-    async def handle_test_tarhim(call):
-        """Test tarhim."""
-        options = entry.options if entry.options else entry.data
-        speaker = call.data.get("speaker", options.get(CONF_TARHIM_SPEAKER, "media_player.adhan_speakers"))
-        if isinstance(speaker, str):
-            speaker = [speaker]
-        raw = call.data.get("volume", options.get(CONF_TARHIM_VOLUME, 15))
-        volume = raw / 100 if isinstance(raw, (int, float)) and raw > 1 else float(raw)
-        volume = max(0.0, min(1.0, volume))
-        sound = call.data.get("sound", options.get(CONF_TARHIM_SOUND, "Ramadan [salawat] - Ustaz Hendra.mp3"))
-        media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
-        await _play_media_with_volume(
-            hass, speaker, media_url, volume,
-            cover_url=_get_logo_url(hass),
-            restore_delay=60.0,
-        )
-
-    async def handle_test_reminder(call):
-        """Test pre-adhan reminder (sound + TTS)."""
-        options = entry.options if entry.options else entry.data
-        r_num = call.data.get("reminder", 1)
-        minutes = options.get(f"reminder_{r_num}_minutes", 10)
-        prayer = call.data.get("prayer", "Dhuhr")
-        sound = options.get(f"reminder_{r_num}_sound", "")
-        lang = options.get(f"reminder_{r_num}_lang", "nl")
-        text = options.get(f"reminder_{r_num}_tts", "Over [minutes] minuten is het tijd voor [prayer]")
-        text = text.replace("[minutes]", str(int(minutes))).replace("[prayer]", prayer)
-        speaker = options.get(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"])
-        if isinstance(speaker, str): speaker = [speaker]
-        volume = _get_volume(options, CONF_DAY_VOLUME, 50)
-
-        if sound:
-            media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
-            await _play_media_with_volume(
-                hass, speaker, media_url, volume,
-                cover_url=_get_logo_url(hass),
-                restore_delay=10.0,
-            )
-            await asyncio.sleep(3)
-
-        if text:
-            lang_map = {"nl": "nl-NL", "en": "en-US", "ar": "ar-SA", "tr": "tr-TR"}
-            tts_lang = lang_map.get(lang, lang)
-            tts_entity = "tts.home_assistant_cloud"
-            await hass.services.async_call(
-                "tts", "speak",
-                {
-                    "entity_id": tts_entity,
-                    "media_player_entity_id": speaker if isinstance(speaker, list) else [speaker],
-                    "message": text,
-                    "language": tts_lang,
-                    "options": {"voice": "HamedNeural"} if tts_lang == "ar-SA" else {}
-                }
-            )
-
-    async def handle_test_notification(call):
-        """Test notificatie."""
-        options = entry.options if entry.options else entry.data
-        custom_title = options.get("notify_title", "🕌 Prayer Times")
-        custom_msg = options.get("notify_message", "It is time for {prayer} prayer")
-        await async_send_notification(hass, entry, custom_msg, custom_title)
-
-    hass.services.async_register(
-        DOMAIN, "preview_adhan", handle_preview,
-        schema=vol.Schema({
-            vol.Required("sound"): str,
-            vol.Optional("speaker"): str,
-            vol.Optional("volume"): vol.Any(None, vol.Coerce(int)),
-        })
-    )
-
-    hass.services.async_register(
-        DOMAIN, "test_prayer", handle_test_prayer,
-        schema=vol.Schema({
-            vol.Optional("prayer", default="dhuhr"): vol.In(["fajr", "dhuhr", "asr", "maghrib", "isha", "jumat"]),
-        })
-    )
-
-    hass.services.async_register(
-        DOMAIN, "test_tarhim", handle_test_tarhim,
-        schema=vol.Schema({
-            vol.Optional("sound"): str,
-            vol.Optional("speaker"): str,
-            vol.Optional("volume"): vol.Any(None, vol.Coerce(int)),
-        })
-    )
-
-    hass.services.async_register(
-        DOMAIN, "test_notification", handle_test_notification,
-        schema=vol.Schema({
-            vol.Optional("title"): str,
-            vol.Optional("message"): str,
-        })
-    )
-
-    hass.services.async_register(
-        DOMAIN, "test_reminder", handle_test_reminder,
-        schema=vol.Schema({
-            vol.Optional("reminder", default=1): vol.In([1, 2]),
-            vol.Optional("prayer", default="Dhuhr"): str,
-        })
-    )
 
 
 async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
@@ -837,8 +693,7 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
         text = options.get(f"reminder_{r_num}_tts", "Over [minutes] minuten is het tijd voor [prayer]")
         text = text.replace("[minutes]", str(int(minutes))).replace("[prayer]", prayer)
         speaker = options.get(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"])
-        if isinstance(speaker, str):
-            speaker = [speaker]
+        if isinstance(speaker, str): speaker = [speaker]
         volume = _get_volume(options, CONF_DAY_VOLUME, 50)
 
         if sound:
@@ -1000,7 +855,6 @@ async def async_update_services_yaml(hass: HomeAssistant):
     import yaml
 
     def _build_and_write():
-        # ✅ Alle I/O zit in dit blok — wordt uitgevoerd in thread executor
         sounds_path = hass.config.path("www/nida/sounds")
         fajr_options = []
         day_options = []
@@ -1028,7 +882,6 @@ async def async_update_services_yaml(hass: HomeAssistant):
                 elif "[day]" in fl or ("adhan" in fl and "fajr" not in fl and "tarhim" not in fl and "suhoor" not in fl):
                     day_options.append({"label": label, "value": f})
 
-        # Jingle opties toevoegen aan preview
         jingle_options = []
         for f in sorted(os.listdir(sounds_path)) if os.path.isdir(sounds_path) else []:
             if not f.endswith(".mp3"):
