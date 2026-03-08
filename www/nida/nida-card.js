@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-// NIDA CARD v42 — fix: nextAction toont altijd eerstvolgende actie (ook na Isha)
+// NIDA CARD v43 — feat: collapsed state persistent, skip suhoor/tarhim button, settings toggle
 
 // Hijri maandnamen per taal
 const HIJRI_MONTHS = {
@@ -17,16 +17,16 @@ function getHijriMonth(monthNum, lang) {
 }
 
 const TRANSLATIONS = {
-  nl: { next_prayer:'Volgend Gebed', remaining:'Resterend', tadkir:'Tadkir', pre_adhan:'Pre-adhan', adhan:'Adhan', tarhim:'Tarhim', suhoor:'Suhoor', ramadan:'Ramadan', dag:'Dag', imsak:'Imsak', iftar:'Iftar', settings:'Instellingen', show_title:'Toon datum', language:'Taal', no_action:'Geen actie', theme:'Thema', brightness:'Helderheid', close_settings:'Kaart sluiten', prayers:{ fajr:'Fajr', dhuhr:'Dhuhr', asr:'Asr', maghrib:'Maghrib', isha:'Isha' } },
-  en: { next_prayer:'Next Prayer', remaining:'Remaining', tadkir:'Tadkir', pre_adhan:'Pre-adhan', adhan:'Adhan', tarhim:'Tarhim', suhoor:'Suhoor', ramadan:'Ramadan', dag:'Day', imsak:'Imsak', iftar:'Iftar', settings:'Settings', show_title:'Show date', language:'Language', no_action:'No action', theme:'Theme', brightness:'Brightness', close_settings:'Close card', prayers:{ fajr:'Fajr', dhuhr:'Dhuhr', asr:'Asr', maghrib:'Maghrib', isha:'Isha' } },
-  ar: { next_prayer:'الصلاة القادمة', remaining:'المتبقي', tadkir:'تذكير', pre_adhan:'قبل الأذان', adhan:'أذان', tarhim:'ترحيم', suhoor:'سحور', ramadan:'رمضان', dag:'يوم', imsak:'إمساك', iftar:'إفطار', settings:'إعدادات', show_title:'إظهار التاريخ', language:'اللغة', no_action:'لا إجراء', theme:'المظهر', brightness:'السطوع', close_settings:'إغلاق البطاقة', prayers:{ fajr:'الفجر', dhuhr:'الظهر', asr:'العصر', maghrib:'المغرب', isha:'العشاء' } },
-  de: { next_prayer:'Nächstes Gebet', remaining:'Verbleibend', tadkir:'Tadkir', pre_adhan:'Vor-Adhan', adhan:'Adhan', tarhim:'Tarhim', suhoor:'Suhoor', ramadan:'Ramadan', dag:'Tag', imsak:'Imsak', iftar:'Iftar', settings:'Einstellungen', show_title:'Datum anzeigen', language:'Sprache', no_action:'Keine Aktion', theme:'Design', brightness:'Helligkeit', close_settings:'Karte schließen', prayers:{ fajr:'Fajr', dhuhr:'Dhuhr', asr:'Asr', maghrib:'Maghrib', isha:'Isha' } },
-  fr: { next_prayer:'Prochaine Prière', remaining:'Restant', tadkir:'Tadkir', pre_adhan:'Pré-adhan', adhan:'Adhan', tarhim:'Tarhim', suhoor:'Suhour', ramadan:'Ramadan', dag:'Jour', imsak:'Imsak', iftar:'Iftar', settings:'Paramètres', show_title:'Afficher date', language:'Langue', no_action:'Aucune action', theme:'Thème', brightness:'Luminosité', close_settings:'Fermer la carte', prayers:{ fajr:'Fajr', dhuhr:'Dhuhr', asr:'Asr', maghrib:'Maghrib', isha:'Isha' } },
-  id: { next_prayer:'Sholat Berikutnya', remaining:'Tersisa', tadkir:'Tadkir', pre_adhan:'Pra-adzan', adhan:'Adzan', tarhim:'Tarhim', suhoor:'Sahur', ramadan:'Ramadan', dag:'Hari', imsak:'Imsak', iftar:'Iftar', settings:'Pengaturan', show_title:'Tampilkan tanggal', language:'Bahasa', no_action:'Tidak ada', theme:'Tema', brightness:'Kecerahan', close_settings:'Tutup kartu', prayers:{ fajr:'Subuh', dhuhr:'Dzuhur', asr:'Ashar', maghrib:'Maghrib', isha:'Isya' } },
-  ms: { next_prayer:'Solat Seterusnya', remaining:'Baki', tadkir:'Tadkir', pre_adhan:'Pra-azan', adhan:'Azan', tarhim:'Tarhim', suhoor:'Sahur', ramadan:'Ramadan', dag:'Hari', imsak:'Imsak', iftar:'Iftar', settings:'Tetapan', show_title:'Tunjuk tarikh', language:'Bahasa', no_action:'Tiada', theme:'Tema', brightness:'Kecerahan', close_settings:'Tutup kad', prayers:{ fajr:'Subuh', dhuhr:'Zohor', asr:'Asar', maghrib:'Maghrib', isha:'Isyak' } },
-  tr: { next_prayer:'Sonraki Namaz', remaining:'Kalan', tadkir:'Hatırlatma', pre_adhan:'Ezan Öncesi', adhan:'Ezan', tarhim:'Terhim', suhoor:'Sahur', ramadan:'Ramazan', dag:'Gün', imsak:'İmsak', iftar:'İftar', settings:'Ayarlar', show_title:'Tarihi göster', language:'Dil', no_action:'İşlem yok', theme:'Tema', brightness:'Parlaklık', close_settings:'Kartı kapat', prayers:{ fajr:'Sabah', dhuhr:'Öğle', asr:'İkindi', maghrib:'Akşam', isha:'Yatsı' } },
-  ur: { next_prayer:'اگلی نماز', remaining:'باقی', tadkir:'تذکیر', pre_adhan:'پیشِ اذان', adhan:'اذان', tarhim:'ترحیم', suhoor:'سحری', ramadan:'رمضان', dag:'دن', imsak:'امساک', iftar:'افطار', settings:'ترتیبات', show_title:'تاریخ دکھائیں', language:'زبان', no_action:'کوئی عمل نہیں', theme:'تھیم', brightness:'روشنی', close_settings:'کارڈ بند کریں', prayers:{ fajr:'فجر', dhuhr:'ظہر', asr:'عصر', maghrib:'مغرب', isha:'عشاء' } },
-  fa: { next_prayer:'نماز بعدی', remaining:'باقی‌مانده', tadkir:'تذکیر', pre_adhan:'پیش از اذان', adhan:'اذان', tarhim:'ترحیم', suhoor:'سحر', ramadan:'رمضان', dag:'روز', imsak:'امساک', iftar:'افطار', settings:'تنظیمات', show_title:'نمایش تاریخ', language:'زبان', no_action:'هیچ عملی', theme:'پوسته', brightness:'روشنایی', close_settings:'بستن کارت', prayers:{ fajr:'صبح', dhuhr:'ظهر', asr:'عصر', maghrib:'مغرب', isha:'عشاء' } },
+  nl: { next_prayer:'Volgend Gebed', remaining:'Resterend', tadkir:'Tadkir', pre_adhan:'Pre-adhan', adhan:'Adhan', tarhim:'Tarhim', suhoor:'Suhoor', ramadan:'Ramadan', dag:'Dag', imsak:'Imsak', iftar:'Iftar', settings:'Instellingen', show_title:'Toon datum', language:'Taal', no_action:'Geen actie', theme:'Thema', brightness:'Helderheid', close_settings:'Kaart sluiten', skip_suhoor:'Suhoor overslaan', show_skip_suhoor:'Toon "suhoor overslaan"', prayers:{ fajr:'Fajr', dhuhr:'Dhuhr', asr:'Asr', maghrib:'Maghrib', isha:'Isha' } },
+  en: { next_prayer:'Next Prayer', remaining:'Remaining', tadkir:'Tadkir', pre_adhan:'Pre-adhan', adhan:'Adhan', tarhim:'Tarhim', suhoor:'Suhoor', ramadan:'Ramadan', dag:'Day', imsak:'Imsak', iftar:'Iftar', settings:'Settings', show_title:'Show date', language:'Language', no_action:'No action', theme:'Theme', brightness:'Brightness', close_settings:'Close card', skip_suhoor:'Skip Suhoor', show_skip_suhoor:'Show "skip suhoor"', prayers:{ fajr:'Fajr', dhuhr:'Dhuhr', asr:'Asr', maghrib:'Maghrib', isha:'Isha' } },
+  ar: { next_prayer:'الصلاة القادمة', remaining:'المتبقي', tadkir:'تذكير', pre_adhan:'قبل الأذان', adhan:'أذان', tarhim:'ترحيم', suhoor:'سحور', ramadan:'رمضان', dag:'يوم', imsak:'إمساك', iftar:'إفطار', settings:'إعدادات', show_title:'إظهار التاريخ', language:'اللغة', no_action:'لا إجراء', theme:'المظهر', brightness:'السطوع', close_settings:'إغلاق البطاقة', skip_suhoor:'تخطي السحور', show_skip_suhoor:'إظهار "تخطي السحور"', prayers:{ fajr:'الفجر', dhuhr:'الظهر', asr:'العصر', maghrib:'المغرب', isha:'العشاء' } },
+  de: { next_prayer:'Nächstes Gebet', remaining:'Verbleibend', tadkir:'Tadkir', pre_adhan:'Vor-Adhan', adhan:'Adhan', tarhim:'Tarhim', suhoor:'Suhoor', ramadan:'Ramadan', dag:'Tag', imsak:'Imsak', iftar:'Iftar', settings:'Einstellungen', show_title:'Datum anzeigen', language:'Sprache', no_action:'Keine Aktion', theme:'Design', brightness:'Helligkeit', close_settings:'Karte schließen', skip_suhoor:'Suhoor überspringen', show_skip_suhoor:'"Suhoor überspringen" zeigen', prayers:{ fajr:'Fajr', dhuhr:'Dhuhr', asr:'Asr', maghrib:'Maghrib', isha:'Isha' } },
+  fr: { next_prayer:'Prochaine Prière', remaining:'Restant', tadkir:'Tadkir', pre_adhan:'Pré-adhan', adhan:'Adhan', tarhim:'Tarhim', suhoor:'Suhour', ramadan:'Ramadan', dag:'Jour', imsak:'Imsak', iftar:'Iftar', settings:'Paramètres', show_title:'Afficher date', language:'Langue', no_action:'Aucune action', theme:'Thème', brightness:'Luminosité', close_settings:'Fermer la carte', skip_suhoor:'Ignorer Suhour', show_skip_suhoor:'Afficher "ignorer suhour"', prayers:{ fajr:'Fajr', dhuhr:'Dhuhr', asr:'Asr', maghrib:'Maghrib', isha:'Isha' } },
+  id: { next_prayer:'Sholat Berikutnya', remaining:'Tersisa', tadkir:'Tadkir', pre_adhan:'Pra-adzan', adhan:'Adzan', tarhim:'Tarhim', suhoor:'Sahur', ramadan:'Ramadan', dag:'Hari', imsak:'Imsak', iftar:'Iftar', settings:'Pengaturan', show_title:'Tampilkan tanggal', language:'Bahasa', no_action:'Tidak ada', theme:'Tema', brightness:'Kecerahan', close_settings:'Tutup kartu', skip_suhoor:'Lewati Sahur', show_skip_suhoor:'Tampilkan "lewati sahur"', prayers:{ fajr:'Subuh', dhuhr:'Dzuhur', asr:'Ashar', maghrib:'Maghrib', isha:'Isya' } },
+  ms: { next_prayer:'Solat Seterusnya', remaining:'Baki', tadkir:'Tadkir', pre_adhan:'Pra-azan', adhan:'Azan', tarhim:'Tarhim', suhoor:'Sahur', ramadan:'Ramadan', dag:'Hari', imsak:'Imsak', iftar:'Iftar', settings:'Tetapan', show_title:'Tunjuk tarikh', language:'Bahasa', no_action:'Tiada', theme:'Tema', brightness:'Kecerahan', close_settings:'Tutup kad', skip_suhoor:'Langkau Sahur', show_skip_suhoor:'Tunjuk "langkau sahur"', prayers:{ fajr:'Subuh', dhuhr:'Zohor', asr:'Asar', maghrib:'Maghrib', isha:'Isyak' } },
+  tr: { next_prayer:'Sonraki Namaz', remaining:'Kalan', tadkir:'Hatırlatma', pre_adhan:'Ezan Öncesi', adhan:'Ezan', tarhim:'Terhim', suhoor:'Sahur', ramadan:'Ramazan', dag:'Gün', imsak:'İmsak', iftar:'İftar', settings:'Ayarlar', show_title:'Tarihi göster', language:'Dil', no_action:'İşlem yok', theme:'Tema', brightness:'Parlaklık', close_settings:'Kartı kapat', skip_suhoor:'Sahuru Atla', show_skip_suhoor:'"Sahuru atla" göster', prayers:{ fajr:'Sabah', dhuhr:'Öğle', asr:'İkindi', maghrib:'Akşam', isha:'Yatsı' } },
+  ur: { next_prayer:'اگلی نماز', remaining:'باقی', tadkir:'تذکیر', pre_adhan:'پیشِ اذان', adhan:'اذان', tarhim:'ترحیم', suhoor:'سحری', ramadan:'رمضان', dag:'دن', imsak:'امساک', iftar:'افطار', settings:'ترتیبات', show_title:'تاریخ دکھائیں', language:'زبان', no_action:'کوئی عمل نہیں', theme:'تھیم', brightness:'روشنی', close_settings:'کارڈ بند کریں', skip_suhoor:'سحری چھوڑیں', show_skip_suhoor:'"سحری چھوڑیں" دکھائیں', prayers:{ fajr:'فجر', dhuhr:'ظہر', asr:'عصر', maghrib:'مغرب', isha:'عشاء' } },
+  fa: { next_prayer:'نماز بعدی', remaining:'باقی‌مانده', tadkir:'تذکیر', pre_adhan:'پیش از اذان', adhan:'اذان', tarhim:'ترحیم', suhoor:'سحر', ramadan:'رمضان', dag:'روز', imsak:'امساک', iftar:'افطار', settings:'تنظیمات', show_title:'نمایش تاریخ', language:'زبان', no_action:'هیچ عملی', theme:'پوسته', brightness:'روشنایی', close_settings:'بستن کارت', skip_suhoor:'رد کردن سحر', show_skip_suhoor:'نمایش "رد کردن سحر"', prayers:{ fajr:'صبح', dhuhr:'ظهر', asr:'عصر', maghrib:'مغرب', isha:'عشاء' } },
 };
 
 
@@ -138,6 +138,18 @@ function moonPhaseEmoji(day) {
   if (d < 24) return '🌗'; if (d < 28) return '🌘'; return '🌑';
 }
 
+// Helperfunctie: geeft een sleutel terug die uniek is per nacht (reset na Maghrib)
+// Zodat "suhoor overslaan" alleen die nacht geldt
+function _nightKey() {
+  const now = new Date();
+  // Na middernacht maar voor Fajr valt nog onder "gisternacht" qua suhoor
+  // We gebruiken simpelweg de datum van vandaag als de uur >= 12, anders gisteren
+  const h = now.getHours();
+  const d = new Date(now);
+  if (h < 12) d.setDate(d.getDate() - 1);
+  return `nida-skip-suhoor-${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
 class NidaCard extends LitElement {
   static get properties() {
     return {
@@ -146,6 +158,8 @@ class NidaCard extends LitElement {
       _collapsed:{ type: Boolean },
       _introStep:{ type: Number },
       _introDemo:{ type: Boolean },
+      _skipSuhoor:{ type: Boolean },
+      _showSkipSuhoorBtn:{ type: Boolean },
     };
   }
 
@@ -156,7 +170,17 @@ class NidaCard extends LitElement {
     this._brightness = config.brightness !== undefined ? config.brightness : 50;
     this._lang = config.language || null;
     this._flipped = false;
-    this._collapsed = false;
+
+    // Herstel collapsed state uit localStorage
+    const savedCollapsed = localStorage.getItem('nida-collapsed');
+    this._collapsed = savedCollapsed === 'true';
+
+    // Herstel skip suhoor (per nacht)
+    this._skipSuhoor = localStorage.getItem(_nightKey()) === 'true';
+
+    // Toon/verberg de skip-suhoor knop (instelbaar via settings, standaard aan)
+    this._showSkipSuhoorBtn = config.show_skip_suhoor !== false;
+
     const seen = localStorage.getItem('nida-intro-seen');
     this._introStep = seen ? 0 : 1;
     this._introDemo = false;
@@ -219,7 +243,6 @@ class NidaCard extends LitElement {
   }
 
   _detectLang() {
-    // Standaard altijd Engels, tenzij expliciet ingesteld in config
     if (this._config?.language) return this._config.language;
     return 'en';
   }
@@ -227,6 +250,22 @@ class NidaCard extends LitElement {
   _s(e) { return this.hass?.states[e]?.state; }
   _a(e,a) { return this.hass?.states[e]?.attributes?.[a]; }
   _isRamadan() { return this._s('binary_sensor.is_ramadan') === 'on'; }
+
+  // Toggle collapsed + sla op in localStorage
+  _toggleCollapse(e) {
+    e.stopPropagation();
+    this._collapsed = !this._collapsed;
+    localStorage.setItem('nida-collapsed', String(this._collapsed));
+    this.requestUpdate();
+  }
+
+  // Toggle skip suhoor (voor deze nacht)
+  _toggleSkipSuhoor(e) {
+    e.stopPropagation();
+    this._skipSuhoor = !this._skipSuhoor;
+    localStorage.setItem(_nightKey(), String(this._skipSuhoor));
+    this.requestUpdate();
+  }
 
   _nextKey() {
     const map = { fajr:'sensor.02_fajr_readable', dhuhr:'sensor.04_dhuhr_readable', asr:'sensor.05_asr_readable', maghrib:'sensor.07_maghrib_readable', isha:'sensor.08_isha_readable' };
@@ -309,10 +348,8 @@ class NidaCard extends LitElement {
     for(const p of pmap){
       const t=this._s(p.e); if(!t||t==='unavailable') continue;
       const[h,m]=t.split(':').map(Number);
-      // Als gebed al voorbij is vandaag → voeg toe als morgen (+1440)
       let pm=h*60+m;
       if(pm<=nowMin) pm+=1440;
-      // Pre-adhan reminders (10 en 5 min voor)
       for(const off of[10,5]){
         const r=pm-off;
         if(r>nowMin) acts.push({type:'tadkir',prayerKey:p.k,min:r,time:_fmt(r)});
@@ -320,17 +357,19 @@ class NidaCard extends LitElement {
       acts.push({type:'adhan',prayerKey:p.k,min:pm,time:_fmt(pm)});
     }
 
-    // Suhoor: altijd tonen als sensor beschikbaar is (ook buiten Ramadan)
-    const imsak=this._s('sensor.01_imsak_readable');
-    if(imsak && imsak!=='unavailable'){
-      const[ih,im]=imsak.split(':').map(Number);
-      let sm=ih*60+im;
-      if(sm<=nowMin) sm+=1440;
-      acts.push({type:'suhoor',prayerKey:null,min:sm,time:_fmt(sm)});
+    // Suhoor: overgeslagen? Dan niet tonen
+    if (!this._skipSuhoor) {
+      const imsak=this._s('sensor.01_imsak_readable');
+      if(imsak && imsak!=='unavailable'){
+        const[ih,im]=imsak.split(':').map(Number);
+        let sm=ih*60+im;
+        if(sm<=nowMin) sm+=1440;
+        acts.push({type:'suhoor',prayerKey:null,min:sm,time:_fmt(sm)});
+      }
     }
 
-    // Tarhim: alleen tijdens Ramadan
-    if(isRam){
+    // Tarhim: alleen tijdens Ramadan en niet overgeslagen
+    if(isRam && !this._skipSuhoor){
       const f=this._s('sensor.02_fajr_readable');
       if(f && f!=='unavailable'){
         const[fh,fm]=f.split(':').map(Number);
@@ -365,19 +404,11 @@ class NidaCard extends LitElement {
     }
   }
 
-  // Toggle ingeklapt / uitgeklapt
-  _toggleCollapse(e) {
-    e.stopPropagation();
-    this._collapsed = !this._collapsed;
-    this.requestUpdate();
-  }
-
   static get styles() {
     return css`
       :host{display:block;width:100%;box-sizing:border-box;font-family:'Cairo',sans-serif;}
       *,*::before,*::after{box-sizing:border-box;}
 
-      /* ── FLIP CONTAINER ── */
       .flip-container{width:100%;perspective:1200px;}
       .flipper{
         position:relative;
@@ -413,7 +444,6 @@ class NidaCard extends LitElement {
         pointer-events:none;
       }
 
-      /* CARD — min-height zodat kaart overeenkomt met klok-kaart hoogte */
       .card{width:100%;border-radius:var(--ha-card-border-radius,12px);overflow:hidden;transition:background 0.4s;min-height:120px;box-sizing:border-box;}
 
       .header{padding:0;}
@@ -421,7 +451,6 @@ class NidaCard extends LitElement {
       .hijri-date{font-family:'Amiri',serif;font-size:19px;font-weight:700;line-height:1.2;display:flex;align-items:center;gap:7px;}
       .holiday-name{font-size:11px;font-weight:700;padding:6px 16px 0;}
 
-      /* HEADER BLOCK — klikbaar voor collapse */
       .header-block{
         border-radius:12px;
         overflow:hidden;
@@ -435,9 +464,6 @@ class NidaCard extends LitElement {
         transform:scale(0.995);
       }
 
-      /* Geen collapse indicator — pijltje verwijderd */
-
-      /* PROGRESS BAR */
       .progress-bar{
         height:10px;
         width:calc(100% - 24px);
@@ -455,8 +481,6 @@ class NidaCard extends LitElement {
         overflow:hidden;
         animation:progress-glow 3s ease-in-out infinite;
       }
-
-      /* Shimmer blijft BINNEN de fill via overflow:hidden op de parent */
       .progress-fill::after{
         content:'';
         position:absolute;
@@ -472,13 +496,11 @@ class NidaCard extends LitElement {
         0%,100% { box-shadow: 0 0 3px rgba(201,168,76,0.2); }
         50%      { box-shadow: 0 0 8px rgba(201,168,76,0.6); }
       }
-
       @keyframes progress-shimmer{
         0%   { left:-100%; }
         100% { left:160%; }
       }
 
-      /* NEXT PRAYER — compact padding */
       .next-block{
         padding:10px 12px 6px;
         width:100%;
@@ -527,14 +549,10 @@ class NidaCard extends LitElement {
         display:block;
         margin-bottom:2px;
       }
-
-      /* Countdown — geen puls hier, puls zit op de progress bar */
       .countdown{
         font-family:'Amiri',serif;font-size:28px;font-weight:700;line-height:1.15;
         display:block;
       }
-
-      /* Datum */
       .next-date{
         font-size:10px;font-weight:800;opacity:.55;
         margin-top:6px;
@@ -567,10 +585,8 @@ class NidaCard extends LitElement {
         overflow:hidden;
       }
 
-      /* PRAYER GRID */
       .prayers{padding:0 8px 8px;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:7px;}
 
-      /* DYNAMIC SLOT */
       .dynamic-slot{position:relative;border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;}
       .dynamic-sub{display:flex;flex-direction:column;gap:2px;margin-top:4px;font-size:11px;font-weight:600;opacity:.85;}
       .dynamic-countdown{font-family:'Amiri',serif;font-size:14px;font-weight:700;margin-top:5px;}
@@ -602,7 +618,6 @@ class NidaCard extends LitElement {
         align-self:center;
       }
 
-      /* PRAYER ITEM */
       .prayer-item{position:relative;padding:9px 11px;border-radius:10px;overflow:hidden;}
       .prayer-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:10px 0 0 10px;}
       .prayer-item.past{opacity:.4;}
@@ -613,7 +628,6 @@ class NidaCard extends LitElement {
       .card.light .prayer-emoji{opacity:.25;}
       .card.light .prayer-item.active .prayer-emoji{opacity:.45;}
 
-      /* GEAR */
       .gear-btn{
         position:absolute;
         right:8px;
@@ -630,6 +644,47 @@ class NidaCard extends LitElement {
       }
       .gear-btn:hover{opacity:.45;}
       .face.back .gear-btn{display:none;}
+
+      /* ── SKIP SUHOOR KNOP ── */
+      .skip-suhoor-bar{
+        padding:0 8px 8px;
+      }
+      .skip-suhoor-btn{
+        width:100%;
+        border:none;
+        border-radius:10px;
+        padding:9px 14px;
+        cursor:pointer;
+        font-family:'Cairo',sans-serif;
+        font-size:11px;
+        font-weight:700;
+        letter-spacing:0.3px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:7px;
+        transition:opacity 0.2s, transform 0.1s;
+        -webkit-tap-highlight-color:transparent;
+      }
+      .skip-suhoor-btn:active{ transform:scale(0.98); }
+      .skip-suhoor-btn.active{
+        background:rgba(201,168,76,0.18);
+        color:#c9a84c;
+        border:1px solid rgba(201,168,76,0.35);
+      }
+      .skip-suhoor-btn.inactive{
+        background:rgba(255,255,255,0.05);
+        border:1px solid rgba(255,255,255,0.1);
+      }
+      .card.light .skip-suhoor-btn.inactive{
+        background:rgba(0,0,0,0.04);
+        border:1px solid rgba(160,120,48,0.15);
+      }
+      .card.light .skip-suhoor-btn.active{
+        background:rgba(201,168,76,0.12);
+        border:1px solid rgba(160,120,48,0.3);
+        color:#8a6820;
+      }
 
       /* ── SETTINGS ACHTERKANT ── */
       .settings-back{
@@ -710,7 +765,6 @@ class NidaCard extends LitElement {
       .card.dark .next-name{color:#f0e6c8;}
       .card.dark .countdown{color:#f0e6c8;}
       .card.dark .next-date{color:#c9a84c;}
-      .card.dark .collapse-indicator{color:#c9a84c;}
       .card.dark .prayer-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);}
       .card.dark .prayer-item.active{background:rgba(201,168,76,.09);border-color:rgba(201,168,76,.25);}
       .card.dark .prayer-item.active::before{background:linear-gradient(180deg,#c9a84c,#a07830);}
@@ -725,6 +779,7 @@ class NidaCard extends LitElement {
       .card.dark .gear-btn{color:#e8dcc8;}
       .card.dark .nida-action-time{color:#f0e6c8;}
       .card.dark .nida-action-label{color:#e8dcc8;}
+      .card.dark .skip-suhoor-btn.inactive{color:rgba(232,220,200,0.5);}
 
       /* LIGHT */
       .card.light .hijri-date{color:#8a6820;}
@@ -736,7 +791,6 @@ class NidaCard extends LitElement {
       .card.light .next-name{color:#3a2c0a;}
       .card.light .countdown{color:#3a2c0a;}
       .card.light .next-date{color:#8a6820;}
-      .card.light .collapse-indicator{color:#8a6820;}
       .card.light .prayer-item{background:rgba(255,255,255,.75);border:1px solid rgba(160,120,48,.12);}
       .card.light .prayer-item.active{background:rgba(201,168,76,.15);border-color:rgba(160,120,48,.35);}
       .card.light .prayer-item.active::before{background:linear-gradient(180deg,#c9a84c,#a07830);}
@@ -751,6 +805,8 @@ class NidaCard extends LitElement {
       .card.light .gear-btn{color:#3a2c0a;}
       .card.light .nida-action-time{color:#2a1e04;}
       .card.light .nida-action-label{color:#3a2c0a;}
+      .card.light .skip-suhoor-btn.inactive{color:rgba(58,44,10,0.4);}
+
       /* ── INTRO OVERLAY ── */
       .intro-overlay{
         position:absolute;
@@ -773,103 +829,26 @@ class NidaCard extends LitElement {
         from{ opacity:0; transform:scale(0.97); }
         to  { opacity:1; transform:scale(1); }
       }
-      .intro-icon{
-        font-size:32px;
-        line-height:1;
-        animation:intro-icon-bounce 0.6s cubic-bezier(0.36,0.07,0.19,0.97) both;
-      }
+      .intro-icon{font-size:32px;line-height:1;animation:intro-icon-bounce 0.6s cubic-bezier(0.36,0.07,0.19,0.97) both;}
       @keyframes intro-icon-bounce{
         0%,100%{ transform:translateY(0); }
         30%    { transform:translateY(-8px); }
         60%    { transform:translateY(-3px); }
       }
-      .intro-title{
-        font-family:'Cairo',sans-serif;
-        font-size:13px;
-        font-weight:800;
-        color:#f0e6c8;
-        letter-spacing:0.3px;
-        line-height:1.3;
-      }
-      .intro-body{
-        font-family:'Cairo',sans-serif;
-        font-size:11px;
-        font-weight:500;
-        color:rgba(240,230,200,0.75);
-        line-height:1.5;
-        max-width:240px;
-      }
-      .intro-demo-bar{
-        width:80%;
-        height:7px;
-        border-radius:99px;
-        background:rgba(201,168,76,0.25);
-        overflow:hidden;
-        margin:2px 0;
-      }
-      .intro-demo-fill{
-        height:100%;
-        border-radius:99px;
-        background:linear-gradient(90deg,#c9a84c,#f0d078);
-        width:60%;
-      }
-      .intro-demo-rows{
-        display:flex;
-        flex-direction:column;
-        gap:3px;
-        width:80%;
-        overflow:hidden;
-        transition:max-height 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease;
-        max-height:60px;
-        opacity:1;
-      }
-      .intro-demo-rows.collapsed{
-        max-height:0;
-        opacity:0;
-      }
-      .intro-demo-row{
-        height:8px;
-        border-radius:6px;
-        background:rgba(240,230,200,0.15);
-      }
-      .intro-step-dots{
-        display:flex;
-        gap:5px;
-        margin-top:2px;
-      }
-      .intro-dot{
-        width:6px; height:6px;
-        border-radius:50%;
-        background:rgba(201,168,76,0.3);
-        transition:background 0.2s;
-      }
-      .intro-dot.active{ background:#c9a84c; }
-      .intro-btn{
-        background:linear-gradient(135deg,#c9a84c,#a07830);
-        border:none;
-        border-radius:8px;
-        color:#1a1200;
-        font-family:'Cairo',sans-serif;
-        font-size:12px;
-        font-weight:800;
-        padding:7px 20px;
-        cursor:pointer;
-        letter-spacing:0.3px;
-        transition:opacity 0.2s;
-        margin-top:2px;
-      }
-      .intro-btn:hover{ opacity:0.85; }
-      .intro-skip{
-        font-size:10px;
-        color:rgba(240,230,200,0.35);
-        cursor:pointer;
-        text-decoration:underline;
-        background:none;
-        border:none;
-        font-family:'Cairo',sans-serif;
-        padding:0;
-      }
-      .intro-skip:hover{ color:rgba(240,230,200,0.6); }
+      .intro-title{font-family:'Cairo',sans-serif;font-size:13px;font-weight:800;color:#f0e6c8;letter-spacing:0.3px;line-height:1.3;}
+      .intro-body{font-family:'Cairo',sans-serif;font-size:11px;font-weight:500;color:rgba(240,230,200,0.75);line-height:1.5;max-width:240px;}
+      .intro-demo-bar{width:80%;height:7px;border-radius:99px;background:rgba(201,168,76,0.25);overflow:hidden;margin:2px 0;}
+      .intro-demo-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#c9a84c,#f0d078);width:60%;}
+      .intro-demo-rows{display:flex;flex-direction:column;gap:3px;width:80%;overflow:hidden;transition:max-height 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease;max-height:60px;opacity:1;}
+      .intro-demo-rows.collapsed{max-height:0;opacity:0;}
+      .intro-demo-row{height:8px;border-radius:6px;background:rgba(240,230,200,0.15);}
+      .intro-step-dots{display:flex;gap:5px;margin-top:2px;}
+      .intro-dot{width:6px;height:6px;border-radius:50%;background:rgba(201,168,76,0.3);transition:background 0.2s;}
+      .intro-dot.active{background:#c9a84c;}
+      .intro-btn{background:linear-gradient(135deg,#c9a84c,#a07830);border:none;border-radius:8px;color:#1a1200;font-family:'Cairo',sans-serif;font-size:12px;font-weight:800;padding:7px 20px;cursor:pointer;letter-spacing:0.3px;transition:opacity 0.2s;margin-top:2px;}
+      .intro-btn:hover{opacity:0.85;}
+      .intro-skip{font-size:10px;color:rgba(240,230,200,0.35);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:'Cairo',sans-serif;padding:0;}
+      .intro-skip:hover{color:rgba(240,230,200,0.6);}
     `;
   }
 
@@ -946,6 +925,22 @@ class NidaCard extends LitElement {
         </div>`;
     }
 
+    // Skip suhoor knop — alleen tonen als showSkipSuhoorBtn aan staat
+    // en wanneer suhoor relevant is (Ramadan of als imsak sensor beschikbaar is)
+    const imsakAvail = this._s('sensor.01_imsak_readable') && this._s('sensor.01_imsak_readable') !== 'unavailable';
+    const showSkipBtn = this._showSkipSuhoorBtn && (isRamadan || imsakAvail);
+
+    const skipSuhoorBar = showSkipBtn ? html`
+      <div class="skip-suhoor-bar">
+        <button
+          class="skip-suhoor-btn ${this._skipSuhoor ? 'active' : 'inactive'}"
+          @click=${this._toggleSkipSuhoor}>
+          ${this._skipSuhoor ? '✓' : '😴'}
+          ${this._t('skip_suhoor')}
+          ${this._skipSuhoor ? html`<span style="opacity:.5;font-size:10px;">— ${this._t('tarhim')} &amp; ${this._t('suhoor')}</span>` : ''}
+        </button>
+      </div>` : '';
+
     const bgStyle = `background:${this._bg()};`;
 
     // FRONT FACE
@@ -953,7 +948,6 @@ class NidaCard extends LitElement {
       <div class="face front">
         <div class="card ${themeClass} ${isRtl?'rtl':''}${this._collapsed?' collapsed':''}" style="${bgStyle}">
 
-          <!-- HEADER BLOCK: klikbaar, bevat next prayer + progress bar -->
           <div class="header-block" @click=${this._toggleCollapse}>
             <div class="next-block">
               <div class="next-inner">
@@ -974,18 +968,13 @@ class NidaCard extends LitElement {
                   ${holiday==='on' && holidayName ? html`<span class="next-date-sep">·</span><span>${holidayName}</span>` : ''}
                 </div>` : ''}
             </div>
-
-            <!-- PROGRESS BAR -->
             <div class="progress-bar">
               <div class="progress-fill" style="width:${progress}%"></div>
             </div>
-
           </div>
 
-          <!-- INKLAPBARE WRAPPER om de gebedsrijen -->
           <div class="prayers-wrapper${this._collapsed?' collapsed':''}">
             <div class="prayers-wrapper-inner">
-              <!-- GEBEDEN RASTER -->
               <div class="prayers">
                 ${dynamicSlot}
                 ${prayers.map((p,i) => {
@@ -1004,6 +993,10 @@ class NidaCard extends LitElement {
                     </div>`;
                 })}
               </div>
+
+              <!-- SKIP SUHOOR KNOP -->
+              ${skipSuhoorBar}
+
             </div>
           </div>
 
@@ -1025,6 +1018,12 @@ class NidaCard extends LitElement {
             <label>${this._t('show_title')}</label>
             <button class="settings-toggle ${this._showTitle?'on':'off'}"
               @click=${()=>{this._showTitle=!this._showTitle;this.requestUpdate();}}></button>
+          </div>
+
+          <div class="settings-row">
+            <label>${this._t('show_skip_suhoor')}</label>
+            <button class="settings-toggle ${this._showSkipSuhoorBtn?'on':'off'}"
+              @click=${()=>{this._showSkipSuhoorBtn=!this._showSkipSuhoorBtn;this.requestUpdate();}}></button>
           </div>
 
           <div class="settings-row">
@@ -1060,7 +1059,6 @@ class NidaCard extends LitElement {
           <div class="intro-icon">👆</div>
           <div class="intro-title">${getIntroT(this._lang,'step1_title')}</div>
           <div class="intro-body">${getIntroT(this._lang,'step1_body')}</div>
-          <!-- Mini demo animatie -->
           <div class="intro-demo-bar"><div class="intro-demo-fill"></div></div>
           <div class="intro-demo-rows ${this._introDemo?'collapsed':''}">
             <div class="intro-demo-row"></div>
@@ -1098,4 +1096,4 @@ class NidaCard extends LitElement {
 }
 
 customElements.define('nida-card', NidaCard);
-console.log('%c NIDA CARD v42 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');
+console.log('%c NIDA CARD v43 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');
