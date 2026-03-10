@@ -169,6 +169,7 @@ async def async_setup_adhan_scheduler(hass: HomeAssistant, entry: ConfigEntry, c
         hass.async_create_task(check_suhoor(hass, entry, coordinator, now_ts))
         hass.async_create_task(check_reminders(hass, entry, coordinator, now_ts, prayers))
         hass.async_create_task(check_reset_skip_suhoor(hass, coordinator, now_ts))
+        hass.async_create_task(update_nida_sensors(hass, entry, coordinator))
 
     entry.async_on_unload(
         async_track_time_change(hass, check_prayer_time, second=0)
@@ -650,6 +651,38 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
         _LOGGER.error("Tarhim error: %s", e)
 
 
+async def update_nida_sensors(hass: HomeAssistant, entry: ConfigEntry, coordinator) -> None:
+    """Bereken en zet sensor waarden die de card nodig heeft."""
+    try:
+        if not coordinator.data:
+            return
+        options = entry.options if entry.options else entry.data
+        timings = coordinator.data["data"]["timings"]
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        # sensor.nida_suhoor_readable — alarm tijd X minuten voor Fajr
+        if options.get("suhoor_alarm_enabled", True):
+            fajr_ts = datetime.strptime(
+                f"{today} {timings['Fajr']}", "%Y-%m-%d %H:%M"
+            ).timestamp()
+            minutes = int(options.get("suhoor_alarm_minutes", 30))
+            suhoor_ts = fajr_ts - (minutes * 60)
+            # Als suhoor al voorbij is vandaag, toon morgen
+            if suhoor_ts < datetime.now().timestamp():
+                tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+                fajr_ts = datetime.strptime(
+                    f"{tomorrow} {timings['Fajr']}", "%Y-%m-%d %H:%M"
+                ).timestamp()
+                suhoor_ts = fajr_ts - (minutes * 60)
+            hass.states.async_set(
+                "sensor.nida_suhoor_readable",
+                datetime.fromtimestamp(suhoor_ts).strftime("%H:%M"),
+                {"friendly_name": "Nida Suhoor Alarm Time", "icon": "mdi:food"},
+            )
+    except Exception as e:
+        _LOGGER.debug("update_nida_sensors error: %s", e)
+
+
 async def check_suhoor(hass: HomeAssistant, entry: ConfigEntry, coordinator, now_ts: float):
     """
     Speel suhoor alarm X minuten voor Fajr tijdens Ramadan.
@@ -681,6 +714,14 @@ async def check_suhoor(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
 
         minutes   = int(options.get("suhoor_minutes", 30))
         suhoor_ts = fajr_ts - (minutes * 60)
+
+        # Sla suhoor alarm tijd op als sensor zodat de card hem kan tonen
+        suhoor_readable = datetime.fromtimestamp(suhoor_ts).strftime("%H:%M")
+        hass.states.async_set(
+            "sensor.nida_suhoor_readable",
+            suhoor_readable,
+            {"friendly_name": "Nida Suhoor Alarm Time", "icon": "mdi:food"},
+        )
 
         _LOGGER.debug(
             "Suhoor timing: %d min voor Fajr (%s) → alarm om %s",
