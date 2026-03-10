@@ -77,7 +77,8 @@
           "tarhim_enabled": "Aktifkan Tarhim sebelum Subuh",
           "tarhim_sound": "Suara Tarhim",
           "tarhim_speaker": "Speaker",
-          "tarhim_volume": "Volume"
+          "tarhim_volume": "Volume",
+          "suhoor_scene": "Adegan saat alarm Suhoor"
         }
       }
     },
@@ -152,7 +153,8 @@
           "tarhim_enabled": "Tarhim",
           "tarhim_sound": "Suara Tarhim",
           "tarhim_speaker": "Speaker",
-          "tarhim_volume": "Volume"
+          "tarhim_volume": "Volume",
+          "suhoor_scene": "Adegan saat alarm Suhoor"
         }
       }
     }

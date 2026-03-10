@@ -77,7 +77,8 @@
           "tarhim_enabled": "تراویح قبل از صبح",
           "tarhim_sound": "صدای تراویح",
           "tarhim_speaker": "بلندگو",
-          "tarhim_volume": "صدا"
+          "tarhim_volume": "صدا",
+          "suhoor_scene": "صحنه هنگام هشدار سحری"
         }
       }
     },
@@ -152,7 +153,8 @@
           "tarhim_enabled": "تراویح",
           "tarhim_sound": "صدا",
           "tarhim_speaker": "بلندگو",
-          "tarhim_volume": "صدا"
+          "tarhim_volume": "صدا",
+          "suhoor_scene": "صحنه هنگام هشدار سحری"
         }
       }
     }

@@ -77,7 +77,8 @@
           "tarhim_enabled": "فجر سے پہلے تراویح فعال کریں",
           "tarhim_sound": "تراویح کی آواز",
           "tarhim_speaker": "اسپیکر",
-          "tarhim_volume": "آواز کی سطح"
+          "tarhim_volume": "آواز کی سطح",
+          "suhoor_scene": "سحری الارم پر منظر"
         }
       }
     },
@@ -152,7 +153,8 @@
           "tarhim_enabled": "تراویح",
           "tarhim_sound": "آواز",
           "tarhim_speaker": "اسپیکر",
-          "tarhim_volume": "سطح"
+          "tarhim_volume": "سطح",
+          "suhoor_scene": "سحری الارم پر منظر"
         }
       }
     }

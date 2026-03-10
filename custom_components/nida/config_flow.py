@@ -47,6 +47,9 @@ async def _test_connection(city, country, method):
 def _speaker_sel():
     return selector.selector({"entity": {"domain": "media_player", "multiple": True}})
 
+def _scene_sel():
+    return selector.selector({"entity": {"domain": "scene", "multiple": False}})
+
 def _volume_sel():
     return selector.selector({"number": {"min": 0, "max": 100, "step": 5, "unit_of_measurement": "%", "mode": "slider"}})
 
@@ -182,6 +185,7 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional("suhoor_alarm_minutes", default=30): _minutes_sel(120),
                 vol.Optional("suhoor_alarm_sound", default=next(iter(get_suhoor_sounds()), "")): _make_select({"": "— No sound —", **get_suhoor_sounds()}),
                 vol.Optional("suhoor_alarm_volume", default=10): _volume_sel(),
+                vol.Optional("suhoor_scene", default=""): _scene_sel(),
                 vol.Optional(CONF_TARHIM_ENABLED, default=True): bool,
                 vol.Optional(CONF_TARHIM_SOUND, default=next(iter(get_tarhim_sounds()), "01-tarhim.mp3")): _make_select(get_tarhim_sounds()),
                 vol.Optional(CONF_TARHIM_SPEAKER, default=["media_player.adhan_speakers"]): _speaker_sel(),
@@ -314,6 +318,7 @@ class PrayerTimesOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional("suhoor_alarm_minutes", default=self._get("suhoor_alarm_minutes", 30)): _minutes_sel(120),
                 vol.Optional("suhoor_alarm_sound", default=self._get("suhoor_alarm_sound", next(iter(get_suhoor_sounds()), ""))): _make_select({"": "— No sound —", **get_suhoor_sounds()}),
                 vol.Optional("suhoor_alarm_volume", default=self._get_vol("suhoor_alarm_volume", 10)): _volume_sel(),
+                vol.Optional("suhoor_scene", default=self._get("suhoor_scene", "")): _scene_sel(),
                 vol.Optional(CONF_TARHIM_ENABLED, default=self._get(CONF_TARHIM_ENABLED, True)): bool,
                 vol.Optional(CONF_TARHIM_SOUND, default=self._get(CONF_TARHIM_SOUND, next(iter(get_tarhim_sounds()), "01-tarhim.mp3"))): _make_select(get_tarhim_sounds()),
                 vol.Optional(CONF_TARHIM_SPEAKER, default=self._get_list(CONF_TARHIM_SPEAKER, ["media_player.adhan_speakers"])): _speaker_sel(),
