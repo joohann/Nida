@@ -699,6 +699,19 @@ async def check_suhoor(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
                     restore_delay=30.0,
                 )
 
+            # Activeer scene als ingesteld
+            scene = options.get("suhoor_scene", "")
+            if scene:
+                try:
+                    await hass.services.async_call(
+                        "scene", "turn_on",
+                        {"entity_id": scene},
+                        blocking=False,
+                    )
+                    _LOGGER.info("Suhoor scene geactiveerd: %s", scene)
+                except Exception as se:
+                    _LOGGER.warning("Suhoor scene activatie mislukt: %s", se)
+
             await async_send_notification(
                 hass, entry,
                 message=options.get("notify_msg_suhoor", "Last chance for Suhoor 🍽️"),

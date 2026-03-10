@@ -77,7 +77,8 @@
           "tarhim_sound": "Tarhim sound",
           "tarhim_speaker": "Speaker(s)",
           "tarhim_volume": "Volume",
-          "suhoor_alarm_volume": "Suhoor Volume"
+          "suhoor_alarm_volume": "Suhoor Volume",
+          "suhoor_scene": "Scene on Suhoor alarm"
         }
       }
     },
@@ -162,7 +163,8 @@
           "tarhim_sound": "Tarhim sound",
           "tarhim_speaker": "Speaker(s)",
           "tarhim_volume": "Volume",
-          "suhoor_alarm_volume": "Suhoor Volume"
+          "suhoor_alarm_volume": "Suhoor Volume",
+          "suhoor_scene": "Scene on Suhoor alarm"
         }
       },
       "init": {

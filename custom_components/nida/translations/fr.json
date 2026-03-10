@@ -77,7 +77,8 @@
           "tarhim_enabled": "Activer le Tarhim avant Fajr",
           "tarhim_sound": "Son Tarhim",
           "tarhim_speaker": "Haut-parleur(s)",
-          "tarhim_volume": "Volume"
+          "tarhim_volume": "Volume",
+          "suhoor_scene": "Scène lors de l'alarme Suhoor"
         }
       }
     },
@@ -152,7 +153,8 @@
           "tarhim_enabled": "Tarhim",
           "tarhim_sound": "Son Tarhim",
           "tarhim_speaker": "Haut-parleur(s)",
-          "tarhim_volume": "Volume"
+          "tarhim_volume": "Volume",
+          "suhoor_scene": "Scène lors de l'alarme Suhoor"
         }
       }
     }
