@@ -101,7 +101,7 @@ test_reminder:
       name: "[%key:component::nida::services::test_reminder::fields::reminder::name%]"
       description: "[%key:component::nida::services::test_reminder::fields::reminder::description%]"
       required: false
-      default: "1"
+      default: "reminder_1"
       selector:
         select:
           options:
