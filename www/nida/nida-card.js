@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-// NIDA CARD v43 — feat: collapsed state persistent, skip suhoor/tarhim button, settings toggle
+// NIDA CARD v50 — Ramadan balk, header stijl fix, sensor.nida_tarhim_readable, tarhim buffer 10s
 
 // Hijri maandnamen per taal
 const HIJRI_MONTHS = {
@@ -151,6 +151,9 @@ function _nightKey() {
 }
 
 class NidaCard extends LitElement {
+  createRenderRoot() {
+    return this.attachShadow({ mode: 'open', delegatesFocus: true });
+  }
   static get properties() {
     return {
       hass:{}, _config:{}, _dark:{}, _flipped:{}, _lang:{}, _showTitle:{},
@@ -217,6 +220,18 @@ class NidaCard extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    // Zorg dat Shadow DOM bereikbaar is via Tab navigatie (TV/Fully Browser)
+    if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0');
+    // Bij Enter op host: focus eerste focusbare element binnen Shadow DOM
+    this._hostKeydown = (e) => {
+      if (e.key === 'Enter' && e.target === this) {
+        const first = this.shadowRoot && this.shadowRoot.querySelector(
+          '[tabindex="0"], button, select, input'
+        );
+        if (first) { e.preventDefault(); first.focus(); }
+      }
+    };
+    this.addEventListener('keydown', this._hostKeydown);
     this._interval = setInterval(() => this.requestUpdate(), 1000);
     this._applyTheme();
     this._obs = new MutationObserver(() => this._applyTheme());
@@ -227,6 +242,7 @@ class NidaCard extends LitElement {
     super.disconnectedCallback();
     clearInterval(this._interval);
     if (this._obs) this._obs.disconnect();
+    if (this._hostKeydown) this.removeEventListener('keydown', this._hostKeydown);
   }
 
   _applyTheme() {
@@ -249,7 +265,7 @@ class NidaCard extends LitElement {
 
   _s(e) { return this.hass?.states[e]?.state; }
   _a(e,a) { return this.hass?.states[e]?.attributes?.[a]; }
-  _isRamadan() { return this._s('binary_sensor.is_ramadan') === 'on'; }
+  _isRamadan() { return this._s('binary_sensor.is_ramadan') === 'on' || this._s('sensor.is_ramadan') === 'on'; }
 
   // Toggle collapsed + sla op in localStorage
   _toggleCollapse(e) {
@@ -264,6 +280,12 @@ class NidaCard extends LitElement {
     e.stopPropagation();
     this._skipSuhoor = !this._skipSuhoor;
     localStorage.setItem(_nightKey(), String(this._skipSuhoor));
+    // Sync naar HA input_boolean.nida_skip_suhoor (indien beschikbaar)
+    if (this.hass && this.hass.states['input_boolean.nida_skip_suhoor'] !== undefined) {
+      this.hass.callService('input_boolean', this._skipSuhoor ? 'turn_on' : 'turn_off', {
+        entity_id: 'input_boolean.nida_skip_suhoor'
+      });
+    }
     this.requestUpdate();
   }
 
@@ -315,12 +337,28 @@ class NidaCard extends LitElement {
     return Math.min(100,Math.max(0,Math.round(((nowMin-prev)/span)*100)));
   }
 
+  _iftarPast() {
+    const mag=this._s('sensor.07_maghrib_readable'); if(!mag) return false;
+    const now=new Date(); const ns=now.getHours()*3600+now.getMinutes()*60+now.getSeconds();
+    const[h,m]=mag.split(':').map(Number);
+    return ns > h*3600+m*60;
+  }
+
   _iftarCd() {
     const mag=this._s('sensor.07_maghrib_readable'); if(!mag) return null;
     const now=new Date(); const ns=now.getHours()*3600+now.getMinutes()*60+now.getSeconds();
-    const[h,m]=mag.split(':').map(Number); const d=(h*3600+m*60)-ns;
-    if(d<=0) return null;
-    return `${Math.floor(d/3600)}:${String(Math.floor((d%3600)/60)).padStart(2,'0')}:${String(d%60).padStart(2,'0')}`;
+    const[h,m]=mag.split(':').map(Number); let maghribSec=h*3600+m*60;
+    // Altijd aftellen naar volgende Maghrib — als al geweest, tel naar morgen
+    let d=maghribSec-ns;
+    if(d<=0) d+=86400;
+    const hh=Math.floor(d/3600), mm=Math.floor((d%3600)/60), ss=d%60;
+    if(hh>=1){
+      // Meer dan een uur: HH:MM
+      return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+    } else {
+      // Laatste uur: MM:SS
+      return `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    }
   }
 
   _eid() {
@@ -369,11 +407,19 @@ class NidaCard extends LitElement {
     }
 
     // Tarhim: alleen tijdens Ramadan en niet overgeslagen
+    // Leest sensor.nida_tarhim_readable als die bestaat (exact), anders fajr - geschatte duur
     if(isRam && !this._skipSuhoor){
+      const tarhimSensor=this._s('sensor.nida_tarhim_readable');
       const f=this._s('sensor.02_fajr_readable');
-      if(f && f!=='unavailable'){
+      if(tarhimSensor && tarhimSensor!=='unavailable'){
+        const[th,tm2]=tarhimSensor.split(':').map(Number);
+        let tm=th*60+tm2;
+        if(tm<=nowMin) tm+=1440;
+        acts.push({type:'tarhim',prayerKey:null,min:tm,time:_fmt(tm)});
+      } else if(f && f!=='unavailable'){
         const[fh,fm]=f.split(':').map(Number);
-        let tm=fh*60+fm-30;
+        // Schatting: 10 minuten voor fajr (mp3 ~9min + 10s buffer)
+        let tm=fh*60+fm-10;
         if(tm<=nowMin) tm+=1440;
         acts.push({type:'tarhim',prayerKey:null,min:tm,time:_fmt(tm)});
       }
@@ -407,6 +453,7 @@ class NidaCard extends LitElement {
   static get styles() {
     return css`
       :host{display:block;width:100%;box-sizing:border-box;font-family:'Cairo',sans-serif;}
+      :host(:focus-within){outline:2px solid #c9a84c;outline-offset:3px;border-radius:var(--ha-card-border-radius,12px);}
       *,*::before,*::after{box-sizing:border-box;}
 
       .flip-container{width:100%;perspective:1200px;}
@@ -450,11 +497,12 @@ class NidaCard extends LitElement {
       .header-top{display:none;}
       .hijri-date{font-family:'Amiri',serif;font-size:19px;font-weight:700;line-height:1.2;display:flex;align-items:center;gap:7px;}
       .holiday-name{font-size:11px;font-weight:700;padding:6px 16px 0;}
+      .holiday-badge{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(201,168,76,0.25),rgba(160,120,48,0.15));border:1px solid rgba(201,168,76,0.45);border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;color:#f0c060;font-family:'Cairo',sans-serif;}
 
       .header-block{
-        border-radius:12px;
+        border-radius:10px;
         overflow:hidden;
-        margin:8px 8px 8px 8px;
+        margin:8px 8px 0 8px;
         cursor:pointer;
         user-select:none;
         -webkit-tap-highlight-color:transparent;
@@ -587,6 +635,13 @@ class NidaCard extends LitElement {
 
       .prayers{padding:0 8px 8px;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:7px;}
 
+      .ramadan-bar-row{grid-column:1/-1;background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.18);border-radius:10px;padding:10px 14px;display:grid;grid-template-columns:auto 1px 1fr 1px 1fr 1px 1fr;align-items:center;margin-top:2px;}
+      .rbar-seg{display:flex;flex-direction:column;align-items:center;gap:1px;padding:0 12px;}
+      .rbar-day{align-items:center;padding-left:0;}
+      .rbar-val{font-family:'Amiri',serif;font-size:20px;font-weight:700;color:#f0e6c8;line-height:1;}
+      .rbar-day .rbar-val{font-size:26px;color:#c9a84c;}
+      .rbar-lbl{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:rgba(201,168,76,.45);margin-top:2px;}
+      .rbar-divider{width:1px;height:30px;background:rgba(201,168,76,.15);}
       .dynamic-slot{position:relative;border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;}
       .dynamic-sub{display:flex;flex-direction:column;gap:2px;margin-top:4px;font-size:11px;font-weight:600;opacity:.85;}
       .dynamic-countdown{font-family:'Amiri',serif;font-size:14px;font-weight:700;margin-top:5px;}
@@ -667,6 +722,7 @@ class NidaCard extends LitElement {
         -webkit-tap-highlight-color:transparent;
       }
       .skip-suhoor-btn:active{ transform:scale(0.98); }
+      .skip-suhoor-btn:focus{ outline:2px solid #c9a84c !important; outline-offset:3px; box-shadow:0 0 0 4px rgba(201,168,76,0.3) !important; }
       .skip-suhoor-btn.active{
         background:rgba(201,168,76,0.18);
         color:#c9a84c;
@@ -758,7 +814,7 @@ class NidaCard extends LitElement {
       .card.dark .header{border-bottom:none;}
       .card.dark .hijri-date{color:#c9a84c;}
       .card.dark .holiday-name{color:#f0a050;}
-      .card.dark .header-block{background:rgba(201,168,76,.06);border-bottom:none;}
+      .card.dark .header-block{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);}
       .card.dark .progress-bar{background:rgba(201,168,76,.35);}
       .card.dark .next-label{color:rgba(201,168,76,.5);}
       .card.dark .countdown-lbl{color:rgba(201,168,76,.4);}
@@ -784,7 +840,8 @@ class NidaCard extends LitElement {
       /* LIGHT */
       .card.light .hijri-date{color:#8a6820;}
       .card.light .holiday-name{color:#c05800;}
-      .card.light .header-block{background:rgba(201,168,76,.10);border-bottom:none;}
+      .card.light .holiday-badge{background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(160,120,48,0.1));border-color:rgba(160,120,48,0.5);color:#8a5000;}
+      .card.light .header-block{background:rgba(0,0,0,.03);border:1px solid rgba(0,0,0,.08);}
       .card.light .progress-bar{background:rgba(160,120,48,.35);}
       .card.light .next-label{color:rgba(138,104,32,.6);}
       .card.light .countdown-lbl{color:rgba(138,104,32,.5);}
@@ -849,6 +906,24 @@ class NidaCard extends LitElement {
       .intro-btn:hover{opacity:0.85;}
       .intro-skip{font-size:10px;color:rgba(240,230,200,0.35);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:'Cairo',sans-serif;padding:0;}
       .intro-skip:hover{color:rgba(240,230,200,0.6);}
+      .intro-btn:focus{ outline:2px solid #c9a84c !important; outline-offset:3px; }
+      .intro-skip:focus{ outline:2px solid rgba(201,168,76,0.6) !important; outline-offset:3px; }
+      /* Focus styling — outline + box-shadow voor maximale browser compatibiliteit (incl. Philips TV) */
+      .header-block:focus,
+      .skip-suhoor-btn:focus,
+      .intro-btn:focus,
+      .intro-skip:focus,
+      .close-btn:focus,
+      .gear-btn:focus,
+      .settings-toggle:focus,
+      .lang-select:focus,
+      .theme-select:focus,
+      .range-slider:focus {
+        outline: 2px solid #c9a84c !important;
+        outline-offset: 3px;
+        box-shadow: 0 0 0 3px rgba(201,168,76,0.4) !important;
+        border-radius: 8px;
+      }
     `;
   }
 
@@ -885,19 +960,14 @@ class NidaCard extends LitElement {
     // Dynamic slot
     let dynamicSlot;
     if (isRamadan) {
-      const imsak  = this._s('sensor.01_imsak_readable');
-      const iftarCd = this._iftarCd();
-      const iftar  = this._s('sensor.07_maghrib_readable');
+      // Ramadan: toon volgende actie (suhoor/tarhim/pre-adhan/adhan)
       dynamicSlot = html`
         <div class="dynamic-slot ramadan-slot">
           <div class="prayer-emoji">🌙</div>
-          <div class="prayer-name">${this._t('ramadan')} ${this._t('dag')} ${this._a('binary_sensor.is_ramadan','ramadan_day')||'—'}</div>
-          <div class="dynamic-sub">
-            <span>🌅 ${this._t('imsak')} ${imsak||'—'}</span>
-            <span>🌇 ${this._t('iftar')} ${iftar||'—'}</span>
-          </div>
-          ${iftarCd ? html`<div class="dynamic-countdown">⏳ ${iftarCd}</div>`
-                    : html`<div class="dynamic-countdown" style="font-size:11px;">بسم الله</div>`}
+          ${nextAction ? html`
+            <div class="prayer-name">${this._actionLabel(nextAction)}</div>
+            <div class="prayer-time">${nextAction.time}</div>
+          ` : html`<div class="prayer-name">${this._t('ramadan')} ${this._t('dag')} ${this._a('sensor.is_ramadan','ramadan_day')||'—'}</div>`}
         </div>`;
     } else if (eid?.today) {
       dynamicSlot = html`
@@ -934,6 +1004,7 @@ class NidaCard extends LitElement {
       <div class="skip-suhoor-bar">
         <button
           class="skip-suhoor-btn ${this._skipSuhoor ? 'active' : 'inactive'}"
+          tabindex="2"
           @click=${this._toggleSkipSuhoor}>
           ${this._skipSuhoor ? '✓' : '😴'}
           ${this._t('skip_suhoor')}
@@ -948,7 +1019,7 @@ class NidaCard extends LitElement {
       <div class="face front">
         <div class="card ${themeClass} ${isRtl?'rtl':''}${this._collapsed?' collapsed':''}" style="${bgStyle}">
 
-          <div class="header-block" @click=${this._toggleCollapse}>
+          <div class="header-block" tabindex="1" @click=${this._toggleCollapse} @keydown=${(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();this._toggleCollapse(e);}}}>
             <div class="next-block">
               <div class="next-inner">
                 <div class="next-icon">🕌</div>
@@ -965,7 +1036,7 @@ class NidaCard extends LitElement {
                 <div class="next-date">
                   <span>${moonEmoji}</span>
                   <span>${hijriDay} ${hijriMonthLabel} ${hijriYear}</span>
-                  ${holiday==='on' && holidayName ? html`<span class="next-date-sep">·</span><span>${holidayName}</span>` : ''}
+                  ${holiday==='on' && holidayName ? html`<span class="next-date-sep">·</span><span class="holiday-badge">✨ ${holidayName}</span>` : ''}
                 </div>` : ''}
             </div>
             <div class="progress-bar">
@@ -976,6 +1047,28 @@ class NidaCard extends LitElement {
           <div class="prayers-wrapper${this._collapsed?' collapsed':''}">
             <div class="prayers-wrapper-inner">
               <div class="prayers">
+                ${isRamadan ? html`
+                  <div class="ramadan-bar-row">
+                    <div class="rbar-seg rbar-day">
+                      <div class="rbar-val">${this._a('sensor.is_ramadan','ramadan_day')||'—'}</div>
+                      <div class="rbar-lbl">${this._t('ramadan')}</div>
+                    </div>
+                    <div class="rbar-divider"></div>
+                    <div class="rbar-seg">
+                      <div class="rbar-val">${this._s('sensor.01_imsak_readable')||'—'}</div>
+                      <div class="rbar-lbl">${this._t('imsak')}</div>
+                    </div>
+                    <div class="rbar-divider"></div>
+                    <div class="rbar-seg">
+                      <div class="rbar-val">${this._s('sensor.07_maghrib_readable')||'—'}</div>
+                      <div class="rbar-lbl">${this._t('iftar')}</div>
+                    </div>
+                    <div class="rbar-divider"></div>
+                    <div class="rbar-seg">
+                      <div class="rbar-val">${this._iftarCd()||'—'}</div>
+                      <div class="rbar-lbl">${this._iftarPast() ? this._t('iftar')+' over' : this._t('iftar')}</div>
+                    </div>
+                  </div>` : ''}
                 ${dynamicSlot}
                 ${prayers.map((p,i) => {
                   const t=this._s(p.entity); if(!t||t==='unavailable') return '';
@@ -989,7 +1082,7 @@ class NidaCard extends LitElement {
                       <div class="prayer-name">${this._tp(p.key)}</div>
                       <div class="prayer-time">${t}</div>
                       ${isLast ? html`
-                        <button class="gear-btn" @click=${(e)=>{e.stopPropagation();this._flipped=true;this.requestUpdate();}}>⚙</button>` : ''}
+                        <button class="gear-btn" tabindex="3" @click=${(e)=>{e.stopPropagation();this._flipped=true;this.requestUpdate();}}>⚙</button>` : ''}
                     </div>`;
                 })}
               </div>
@@ -1007,7 +1100,7 @@ class NidaCard extends LitElement {
     const back = html`
       <div class="face back">
         <div class="settings-back">
-          <button class="close-btn" @click=${()=>{this._flipped=false;this.requestUpdate();}}>
+          <button class="close-btn" tabindex="1" @click=${()=>{this._flipped=false;this.requestUpdate();}}>
             <span class="close-btn-icon">✕</span>
             ${this._t('close_settings')}
           </button>
@@ -1016,19 +1109,19 @@ class NidaCard extends LitElement {
 
           <div class="settings-row">
             <label>${this._t('show_title')}</label>
-            <button class="settings-toggle ${this._showTitle?'on':'off'}"
+            <button class="settings-toggle ${this._showTitle?'on':'off'}" tabindex="2"
               @click=${()=>{this._showTitle=!this._showTitle;this.requestUpdate();}}></button>
           </div>
 
           <div class="settings-row">
             <label>${this._t('show_skip_suhoor')}</label>
-            <button class="settings-toggle ${this._showSkipSuhoorBtn?'on':'off'}"
+            <button class="settings-toggle ${this._showSkipSuhoorBtn?'on':'off'}" tabindex="3"
               @click=${()=>{this._showSkipSuhoorBtn=!this._showSkipSuhoorBtn;this.requestUpdate();}}></button>
           </div>
 
           <div class="settings-row">
             <label>${this._t('theme')}</label>
-            <select class="theme-select" @change=${(e)=>{this._theme=e.target.value;this._applyTheme();this.requestUpdate();}}>
+            <select class="theme-select" tabindex="4" @change=${(e)=>{this._theme=e.target.value;this._applyTheme();this.requestUpdate();}}>
               <option value="auto" ?selected=${this._theme==='auto'}>Auto</option>
               <option value="dark" ?selected=${this._theme==='dark'}>Dark</option>
               <option value="light" ?selected=${this._theme==='light'}>Light</option>
@@ -1037,14 +1130,14 @@ class NidaCard extends LitElement {
 
           <div class="settings-row">
             <label>${this._t('language')}</label>
-            <select class="lang-select" @change=${(e)=>{this._lang=e.target.value;this.requestUpdate();}}>
+            <select class="lang-select" tabindex="5" @change=${(e)=>{this._lang=e.target.value;this.requestUpdate();}}>
               ${Object.entries(LANG_LABELS).map(([c,l])=>html`<option value="${c}" ?selected=${this._lang===c}>${l}</option>`)}
             </select>
           </div>
 
           <div class="settings-row slider-row">
             <label>${this._t('brightness')} — ${this._brightness}%</label>
-            <input type="range" class="range-slider" min="0" max="100" step="5"
+            <input type="range" class="range-slider" tabindex="6" min="0" max="100" step="5"
               .value=${String(this._brightness)}
               @input=${(e)=>{this._brightness=+e.target.value;this.requestUpdate();}}>
           </div>
@@ -1069,8 +1162,8 @@ class NidaCard extends LitElement {
             <div class="intro-dot active"></div>
             <div class="intro-dot"></div>
           </div>
-          <button class="intro-btn" @click=${()=>{ this._startIntroDemo(); setTimeout(()=>this._introNext(), 1800); }}>${getIntroT(this._lang,'step1_btn')}</button>
-          <button class="intro-skip" @click=${()=>{ this._introStep=0; localStorage.setItem('nida-intro-seen','1'); this.requestUpdate(); }}>${getIntroT(this._lang,'step1_skip')}</button>
+          <button class="intro-btn" tabindex="1" @click=${()=>{ this._startIntroDemo(); setTimeout(()=>this._introNext(), 1800); }}>${getIntroT(this._lang,'step1_btn')}</button>
+          <button class="intro-skip" tabindex="2" @click=${()=>{ this._introStep=0; localStorage.setItem('nida-intro-seen','1'); this.requestUpdate(); }}>${getIntroT(this._lang,'step1_skip')}</button>
         ` : html`
           <div class="intro-icon">⚙️</div>
           <div class="intro-title">${getIntroT(this._lang,'step2_title')}</div>
@@ -1079,7 +1172,7 @@ class NidaCard extends LitElement {
             <div class="intro-dot"></div>
             <div class="intro-dot active"></div>
           </div>
-          <button class="intro-btn" @click=${()=>this._introNext()}>${getIntroT(this._lang,'step2_btn')}</button>
+          <button class="intro-btn" tabindex="1" @click=${()=>this._introNext()}>${getIntroT(this._lang,'step2_btn')}</button>
         `}
       </div>` : '';
 
@@ -1096,4 +1189,4 @@ class NidaCard extends LitElement {
 }
 
 customElements.define('nida-card', NidaCard);
-console.log('%c NIDA CARD v43 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');
+console.log('%c NIDA CARD v50 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');

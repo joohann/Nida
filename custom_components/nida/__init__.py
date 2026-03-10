@@ -40,7 +40,45 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await async_setup_adhan_scheduler(hass, entry, coordinator)
     await async_update_services_yaml(hass)
     await async_setup_services(hass, entry)
+    await async_ensure_helpers(hass)
     return True
+
+
+async def async_ensure_helpers(hass: HomeAssistant):
+    """Maak benodigde helper entities aan als ze nog niet bestaan."""
+    entity_id = "input_boolean.nida_skip_suhoor"
+    if hass.states.get(entity_id) is None:
+        try:
+            await hass.services.async_call(
+                "input_boolean", "create",
+                {"name": "Nida Skip Suhoor", "icon": "mdi:sleep"},
+                blocking=True,
+            )
+            _LOGGER.info("Helper aangemaakt: %s", entity_id)
+        except Exception as e:
+            _LOGGER.warning(
+                "Kon helper %s niet aanmaken: %s — maak hem handmatig aan via Instellingen → Hulpapparaten",
+                entity_id, e
+            )
+
+
+async def check_reset_skip_suhoor(hass: HomeAssistant, coordinator, now_ts: float):
+    """Reset input_boolean.nida_skip_suhoor na Fajr zodat volgende nacht suhoor weer actief is."""
+    try:
+        timings = coordinator.data["data"]["timings"]
+        today = datetime.now().strftime("%Y-%m-%d")
+        fajr_ts = datetime.strptime(f"{today} {timings['Fajr']}", "%Y-%m-%d %H:%M").timestamp()
+        if abs(now_ts - fajr_ts) < 30:
+            skip_state = hass.states.get("input_boolean.nida_skip_suhoor")
+            if skip_state and skip_state.state == "on":
+                await hass.services.async_call(
+                    "input_boolean", "turn_off",
+                    {"entity_id": "input_boolean.nida_skip_suhoor"},
+                    blocking=True,
+                )
+                _LOGGER.info("input_boolean.nida_skip_suhoor gereset na Fajr")
+    except Exception as e:
+        _LOGGER.debug("Reset skip suhoor mislukt: %s", e)
 
 
 async def async_copy_sounds(hass: HomeAssistant):
@@ -124,6 +162,7 @@ async def async_setup_adhan_scheduler(hass: HomeAssistant, entry: ConfigEntry, c
         hass.async_create_task(check_tarhim(hass, entry, coordinator, now_ts))
         hass.async_create_task(check_suhoor(hass, entry, coordinator, now_ts))
         hass.async_create_task(check_reminders(hass, entry, coordinator, now_ts, prayers))
+        hass.async_create_task(check_reset_skip_suhoor(hass, coordinator, now_ts))
 
     entry.async_on_unload(
         async_track_time_change(hass, check_prayer_time, second=0)
@@ -451,6 +490,26 @@ async def check_reminders(hass, entry, coordinator, now_ts, prayers):
                 continue
             reminder_ts = prayer_ts - (minutes * 60)
             if abs(now_ts - reminder_ts) < 30:
+                # Sla Fajr reminder over als tarhim actief is tijdens Ramadan
+                if prayer_name.lower() in ("fajr", "jumat") and options.get(CONF_TARHIM_ENABLED, True):
+                    try:
+                        hijri_month = coordinator.data["data"]["date"]["hijri"]["month"]["en"]
+                        if "Rama" in hijri_month:
+                            tarhim_sound = options.get(CONF_TARHIM_SOUND, "")
+                            if tarhim_sound:
+                                sounds_path = hass.config.path("www/nida/sounds")
+                                mp3_path = os.path.join(sounds_path, tarhim_sound)
+                                duration = await hass.async_add_executor_job(_get_mp3_duration, mp3_path)
+                                tarhim_start_ts = prayer_ts - duration - 5
+                                if reminder_ts >= tarhim_start_ts - 30:
+                                    _LOGGER.info(
+                                        "Reminder %d voor Fajr overgeslagen — tarhim window actief",
+                                        r_num
+                                    )
+                                    continue
+                    except Exception as e:
+                        _LOGGER.debug("Tarhim window check mislukt: %s", e)
+
                 _LOGGER.info("Reminder %d for %s in %d min", r_num, prayer_name, minutes)
 
                 if sound:
@@ -507,6 +566,12 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
     if not options.get(CONF_TARHIM_ENABLED, True):
         return
 
+    # Sla tarhim over als suhoor geskipt is via de card
+    skip_state = hass.states.get("input_boolean.nida_skip_suhoor")
+    if skip_state and skip_state.state == "on":
+        _LOGGER.info("Tarhim overgeslagen — input_boolean.nida_skip_suhoor is aan")
+        return
+
     try:
         hijri_month = coordinator.data["data"]["date"]["hijri"]["month"]["en"]
         if "Rama" not in hijri_month:
@@ -536,13 +601,22 @@ async def check_tarhim(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
             )
             return
 
-        BUFFER_SECONDS = 5
+        BUFFER_SECONDS = 10
         tarhim_ts = fajr_ts - duration - BUFFER_SECONDS
 
         _LOGGER.debug(
             "Tarhim timing: Fajr=%s, duur=%.1fs, buffer=%ds → start om %s",
             timings["Fajr"], duration, BUFFER_SECONDS,
             datetime.fromtimestamp(tarhim_ts).strftime("%H:%M:%S"),
+        )
+
+        # Sla tarhim tijd op als sensor zodat de card hem kan tonen
+        tarhim_dt = datetime.fromtimestamp(tarhim_ts)
+        tarhim_readable = tarhim_dt.strftime("%H:%M")
+        hass.states.async_set(
+            "sensor.nida_tarhim_readable",
+            tarhim_readable,
+            {"friendly_name": "Nida Tarhim Time", "icon": "mdi:music"},
         )
 
         if abs(now_ts - tarhim_ts) < 30:
@@ -577,6 +651,12 @@ async def check_suhoor(hass: HomeAssistant, entry: ConfigEntry, coordinator, now
     options = entry.options if entry.options else entry.data
 
     if not options.get("suhoor_enabled", True):
+        return
+
+    # Sla suhoor over als geskipt via de card (input_boolean.nida_skip_suhoor)
+    skip_state = hass.states.get("input_boolean.nida_skip_suhoor")
+    if skip_state and skip_state.state == "on":
+        _LOGGER.info("Suhoor overgeslagen — input_boolean.nida_skip_suhoor is aan")
         return
 
     try:
