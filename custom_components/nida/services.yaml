@@ -106,9 +106,9 @@ test_reminder:
         select:
           options:
             - label: Reminder 1
-              value: "1"
+              value: "reminder_1"
             - label: Reminder 2
-              value: "2"
+              value: "reminder_2"
     prayer:
       name: "[%key:component::nida::services::common::fields::prayer::name%]"
       description: "[%key:component::nida::services::common::fields::prayer::description%]"

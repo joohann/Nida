@@ -49,12 +49,18 @@ async def async_ensure_helpers(hass: HomeAssistant):
     entity_id = "input_boolean.nida_skip_suhoor"
     if hass.states.get(entity_id) is None:
         try:
-            await hass.services.async_call(
-                "input_boolean", "create",
-                {"name": "Nida Skip Suhoor", "icon": "mdi:sleep"},
-                blocking=True,
-            )
-            _LOGGER.info("Helper aangemaakt: %s", entity_id)
+            from homeassistant.components.input_boolean import InputBoolean
+            from homeassistant.helpers import entity_registry as er
+            # Gebruik de storage collection om de helper aan te maken
+            component = hass.data.get("input_boolean")
+            if component and hasattr(component, "_collection"):
+                await component._collection.async_create({
+                    "name": "Nida Skip Suhoor",
+                    "icon": "mdi:sleep",
+                })
+                _LOGGER.info("Helper aangemaakt: %s", entity_id)
+            else:
+                raise RuntimeError("input_boolean component niet beschikbaar")
         except Exception as e:
             _LOGGER.warning(
                 "Kon helper %s niet aanmaken: %s — maak hem handmatig aan via Instellingen → Hulpapparaten",
@@ -778,7 +784,12 @@ async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
     async def handle_test_reminder(call):
         """Test pre-adhan reminder (sound + TTS)."""
         options = entry.options if entry.options else entry.data
-        r_num = call.data.get("reminder", 1)
+        r_raw = call.data.get("reminder", "reminder_1")
+        # Ondersteuning voor zowel "reminder_1" als legacy int waarden
+        if isinstance(r_raw, str) and r_raw.startswith("reminder_"):
+            r_num = int(r_raw.split("_")[1])
+        else:
+            r_num = int(r_raw)
         minutes = options.get(f"reminder_{r_num}_minutes", 10)
         prayer = call.data.get("prayer", "Dhuhr")
         sound = options.get(f"reminder_{r_num}_sound", "")
