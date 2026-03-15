@@ -66,6 +66,7 @@ class PrayerTimeSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = f"{order}. {prayer_name}"
         self._attr_device_class = SensorDeviceClass.TIMESTAMP
         self._attr_icon = icon
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def native_value(self):
