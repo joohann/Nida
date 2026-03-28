@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-// NIDA CARD v54 — Ramadan balk, header stijl fix, sensor.nida_tarhim_readable, tarhim buffer 10s
+// NIDA CARD v53 — Ramadan balk, header stijl fix, sensor.nida_tarhim_readable, tarhim buffer 10s
 
 // Hijri maandnamen per taal
 const HIJRI_MONTHS = {
@@ -859,11 +859,6 @@ class NidaCard extends LitElement {
       .card.light .holiday-name{color:#c05800;}
       .card.light .holiday-badge{background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(160,120,48,0.1));border-color:rgba(160,120,48,0.5);color:#8a5000;}
       .card.light .header-block{background:rgba(0,0,0,.02);border:1px solid rgba(0,0,0,.05);}
-      .card.light .ramadan-bar-row{background:rgba(0,0,0,.05);border:1px solid rgba(0,0,0,.1);}
-      .card.light .rbar-val{color:#5a3e00;}
-      .card.light .rbar-day .rbar-val{color:#8a6000;}
-      .card.light .rbar-lbl{color:rgba(90,62,0,.5);}
-      .card.light .rbar-divider{background:rgba(90,62,0,.2);}
       .card.light .progress-bar{background:rgba(160,120,48,.35);}
       .card.light .next-label{color:rgba(138,104,32,.6);}
       .card.light .countdown-lbl{color:rgba(138,104,32,.5);}
@@ -1217,4 +1212,4 @@ class NidaCard extends LitElement {
 }
 
 customElements.define('nida-card', NidaCard);
-console.log('%c NIDA CARD v54 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');
+console.log('%c NIDA CARD v53 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');
