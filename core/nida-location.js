@@ -1,55 +1,68 @@
 /**
- * @file nida-location.js
- * @module NidaLocation
- * @version 2.0.0
+ * @file        nida-location.js
+ * @module      NidaLocation
+ * @version     2.1.0
+ * @since       2026-03-28
+ * @description 5-layer location strategy for Nida v2 — with GPS drift detection and watchdog.
  *
- * 5-laags locatiestrategie voor Nida v2.
+ * ── LAYER ORDER (highest priority first) ────────────────────────────────────
  *
- * Laagvolgorde (hoogste prioriteit eerst):
+ *   Layer 1 — Home Assistant (HA)
+ *     Reads coordinates from HA system config or the zone.home entity.
+ *     HA is authoritative: when HA is available the other layers are never
+ *     consulted. Prevents inconsistency with other HA integrations.
  *
- *   Laag 1 — Home Assistant (HA)
- *     Leest coördinaten uit HA-configuratie of zone.home entity.
- *     HA is leidend: als HA beschikbaar is, worden de andere lagen nooit
- *     aangesproken. Dit voorkomt inconsistentie met andere HA-integraties.
+ *   Layer 2 — GPS (browser / Capacitor 8)
+ *     navigator.geolocation or @capacitor/geolocation.
+ *     Requests user permission. Timeout: 10 seconds.
  *
- *   Laag 2 — GPS (browser/Capacitor)
- *     `navigator.geolocation.getCurrentPosition()` of Capacitor Geolocation
- *     plugin (Capacitor 8). Vraagt toestemming aan de gebruiker.
- *     Timeout: 10 seconden. Nauwkeurigheid: maximale GPS-precisie.
+ *   Layer 3 — IP geolocation
+ *     https://ip-api.com/json — city/region level (~50 km).
+ *     No API key required. Rate limit: 45 req/min per IP.
  *
- *   Laag 3 — IP-geolokatie
- *     Gratis endpoint: https://ip-api.com/json?fields=lat,lon,city,country,timezone
- *     Bereikt een nauwkeurigheid op stad/regio-niveau (~50 km radius).
- *     Geen API-sleutel vereist. Rate-limit: 45 req/min per IP.
+ *   Layer 4 — Manual
+ *     User-supplied coordinates, persisted in localStorage.
+ *     Higher priority than GPS/IP: explicit user choice takes precedence.
  *
- *   Laag 4 — Handmatig
- *     Coördinaten opgegeven door de gebruiker via de Nida-instellingen.
- *     Worden gepersisteerd in localStorage (en optioneel HA input_text).
+ *   Layer 5 — Fallback
+ *     Mecca as geographical centre. The app is always functional.
+ *     The UI always shows a clear warning when this layer is active.
  *
- *   Laag 5 — Fallback (standaard)
- *     Mekka als geografisch centrum van de islamitische wereld.
- *     Zorgt dat de app nooit volledig functionloos is.
- *     Toont altijd een duidelijke UI-waarschuwing als deze laag actief is.
+ * ── GPS DISPLAY & DRIFT DETECTION (v2.1) ────────────────────────────────────
  *
- * DEVELOPER.md-conventies:
- *   - resolveLocation() retourneert altijd een LocationResult (nooit null/throw)
- *   - Laag-nummers zijn constants, geen magic numbers
- *   - Alle toestemmingsfouten worden apart gerapporteerd via LocationResult.permissionDenied
- *   - Persistentie via localStorage met sleutelprefix 'nida-location-'
- *   - HA-hass-object wordt geïnjecteerd via setHass(), niet via constructor
+ *   Subtle display:
+ *     getDisplayInfo() returns a compact object for the UI location badge:
+ *     city name (or rounded coordinates), layer icon, refresh availability.
+ *
+ *   Drift detection:
+ *     startWatching() starts a background GPS watcher.
+ *     When the new position is > DRIFT_THRESHOLD_KM from the stored position,
+ *     a 'drift' event fires via the onDrift callback.
+ *     The app can then show a subtle refresh banner.
+ *     At > DRIFT_AUTO_UPDATE_KM the location is updated automatically.
+ *
+ *   Haversine distance:
+ *     Internal _haversine() calculates the shortest surface distance between
+ *     two geo-coordinates (accuracy: ~0.5%).
+ *
+ * DEVELOPER.md conventions:
+ *   - resolveLocation() always returns a LocationResult (never null/throw)
+ *   - Layer numbers are named constants, no magic numbers
+ *   - GPS permission errors → permissionDenied: true in LocationResult
+ *   - Persistence: localStorage, prefix 'nida-location-'
+ *   - Callbacks via public setters (onDrift, onLocationUpdated)
+ *   - All console logs prefixed with [NidaLocation]
  *
  * @author  Nida v2 Team
  * @license MIT
  */
 
 // ---------------------------------------------------------------------------
-// CONSTANTEN — LAGEN
+// CONSTANTS — LAYERS
 // ---------------------------------------------------------------------------
 
 /**
- * Laag-nummers voor logging en UI-indicatie.
- * Lager nummer = hogere prioriteit.
- *
+ * Layer numbers. Lower = higher priority.
  * @enum {number}
  */
 export const LOCATION_LAYER = {
@@ -60,701 +73,895 @@ export const LOCATION_LAYER = {
   FALLBACK: 5,
 };
 
-/**
- * Beschrijving van elke locatielaag (voor logging en UI).
- *
- * @type {Record<number, string>}
- */
+/** @type {Record<number, string>} Human-readable label per layer */
 export const LAYER_LABELS = {
   [LOCATION_LAYER.HA]:       'Home Assistant',
   [LOCATION_LAYER.GPS]:      'GPS',
-  [LOCATION_LAYER.IP]:       'IP-geolokatie',
-  [LOCATION_LAYER.MANUAL]:   'Handmatig',
-  [LOCATION_LAYER.FALLBACK]: 'Fallback (Mekka)',
+  [LOCATION_LAYER.IP]:       'IP geolocation',
+  [LOCATION_LAYER.MANUAL]:   'Manual',
+  [LOCATION_LAYER.FALLBACK]: 'Fallback (Mecca)',
+};
+
+/** @type {Record<number, string>} Compact emoji icon per layer (for the subtle UI badge) */
+export const LAYER_ICONS = {
+  [LOCATION_LAYER.HA]:       '🏠',
+  [LOCATION_LAYER.GPS]:      '📍',
+  [LOCATION_LAYER.IP]:       '🌐',
+  [LOCATION_LAYER.MANUAL]:   '✏️',
+  [LOCATION_LAYER.FALLBACK]: '⚠️',
 };
 
 // ---------------------------------------------------------------------------
-// CONSTANTEN — CONFIGURATIE
+// CONSTANTS — DRIFT THRESHOLDS
 // ---------------------------------------------------------------------------
 
 /**
- * Fallback-locatie: de Ka'aba in Mekka, Saoedi-Arabië.
- * Wordt gebruikt als geen enkele andere laag beschikbaar is.
+ * Minimum displacement in km that triggers a drift notification.
+ * Below this distance: silent update, no UI alert.
  *
- * @constant {{ lat: number, lon: number, city: string, country: string }}
+ * 5 km is precise enough: at 5 km prayer times differ by less than 1 minute.
+ *
+ * @constant {number}
  */
+const DRIFT_THRESHOLD_KM = 5;
+
+/**
+ * Displacement in km at which the location is updated automatically
+ * without prompting the user. e.g. when travelling to another city.
+ *
+ * @constant {number}
+ */
+const DRIFT_AUTO_UPDATE_KM = 50;
+
+/**
+ * How often (ms) the GPS watchdog polls for a position when interval-polling
+ * is active. 5 minutes is sufficient — prayer times are day-stable.
+ *
+ * @constant {number}
+ */
+const WATCH_INTERVAL_MS = 5 * 60 * 1000;
+
+/**
+ * Minimum time (ms) between two consecutive drift notifications.
+ * Prevents the UI from being flooded when GPS is unstable.
+ *
+ * @constant {number}
+ */
+const DRIFT_DEBOUNCE_MS = 60 * 1000; // 1 minute
+
+// ---------------------------------------------------------------------------
+// CONSTANTS — MISC
+// ---------------------------------------------------------------------------
+
+/** Mecca fallback location */
 const FALLBACK_LOCATION = {
-  lat:      21.4225,
-  lon:      39.8262,
-  city:     'Mecca',
-  country:  'Saudi Arabia',
-  timezone: 'Asia/Riyadh',
+  lat: 21.4225, lon: 39.8262,
+  city: 'Mecca', country: 'Saudi Arabia', timezone: 'Asia/Riyadh',
 };
 
-/**
- * IP-geolokatie endpoint.
- * Gebruikt ip-api.com (gratis, geen API-sleutel, HTTPS beschikbaar op Pro).
- * Voor productie: overweeg ipinfo.io of abstract API voor hogere limieten.
- *
- * @constant {string}
- */
+/** IP geolocation endpoint — free, no auth */
 const IP_GEO_URL = 'https://ip-api.com/json?fields=status,lat,lon,city,country,timezone';
 
-/**
- * Timeout voor GPS-verzoek in milliseconden.
- *
- * @constant {number}
- */
-const GPS_TIMEOUT_MS = 10_000;
+const GPS_TIMEOUT_MS    = 10_000;
+const GPS_HIGH_ACCURACY = false;   // false = battery-efficient; sufficient for prayer times
+const GPS_MAX_AGE_MS    = 5 * 60 * 1000;
+const IP_TIMEOUT_MS     = 8_000;
 
-/**
- * GPS-nauwkeurigheid: false = energiezuiniger, true = hogere batterijverbruik
- * maar nauwkeuriger (echte GPS vs WiFi/Cell).
- *
- * @constant {boolean}
- */
-const GPS_HIGH_ACCURACY = false;
-
-/**
- * Maximum leeftijd van gecachete GPS-positie die nog acceptabel is.
- * Als de GPS-module al een positie heeft die niet ouder is dan dit,
- * wordt die hergebruikt zonder nieuw verzoek.
- *
- * @constant {number}
- */
-const GPS_MAX_AGE_MS = 5 * 60 * 1000; // 5 minuten
-
-/**
- * Timeout voor IP-geolokatie request in milliseconden.
- *
- * @constant {number}
- */
-const IP_TIMEOUT_MS = 8_000;
-
-/**
- * LocalStorage-sleutelprefix voor locatie-opslag.
- *
- * @constant {string}
- */
+/** localStorage key prefix */
 const STORAGE_PREFIX = 'nida-location-';
 
-/**
- * Cache-TTL voor opgeslagen GPS/IP-locaties (30 minuten).
- * Voorkomt herhaalde requests bij elke component-render.
- *
- * @constant {number}
- */
+/** Cache TTL for automatic reuse (30 min) */
 const LOCATION_CACHE_TTL_MS = 30 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
-// TYPE-DEFINITIE (JSDoc)
+// TYPE DEFINITIONS (JSDoc)
 // ---------------------------------------------------------------------------
 
 /**
  * @typedef {object} LocationResult
- *
- * Resultaat van een locatie-oplossing.
- *
- * @property {number}  lat              - Breedtegraad
- * @property {number}  lon              - Lengtegraad
- * @property {string}  [city]           - Plaatsnaam (als beschikbaar)
- * @property {string}  [country]        - Landnaam (als beschikbaar)
- * @property {string}  [timezone]       - IANA tijdzone string
- * @property {number}  layer            - Gebruikte laag (LOCATION_LAYER enum)
- * @property {string}  layerLabel       - Leesbare naam van de laag
- * @property {boolean} isFallback       - True als laag 5 (Mekka) gebruikt is
- * @property {boolean} permissionDenied - True als GPS-toestemming geweigerd
- * @property {number}  resolvedAt       - UNIX timestamp ms van de oplossing
+ * @property {number}      lat               - Latitude
+ * @property {number}      lon               - Longitude
+ * @property {string}      city              - City name (empty when unknown)
+ * @property {string}      country           - Country name (empty when unknown)
+ * @property {string|null} timezone          - IANA timezone string
+ * @property {number|null} accuracy          - GPS accuracy in metres
+ * @property {number}      layer             - LOCATION_LAYER enum value
+ * @property {string}      layerLabel        - Human-readable layer name
+ * @property {string}      layerIcon         - Emoji icon for the layer
+ * @property {boolean}     isFallback        - True when layer 5 (Mecca) is used
+ * @property {boolean}     permissionDenied  - True when GPS permission was denied
+ * @property {number}      resolvedAt        - Resolution timestamp in ms
+ */
+
+/**
+ * @typedef {object} DriftEvent
+ * @property {LocationResult} previous    - Previously stored location
+ * @property {LocationResult} current     - Newly detected location
+ * @property {number}  distanceKm         - Distance in km (Haversine)
+ * @property {boolean} autoUpdated        - True when already updated automatically
+ * @property {boolean} needsConfirm       - True when user confirmation is required
+ */
+
+/**
+ * @typedef {object} LocationDisplayInfo
+ * @property {string}      label       - "Amsterdam" or "6.91°N, 107.62°E"
+ * @property {string}      icon        - Emoji icon for the active layer
+ * @property {string}      layerLabel  - Human-readable layer name
+ * @property {boolean}     isFallback  - True when the Mecca emergency fallback is active
+ * @property {boolean}     canRefresh  - True when a GPS refresh is available
+ * @property {boolean}     hasDrift    - True when an unconfirmed drift is pending
+ * @property {number|null} driftKm     - Distance of the pending drift
+ * @property {string|null} driftCity   - City name of the new position
  */
 
 // ---------------------------------------------------------------------------
-// HOOFD-KLASSE
+// MAIN CLASS
 // ---------------------------------------------------------------------------
 
 /**
  * @class NidaLocation
  *
- * Beheert de 5-laags locatiestrategie voor Nida v2.
- *
- * Gebruik:
- * ```js
- * const locator = new NidaLocation();
- * locator.setHass(hass); // HA-object injecteren
- * const loc = await locator.resolveLocation();
- * // → { lat: 6.9175, lon: 107.6191, layer: 1, layerLabel: 'Home Assistant', ... }
- * ```
+ * Manages the 5-layer location strategy for Nida v2.
+ * Includes GPS drift detection, background watchdog, and subtle UI display support.
  */
 export class NidaLocation {
   constructor() {
-    /**
-     * Home Assistant hass-object (geïnjecteerd via setHass).
-     * Bevat `states`, `config`, `callService` etc.
-     *
-     * @type {object|null}
-     * @private
-     */
+    /** @type {object|null} HA hass object @private */
     this._hass = null;
 
-    /**
-     * Handmatig geconfigureerde locatie (opgegeven door gebruiker).
-     *
-     * @type {{ lat: number, lon: number, city?: string } | null}
-     * @private
-     */
+    /** @type {{ lat: number, lon: number, city: string }|null} @private */
     this._manual = this._loadManual();
 
-    /**
-     * Gecachete locatie-oplossing om herhaalde requests te voorkomen.
-     *
-     * @type {{ result: LocationResult, expiresAt: number } | null}
-     * @private
-     */
+    /** @type {{ result: LocationResult, expiresAt: number }|null} @private */
     this._locationCache = null;
 
+    /** @type {boolean} True when GPS was denied in this session @private */
+    this._gpsDenied = false;
+
     /**
-     * Vlag: heeft de gebruiker GPS-toestemming geweigerd in deze sessie?
-     * Als true, laag 2 (GPS) wordt overgeslagen.
-     *
-     * @type {boolean}
+     * Active watchPosition ID (navigator.geolocation).
+     * @type {number|null}
      * @private
      */
-    this._gpsDenied = false;
+    this._watchId = null;
+
+    /**
+     * Interval ID for periodic polling (when watchPosition is unavailable).
+     * @type {number|null}
+     * @private
+     */
+    this._watchIntervalId = null;
+
+    /**
+     * Timestamp of the last drift notification (for debouncing).
+     * @type {number}
+     * @private
+     */
+    this._lastDriftAt = 0;
+
+    /**
+     * Pending drift awaiting user confirmation.
+     * @type {DriftEvent|null}
+     * @private
+     */
+    this._pendingDrift = null;
+
+    // ---- Public callbacks (set by the consuming app) ----------------------
+
+    /**
+     * Called whenever a significant location change is detected.
+     * @type {((event: DriftEvent) => void)|null}
+     */
+    this.onDrift = null;
+
+    /**
+     * Called after every effective location update.
+     * @type {((result: LocationResult) => void)|null}
+     */
+    this.onLocationUpdated = null;
   }
 
   // -------------------------------------------------------------------------
-  // PUBLIEKE METHODEN — CONFIGURATIE
+  // PUBLIC METHODS — CONFIGURATION
   // -------------------------------------------------------------------------
 
   /**
-   * Injecteert het Home Assistant hass-object.
+   * Injects the HA hass object.
+   * Invalidates the cache so the next resolveLocation() re-evaluates HA.
    *
-   * Moet worden aangeroepen vóór `resolveLocation()` voor HA-ondersteuning.
-   * Kan worden herhaald bij HA-reconnect of state-updates.
-   *
-   * @param {object|null} hass - HA hass-object of null om HA te wissen
+   * @param {object|null} hass - HA hass object, or null to detach HA
    */
   setHass(hass) {
     this._hass = hass;
-
-    // Gooi de cache weg zodat de volgende resolveLocation() HA opnieuw probeert
-    if (hass) {
-      this._locationCache = null;
-    }
+    if (hass) this._locationCache = null;
   }
 
   /**
-   * Slaat een handmatig geconfigureerde locatie op.
+   * Saves a manually configured location.
+   * Persisted in localStorage and optionally synced to HA.
    *
-   * Wordt gepersisteerd in localStorage EN optioneel gesynchroniseerd
-   * naar HA `input_text.nida_location` (als beschikbaar).
-   *
-   * @param {object}  location         - Locatie-object
-   * @param {number}  location.lat     - Breedtegraad
-   * @param {number}  location.lon     - Lengtegraad
-   * @param {string}  [location.city]  - Optionele plaatsnaam
-   * @returns {void}
+   * @param {object} location
+   * @param {number} location.lat     - Latitude
+   * @param {number} location.lon     - Longitude
+   * @param {string} [location.city]  - Optional city name
    */
   setManualLocation({ lat, lon, city = '' }) {
-    if (typeof lat !== 'number' || typeof lon !== 'number') {
-      console.warn('[NidaLocation] setManualLocation: ongeldige coördinaten', { lat, lon });
+    if (!_isValidCoord(lat, lon)) {
+      console.warn('[NidaLocation] setManualLocation: invalid coordinates', { lat, lon });
       return;
     }
-
     this._manual = { lat, lon, city };
     this._saveManual(this._manual);
-
-    // Sync naar HA input_text (best-effort, geen fout als niet beschikbaar)
     this._syncManualToHA(this._manual);
-
-    // Reset cache zodat de nieuwe locatie direct wordt gebruikt
     this._locationCache = null;
-
-    console.info(`[NidaLocation] Handmatige locatie opgeslagen: ${lat}, ${lon} (${city})`);
+    this._pendingDrift  = null;
+    console.info(`[NidaLocation] Manual location saved: ${lat}, ${lon} (${city})`);
   }
 
   /**
-   * Wist de handmatig geconfigureerde locatie.
-   * Na aanroep valt resolveLocation() terug op GPS/IP.
+   * Clears the manually configured location.
+   * After this call resolveLocation() falls back to GPS/IP.
    */
   clearManualLocation() {
     this._manual = null;
-    try {
-      localStorage.removeItem(`${STORAGE_PREFIX}manual`);
-    } catch (_) { /* localStorage kan niet beschikbaar zijn in Capacitor sandboxes */ }
+    try { localStorage.removeItem(`${STORAGE_PREFIX}manual`); } catch (_) {}
     this._locationCache = null;
-    console.info('[NidaLocation] Handmatige locatie gewist');
+    console.info('[NidaLocation] Manual location cleared');
   }
 
   // -------------------------------------------------------------------------
-  // PUBLIEKE METHODEN — LOCATIE OPLOSSEN
+  // PUBLIC METHODS — RESOLVING LOCATION
   // -------------------------------------------------------------------------
 
   /**
-   * Bepaalt de beste beschikbare locatie via de 5-laagsstrategie.
+   * Determines the best available location via the 5-layer strategy.
+   * Always returns a LocationResult — never null or an exception.
    *
-   * Retourneert altijd een `LocationResult`, ook als alle lagen falen.
-   * In dat geval wordt laag 5 (Mekka) gebruikt met `isFallback: true`.
-   *
-   * Caching: als de vorige oplossing recenter is dan LOCATION_CACHE_TTL_MS,
-   * wordt die hergebruikt zonder netwerk-requests.
-   *
-   * @param {object}  [opts={}]              - Opties
-   * @param {boolean} [opts.forceRefresh]    - Sla cache over en los opnieuw op
-   * @param {boolean} [opts.skipGps=false]   - Sla GPS (laag 2) over
-   * @param {boolean} [opts.skipIp=false]    - Sla IP-geolokatie (laag 3) over
-   *
-   * @returns {Promise<LocationResult>} Altijd een geldig resultaat
+   * @param {object}  [opts={}]
+   * @param {boolean} [opts.forceRefresh=false] - Bypass the cache
+   * @param {boolean} [opts.skipGps=false]      - Skip the GPS layer
+   * @param {boolean} [opts.skipIp=false]       - Skip the IP geolocation layer
+   * @returns {Promise<LocationResult>}
    */
-  async resolveLocation(opts = {}) {
-    const { forceRefresh = false, skipGps = false, skipIp = false } = opts;
-
-    // Controleer cache
+  async resolveLocation({ forceRefresh = false, skipGps = false, skipIp = false } = {}) {
+    // Reuse cache when still valid
     if (!forceRefresh && this._locationCache) {
       if (Date.now() < this._locationCache.expiresAt) {
         return this._locationCache.result;
       }
     }
 
-    // ---- Laag 1: Home Assistant ------------------------------------------
-    const haResult = this._resolveFromHA();
-    if (haResult) {
-      return this._cacheAndReturn(haResult);
-    }
+    // Layer 1: Home Assistant
+    const ha = this._resolveFromHA();
+    if (ha) return this._cacheAndReturn(ha);
 
-    // ---- Laag 4: Handmatig (hoge prioriteit als HA niet beschikbaar) ------
-    // Laag 4 staat logisch vóór GPS/IP omdat het bewuste gebruikerskeuze is.
-    // De gebruiker heeft expliciet gekozen voor een locatie — dat respecteren
-    // we boven automatische detectie.
+    // Layer 4: Manual — before GPS because explicit user choice takes precedence
     if (this._manual) {
-      const manualResult = this._buildResult(
-        this._manual.lat,
-        this._manual.lon,
-        LOCATION_LAYER.MANUAL,
-        { city: this._manual.city || '' }
+      return this._cacheAndReturn(
+        this._buildResult(this._manual.lat, this._manual.lon, LOCATION_LAYER.MANUAL, {
+          city: this._manual.city,
+        })
       );
-      return this._cacheAndReturn(manualResult);
     }
 
-    // ---- Laag 2: GPS -------------------------------------------------------
+    // Layer 2: GPS
     if (!skipGps && !this._gpsDenied) {
-      const gpsResult = await this._resolveFromGPS();
-      if (gpsResult) {
-        return this._cacheAndReturn(gpsResult);
-      }
+      const gps = await this._resolveFromGPS();
+      if (gps) return this._cacheAndReturn(gps); // Includes permissionDenied cases
     }
 
-    // ---- Laag 3: IP-geolokatie --------------------------------------------
+    // Layer 3: IP geolocation
     if (!skipIp) {
-      const ipResult = await this._resolveFromIP();
-      if (ipResult) {
-        return this._cacheAndReturn(ipResult);
-      }
+      const ip = await this._resolveFromIP();
+      if (ip) return this._cacheAndReturn(ip);
     }
 
-    // ---- Laag 5: Fallback -------------------------------------------------
-    console.warn('[NidaLocation] Alle lagen mislukt — Mekka-fallback gebruikt');
-    const fallback = this._buildResult(
-      FALLBACK_LOCATION.lat,
-      FALLBACK_LOCATION.lon,
-      LOCATION_LAYER.FALLBACK,
-      {
-        city:     FALLBACK_LOCATION.city,
-        country:  FALLBACK_LOCATION.country,
-        timezone: FALLBACK_LOCATION.timezone,
-        isFallback: true,
-      }
+    // Layer 5: Mecca fallback
+    console.warn('[NidaLocation] All layers failed — Mecca fallback active');
+    return this._cacheAndReturn(
+      this._buildResult(
+        FALLBACK_LOCATION.lat, FALLBACK_LOCATION.lon, LOCATION_LAYER.FALLBACK,
+        { city: FALLBACK_LOCATION.city, country: FALLBACK_LOCATION.country,
+          timezone: FALLBACK_LOCATION.timezone, isFallback: true }
+      )
     );
-    return this._cacheAndReturn(fallback);
   }
 
   /**
-   * Vraagt expliciet GPS-toestemming aan de gebruiker.
+   * Forces a GPS refresh and compares the result with the stored location.
    *
-   * Kan worden aangeroepen vanuit een "Locatie bijwerken"-knop in de UI.
-   * Omzeilt de cache en forceert een nieuw GPS-verzoek.
+   * Workflow:
+   *   1. Request a new GPS position
+   *   2. Calculate Haversine distance to the cached location
+   *   3. < DRIFT_THRESHOLD_KM (5 km)   → silent update, no UI alert
+   *   4. < DRIFT_AUTO_UPDATE_KM (50 km) → drift event → user decides
+   *   5. >= DRIFT_AUTO_UPDATE_KM        → auto-update + informational event
    *
-   * @returns {Promise<LocationResult|null>} GPS-resultaat of null bij weigering
+   * @returns {Promise<LocationResult|null>} New location, or null on error/denial
    */
-  async requestGPS() {
-    this._gpsDenied = false; // Reset de "geweigerd"-vlag
-    const result = await this._resolveFromGPS();
-    if (result) {
-      this._locationCache = null; // Invalideer cache
-      this.setManualLocation({ lat: result.lat, lon: result.lon, city: result.city || '' });
+  async refreshGPS() {
+    this._gpsDenied = false; // Reset denial flag for a fresh attempt
+    const fresh = await this._resolveFromGPS();
+
+    if (!fresh || fresh.permissionDenied) return null;
+
+    const previous = this._locationCache?.result || null;
+
+    if (!previous) {
+      // No location stored yet — save immediately
+      const updated = this._cacheAndReturn(fresh);
+      this.onLocationUpdated?.(updated);
+      return updated;
     }
-    return result;
+
+    const km = _haversine(previous.lat, previous.lon, fresh.lat, fresh.lon);
+
+    if (km < DRIFT_THRESHOLD_KM) {
+      // Negligible displacement — silent update
+      console.info(`[NidaLocation] GPS refresh: ${km.toFixed(1)} km — silent update`);
+      const updated = this._cacheAndReturn(fresh);
+      this.onLocationUpdated?.(updated);
+      return updated;
+    }
+
+    if (km >= DRIFT_AUTO_UPDATE_KM) {
+      // Large displacement (e.g. different city): update automatically
+      console.info(`[NidaLocation] GPS refresh: ${km.toFixed(0)} km — auto-update`);
+      const updated = this._cacheAndReturn(fresh);
+      this._fireDriftEvent(previous, fresh, km, true);
+      this.onLocationUpdated?.(updated);
+      return updated;
+    }
+
+    // Middle range: wait for user confirmation
+    console.info(`[NidaLocation] GPS refresh: ${km.toFixed(1)} km — awaiting confirmation`);
+    this._storePendingDrift(previous, fresh, km);
+    // Return the fresh position but do NOT yet update the active location
+    return fresh;
+  }
+
+  /**
+   * Confirms the pending drift and updates the location.
+   * Call this when the user taps "Update" on the drift banner.
+   *
+   * @returns {LocationResult|null} Updated location, or null when no drift is pending
+   */
+  confirmDrift() {
+    if (!this._pendingDrift) return null;
+    const { current } = this._pendingDrift;
+    this._pendingDrift = null;
+    const updated = this._cacheAndReturn(current);
+    this.onLocationUpdated?.(updated);
+    console.info('[NidaLocation] Drift confirmed by user');
+    return updated;
+  }
+
+  /**
+   * Dismisses the pending drift and keeps the current location.
+   * Call this when the user taps "Dismiss" on the drift banner.
+   */
+  dismissDrift() {
+    this._pendingDrift = null;
+    console.info('[NidaLocation] Drift dismissed by user');
   }
 
   // -------------------------------------------------------------------------
-  // LAAG 1 — HOME ASSISTANT
+  // PUBLIC METHODS — GPS WATCHDOG
   // -------------------------------------------------------------------------
 
   /**
-   * Probeert de locatie uit Home Assistant te lezen.
+   * Starts a background GPS watcher that continuously monitors position.
    *
-   * HA-bronnen (in volgorde van betrouwbaarheid):
-   *   1. `hass.config.latitude` + `hass.config.longitude`
-   *      (HA-systeemconfiguratie, meest betrouwbaar)
-   *   2. `zone.home` entity (home-zone van de gebruiker)
-   *   3. `sensor.nida_latitude` + `sensor.nida_longitude`
-   *      (optioneel: Nida-specifieke sensoren in HA)
+   * Strategy per platform:
+   *   - Browser/Electron: navigator.geolocation.watchPosition (event-based, efficient)
+   *   - Capacitor native: watchPosition via @capacitor/geolocation
+   *   - No GPS hardware: setInterval polling every WATCH_INTERVAL_MS
    *
-   * @returns {LocationResult|null} Null als HA niet beschikbaar of geen geldige locatie
+   * Call from connectedCallback() in the Lit component.
+   * The watcher detects displacement and fires drift events via onDrift.
+   *
+   * @param {object}  [opts={}]
+   * @param {boolean} [opts.useInterval=false] - Force interval polling
+   */
+  startWatching({ useInterval = false } = {}) {
+    // Do not start twice
+    if (this._watchId !== null || this._watchIntervalId !== null) {
+      console.info('[NidaLocation] Watcher already active — skipped');
+      return;
+    }
+
+    // Do not start when GPS was denied
+    if (this._gpsDenied) {
+      console.info('[NidaLocation] GPS denied — watcher not started');
+      return;
+    }
+
+    if (!useInterval && typeof navigator !== 'undefined' && navigator.geolocation) {
+      // Browser/Electron: native watchPosition
+      this._watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          // Called by the OS GPS service whenever a new position is available
+          this._handleWatchPosition(pos.coords.latitude, pos.coords.longitude);
+        },
+        (err) => {
+          if (err.code === 1) {
+            // PERMISSION_DENIED: stop the watcher and mark as denied
+            this._gpsDenied = true;
+            console.info('[NidaLocation] Watcher: GPS permission denied, stopped');
+            this.stopWatching();
+          }
+          // Other errors (POSITION_UNAVAILABLE, TIMEOUT) are ignored —
+          // the watcher will automatically retry on the next OS update
+        },
+        { enableHighAccuracy: GPS_HIGH_ACCURACY, maximumAge: GPS_MAX_AGE_MS, timeout: GPS_TIMEOUT_MS }
+      );
+      console.info('[NidaLocation] GPS watchPosition started (native)');
+
+    } else {
+      // Interval polling when watchPosition is unavailable
+      // (e.g. Electron without GPS hardware, or useInterval forced to true)
+      this._watchIntervalId = setInterval(async () => {
+        const fresh = await this._resolveFromGPS();
+        if (fresh && !fresh.permissionDenied && _isValidCoord(fresh.lat, fresh.lon)) {
+          this._handleWatchPosition(fresh.lat, fresh.lon);
+        }
+      }, WATCH_INTERVAL_MS);
+      console.info(`[NidaLocation] GPS interval polling started (every ${WATCH_INTERVAL_MS / 60000} min)`);
+    }
+  }
+
+  /**
+   * Stops the background GPS watcher.
+   * Call from disconnectedCallback() in the Lit component.
+   */
+  stopWatching() {
+    if (this._watchId !== null) {
+      if (typeof navigator !== 'undefined') navigator.geolocation?.clearWatch(this._watchId);
+      this._watchId = null;
+      console.info('[NidaLocation] GPS watchPosition stopped');
+    }
+    if (this._watchIntervalId !== null) {
+      clearInterval(this._watchIntervalId);
+      this._watchIntervalId = null;
+      console.info('[NidaLocation] GPS interval polling stopped');
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // PUBLIC METHODS — UI DISPLAY
+  // -------------------------------------------------------------------------
+
+  /**
+   * Returns compact display information for the subtle location badge.
+   *
+   * The badge shows at minimum: city/coordinates + layer icon.
+   * When GPS is available: also a refresh button (↺).
+   * When a drift is pending: a subtle indicator with distance and new city name.
+   *
+   * @returns {LocationDisplayInfo}
+   *
+   * @example
+   * const info = locator.getDisplayInfo();
+   * // → {
+   * //   label:      'Jakarta',
+   * //   icon:       '📍',
+   * //   canRefresh: true,
+   * //   hasDrift:   true,
+   * //   driftKm:    12,
+   * //   driftCity:  'Bekasi'
+   * // }
+   */
+  getDisplayInfo() {
+    const result = this._locationCache?.result || null;
+
+    if (!result) {
+      return {
+        label:      'Location unknown',
+        icon:       '❓',
+        layerLabel: 'Unknown',
+        isFallback: true,
+        canRefresh: this._canRefreshGPS(),
+        hasDrift:   false,
+        driftKm:    null,
+        driftCity:  null,
+      };
+    }
+
+    // Prefer city name over coordinates — less technical for end users
+    const label = result.city
+      ? result.city
+      : `${result.lat.toFixed(2)}°N, ${result.lon.toFixed(2)}°E`;
+
+    return {
+      label,
+      icon:       result.layerIcon,
+      layerLabel: result.layerLabel,
+      isFallback: result.isFallback,
+      canRefresh: this._canRefreshGPS(),
+      hasDrift:   this._pendingDrift !== null,
+      driftKm:    this._pendingDrift ? Math.round(this._pendingDrift.distanceKm) : null,
+      driftCity:  this._pendingDrift?.current?.city || null,
+    };
+  }
+
+  /**
+   * Returns the Haversine distance in km from the current location to new coordinates.
+   * Useful in the UI for showing "you are X km from your saved location".
+   *
+   * @param   {number} lat
+   * @param   {number} lon
+   * @returns {number|null} Distance in km, or null when no location is known
+   */
+  distanceTo(lat, lon) {
+    const current = this._locationCache?.result;
+    if (!current || !_isValidCoord(lat, lon)) return null;
+    return _haversine(current.lat, current.lon, lat, lon);
+  }
+
+  // -------------------------------------------------------------------------
+  // LAYER 1 — HOME ASSISTANT
+  // -------------------------------------------------------------------------
+
+  /**
+   * @returns {LocationResult|null}
    * @private
    */
   _resolveFromHA() {
     if (!this._hass) return null;
 
-    // --- Bron 1: HA systeemconfiguratie (meest betrouwbaar) ----------------
+    // Source 1: HA system configuration (most reliable)
     const lat = this._hass.config?.latitude;
     const lon = this._hass.config?.longitude;
-
     if (_isValidCoord(lat, lon)) {
-      const timezone = this._hass.config?.time_zone || null;
-      console.info(`[NidaLocation] Laag 1 (HA config): ${lat}, ${lon}`);
-      return this._buildResult(lat, lon, LOCATION_LAYER.HA, { timezone });
+      console.info(`[NidaLocation] Layer 1 (HA config): ${lat}, ${lon}`);
+      return this._buildResult(lat, lon, LOCATION_LAYER.HA, {
+        timezone: this._hass.config?.time_zone || null,
+      });
     }
 
-    // --- Bron 2: zone.home entity ------------------------------------------
-    const zoneHome = this._hass.states?.['zone.home'];
-    if (zoneHome) {
-      const zLat = zoneHome.attributes?.latitude;
-      const zLon = zoneHome.attributes?.longitude;
-
+    // Source 2: zone.home entity
+    const zone = this._hass.states?.['zone.home'];
+    if (zone) {
+      const zLat = zone.attributes?.latitude;
+      const zLon = zone.attributes?.longitude;
       if (_isValidCoord(zLat, zLon)) {
-        console.info(`[NidaLocation] Laag 1 (zone.home): ${zLat}, ${zLon}`);
+        console.info(`[NidaLocation] Layer 1 (zone.home): ${zLat}, ${zLon}`);
         return this._buildResult(zLat, zLon, LOCATION_LAYER.HA, {
-          city: zoneHome.attributes?.friendly_name || 'Home',
+          city: zone.attributes?.friendly_name || 'Home',
         });
       }
     }
 
-    // --- Bron 3: Nida-specifieke sensoren (optioneel) -----------------------
+    // Source 3: Nida-specific sensors (optional)
     const sLat = parseFloat(this._hass.states?.['sensor.nida_latitude']?.state);
     const sLon = parseFloat(this._hass.states?.['sensor.nida_longitude']?.state);
-
     if (_isValidCoord(sLat, sLon)) {
-      console.info(`[NidaLocation] Laag 1 (sensor.nida_*): ${sLat}, ${sLon}`);
+      console.info(`[NidaLocation] Layer 1 (sensor.nida_*): ${sLat}, ${sLon}`);
       return this._buildResult(sLat, sLon, LOCATION_LAYER.HA, {});
     }
 
-    // HA beschikbaar maar geen geldige locatie gevonden
-    console.info('[NidaLocation] Laag 1 (HA): geen geldige coördinaten in HA');
     return null;
   }
 
   // -------------------------------------------------------------------------
-  // LAAG 2 — GPS (Browser / Capacitor)
+  // LAYER 2 — GPS
   // -------------------------------------------------------------------------
 
   /**
-   * Vraagt de huidige GPS-positie op via de browser Geolocation API
-   * of via de Capacitor Geolocation plugin (als beschikbaar).
-   *
-   * Capacitor 8 detectie: controleert op `window.Capacitor?.isNativePlatform()`.
-   * Als Capacitor actief is, gebruik dan `@capacitor/geolocation`.
-   * Anders: gebruik `navigator.geolocation` (browser/Electron).
-   *
-   * @returns {Promise<LocationResult|null>} Null bij weigering of timeout
+   * @returns {Promise<LocationResult|null>}
    * @private
    */
   async _resolveFromGPS() {
     try {
-      // ---- Capacitor 8 native pad (Android/iOS) ----------------------------
-      if (window.Capacitor?.isNativePlatform?.()) {
+      // Capacitor 8 native path (Android / iOS)
+      if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
         return await this._resolveFromCapacitorGPS();
       }
 
-      // ---- Browser / Electron pad ------------------------------------------
-      if (!navigator.geolocation) {
-        console.info('[NidaLocation] Laag 2 (GPS): navigator.geolocation niet beschikbaar');
+      // Browser / Electron path
+      if (typeof navigator === 'undefined' || !navigator.geolocation) {
+        console.info('[NidaLocation] Layer 2 (GPS): navigator.geolocation not available');
         return null;
       }
 
       const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(
-          resolve,
-          reject,
-          {
-            enableHighAccuracy: GPS_HIGH_ACCURACY,
-            timeout:            GPS_TIMEOUT_MS,
-            maximumAge:         GPS_MAX_AGE_MS,
-          }
+          resolve, reject,
+          { enableHighAccuracy: GPS_HIGH_ACCURACY, timeout: GPS_TIMEOUT_MS, maximumAge: GPS_MAX_AGE_MS }
         );
       });
 
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
-      const accuracy = Math.round(position.coords.accuracy);
-
-      console.info(`[NidaLocation] Laag 2 (GPS): ${lat}, ${lon} (nauwkeurigheid: ${accuracy}m)`);
-      return this._buildResult(lat, lon, LOCATION_LAYER.GPS, {
-        accuracy,
-      });
+      const { latitude: lat, longitude: lon, accuracy } = position.coords;
+      console.info(`[NidaLocation] Layer 2 (GPS): ${lat}, ${lon} (±${Math.round(accuracy)} m)`);
+      return this._buildResult(lat, lon, LOCATION_LAYER.GPS, { accuracy: Math.round(accuracy) });
 
     } catch (err) {
-      // GeolocationPositionError codes:
-      //   1 = PERMISSION_DENIED
-      //   2 = POSITION_UNAVAILABLE
-      //   3 = TIMEOUT
       if (err.code === 1) {
-        this._gpsDenied = true; // Sla GPS over in toekomstige aanroepen
-        console.info('[NidaLocation] Laag 2 (GPS): toestemming geweigerd');
+        // PERMISSION_DENIED — mark so future calls skip GPS
+        this._gpsDenied = true;
+        console.info('[NidaLocation] Layer 2 (GPS): permission denied');
+        // Return a special result so the UI can signal the denial to the user
         return this._buildResult(
-          FALLBACK_LOCATION.lat,
-          FALLBACK_LOCATION.lon,
-          LOCATION_LAYER.GPS, // Markeert als GPS-laag, maar met permissionDenied vlag
+          FALLBACK_LOCATION.lat, FALLBACK_LOCATION.lon, LOCATION_LAYER.GPS,
           { permissionDenied: true, isFallback: true }
         );
       }
-
-      console.info(`[NidaLocation] Laag 2 (GPS): fout code=${err.code} — ${err.message}`);
+      console.info(`[NidaLocation] Layer 2 (GPS): error (code=${err.code}) — ${err.message}`);
       return null;
     }
   }
 
   /**
-   * GPS via Capacitor 8 `@capacitor/geolocation`.
-   *
-   * Vereist dat de Capacitor Geolocation plugin geïnstalleerd is.
-   * Als de plugin niet beschikbaar is, retourneert null.
-   *
-   * @returns {Promise<LocationResult|null>}
+   * GPS via Capacitor 8 @capacitor/geolocation plugin.
+   * Dynamic import so the bundle does not break on non-Capacitor platforms.
    * @private
    */
   async _resolveFromCapacitorGPS() {
     try {
-      // Dynamische import — voorkomt bundle-fouten op niet-Capacitor platforms
-      // eslint-disable-next-line import/no-extraneous-dependencies
       const { Geolocation } = await import('@capacitor/geolocation');
-
-      // Vraag toestemming (Capacitor 8 API)
       const perms = await Geolocation.requestPermissions();
+
       if (perms.location !== 'granted' && perms.coarseLocation !== 'granted') {
         this._gpsDenied = true;
-        console.info('[NidaLocation] Laag 2 (Capacitor GPS): toestemming geweigerd');
+        console.info('[NidaLocation] Layer 2 (Capacitor GPS): permission denied');
         return null;
       }
 
-      const position = await Geolocation.getCurrentPosition({
+      const pos = await Geolocation.getCurrentPosition({
         enableHighAccuracy: GPS_HIGH_ACCURACY,
-        timeout:            GPS_TIMEOUT_MS,
-        maximumAge:         GPS_MAX_AGE_MS,
+        timeout:    GPS_TIMEOUT_MS,
+        maximumAge: GPS_MAX_AGE_MS,
       });
 
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
-      const accuracy = Math.round(position.coords.accuracy);
-
-      console.info(`[NidaLocation] Laag 2 (Capacitor GPS): ${lat}, ${lon} (${accuracy}m)`);
-      return this._buildResult(lat, lon, LOCATION_LAYER.GPS, { accuracy });
+      const { latitude: lat, longitude: lon, accuracy } = pos.coords;
+      console.info(`[NidaLocation] Layer 2 (Capacitor GPS): ${lat}, ${lon} (±${Math.round(accuracy)} m)`);
+      return this._buildResult(lat, lon, LOCATION_LAYER.GPS, { accuracy: Math.round(accuracy) });
 
     } catch (err) {
-      console.warn('[NidaLocation] Laag 2 (Capacitor GPS): fout —', err.message);
+      console.warn('[NidaLocation] Layer 2 (Capacitor GPS):', err.message);
       return null;
     }
   }
 
   // -------------------------------------------------------------------------
-  // LAAG 3 — IP-GEOLOKATIE
+  // LAYER 3 — IP GEOLOCATION
   // -------------------------------------------------------------------------
 
   /**
-   * Bepaalt de locatie op basis van het publieke IP-adres.
-   *
-   * Gebruikt ip-api.com (gratis, geen auth):
-   *   GET https://ip-api.com/json?fields=status,lat,lon,city,country,timezone
-   *
-   * Nauwkeurigheid: op stad/regio-niveau (~50 km). Voldoende voor
-   * gebedstijden, die op deze schaal verwaarloosbare verschillen geven.
-   *
-   * Beperkingen:
-   *   - Rate-limit: 45 req/min per IP (vrij gebruik)
-   *   - Werkt niet achter bedrijfs-VPN's of Tor
-   *   - Niet beschikbaar via HTTPS op de gratis tier
-   *     → HTTP is acceptabel voor puur openbare geo-data (geen auth/persoonlijke data)
-   *
    * @returns {Promise<LocationResult|null>}
    * @private
    */
   async _resolveFromIP() {
     const controller = new AbortController();
-    const timeoutId  = setTimeout(() => controller.abort(), IP_TIMEOUT_MS);
+    const tid = setTimeout(() => controller.abort(), IP_TIMEOUT_MS);
 
     try {
-      const response = await fetch(IP_GEO_URL, { signal: controller.signal });
-      clearTimeout(timeoutId);
+      const res = await fetch(IP_GEO_URL, { signal: controller.signal });
+      clearTimeout(tid);
 
-      if (!response.ok) {
-        console.warn(`[NidaLocation] Laag 3 (IP): HTTP ${response.status}`);
+      if (!res.ok) { console.warn(`[NidaLocation] Layer 3 (IP): HTTP ${res.status}`); return null; }
+
+      const data = await res.json();
+      if (data.status !== 'success' || !_isValidCoord(data.lat, data.lon)) {
+        console.warn('[NidaLocation] Layer 3 (IP): invalid response', data.status);
         return null;
       }
 
-      const data = await response.json();
-
-      // ip-api.com retourneert status: "success" of "fail"
-      if (data.status !== 'success') {
-        console.warn('[NidaLocation] Laag 3 (IP): API status =', data.status);
-        return null;
-      }
-
-      if (!_isValidCoord(data.lat, data.lon)) {
-        console.warn('[NidaLocation] Laag 3 (IP): ongeldige coördinaten', data);
-        return null;
-      }
-
-      console.info(`[NidaLocation] Laag 3 (IP): ${data.lat}, ${data.lon} (${data.city}, ${data.country})`);
+      console.info(`[NidaLocation] Layer 3 (IP): ${data.lat}, ${data.lon} — ${data.city}`);
       return this._buildResult(data.lat, data.lon, LOCATION_LAYER.IP, {
-        city:     data.city     || '',
-        country:  data.country  || '',
-        timezone: data.timezone || null,
+        city: data.city, country: data.country, timezone: data.timezone,
       });
 
     } catch (err) {
-      clearTimeout(timeoutId);
-      if (err.name === 'AbortError') {
-        console.warn(`[NidaLocation] Laag 3 (IP): timeout na ${IP_TIMEOUT_MS}ms`);
-      } else {
-        console.warn('[NidaLocation] Laag 3 (IP): fout —', err.message);
-      }
+      clearTimeout(tid);
+      if (err.name === 'AbortError') console.warn('[NidaLocation] Layer 3 (IP): timeout');
+      else console.warn('[NidaLocation] Layer 3 (IP):', err.message);
       return null;
     }
   }
 
   // -------------------------------------------------------------------------
-  // PERSISTENTIE — HANDMATIGE LOCATIE
+  // DRIFT DETECTION (internal)
   // -------------------------------------------------------------------------
 
   /**
-   * Laadt de opgeslagen handmatige locatie uit localStorage.
+   * Processes a new position from the GPS watcher.
+   * Compares it with the cached location and decides on a drift action.
    *
-   * @returns {{ lat: number, lon: number, city: string }|null}
+   * Called by the watchPosition callback or interval polling.
+   *
+   * @param {number} lat - New latitude
+   * @param {number} lon - New longitude
    * @private
    */
+  _handleWatchPosition(lat, lon) {
+    const current = this._locationCache?.result;
+
+    // No location stored yet — save this as the first position
+    if (!current) {
+      const fresh = this._buildResult(lat, lon, LOCATION_LAYER.GPS, {});
+      this._cacheAndReturn(fresh);
+      this.onLocationUpdated?.(fresh);
+      return;
+    }
+
+    // HA and manual layers are never overwritten by the GPS watchdog.
+    // The user made a deliberate choice — we respect that.
+    if (current.layer === LOCATION_LAYER.HA || current.layer === LOCATION_LAYER.MANUAL) {
+      return;
+    }
+
+    const km = _haversine(current.lat, current.lon, lat, lon);
+
+    // No significant displacement
+    if (km < DRIFT_THRESHOLD_KM) return;
+
+    // Debounce: do not notify more often than DRIFT_DEBOUNCE_MS
+    const now = Date.now();
+    if (now - this._lastDriftAt < DRIFT_DEBOUNCE_MS) return;
+    this._lastDriftAt = now;
+
+    // Build the fresh location object
+    const fresh = this._buildResult(lat, lon, LOCATION_LAYER.GPS, {});
+
+    if (km >= DRIFT_AUTO_UPDATE_KM) {
+      // Large displacement: update automatically, inform the user
+      console.info(`[NidaLocation] Watcher: drift ${km.toFixed(0)} km — auto-update`);
+      this._cacheAndReturn(fresh);
+      this._fireDriftEvent(current, fresh, km, true);
+      this.onLocationUpdated?.(fresh);
+    } else {
+      // Medium displacement: subtle notification, user decides
+      console.info(`[NidaLocation] Watcher: drift ${km.toFixed(1)} km — pending`);
+      this._storePendingDrift(current, fresh, km);
+    }
+  }
+
+  /**
+   * Stores a pending drift and fires the onDrift event.
+   * @private
+   */
+  _storePendingDrift(previous, current, distanceKm) {
+    this._pendingDrift = { previous, current, distanceKm, autoUpdated: false, needsConfirm: true };
+    this.onDrift?.(this._pendingDrift);
+  }
+
+  /**
+   * Fires an informational drift event (already processed, no pending state).
+   * @private
+   */
+  _fireDriftEvent(previous, current, distanceKm, autoUpdated) {
+    this.onDrift?.({ previous, current, distanceKm, autoUpdated, needsConfirm: false });
+  }
+
+  /**
+   * Returns true when a GPS refresh is available on this device/platform.
+   * @returns {boolean}
+   * @private
+   */
+  _canRefreshGPS() {
+    if (this._gpsDenied) return false;
+    if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) return true;
+    if (typeof navigator !== 'undefined' && navigator.geolocation) return true;
+    return false;
+  }
+
+  // -------------------------------------------------------------------------
+  // PERSISTENCE
+  // -------------------------------------------------------------------------
+
+  /** @private */
   _loadManual() {
     try {
       const raw = localStorage.getItem(`${STORAGE_PREFIX}manual`);
       if (!raw) return null;
-
-      const parsed = JSON.parse(raw);
-      if (_isValidCoord(parsed.lat, parsed.lon)) {
-        return { lat: parsed.lat, lon: parsed.lon, city: parsed.city || '' };
-      }
-    } catch (_) {
-      /* localStorage niet beschikbaar of corrupt JSON */
-    }
+      const p = JSON.parse(raw);
+      if (_isValidCoord(p.lat, p.lon)) return { lat: p.lat, lon: p.lon, city: p.city || '' };
+    } catch (_) {}
     return null;
   }
 
-  /**
-   * Slaat een handmatige locatie op in localStorage.
-   *
-   * @param {{ lat: number, lon: number, city: string }} manual
-   * @private
-   */
-  _saveManual(manual) {
-    try {
-      localStorage.setItem(
-        `${STORAGE_PREFIX}manual`,
-        JSON.stringify(manual)
-      );
-    } catch (_) {
-      console.warn('[NidaLocation] localStorage niet beschikbaar voor persistentie');
-    }
+  /** @private */
+  _saveManual(m) {
+    try { localStorage.setItem(`${STORAGE_PREFIX}manual`, JSON.stringify(m)); }
+    catch (_) { console.warn('[NidaLocation] localStorage not available'); }
   }
 
-  /**
-   * Synchroniseert de handmatige locatie naar HA `input_text.nida_location`
-   * als die entity beschikbaar is.
-   *
-   * Formaat: "lat,lon" (bijv. "6.9175,107.6191")
-   *
-   * @param {{ lat: number, lon: number }} manual
-   * @private
-   */
-  _syncManualToHA(manual) {
-    if (!this._hass) return;
-
-    const entityId = 'input_text.nida_location';
-    if (!this._hass.states?.[entityId]) return;
-
+  /** @private */
+  _syncManualToHA(m) {
+    if (!this._hass?.states?.['input_text.nida_location']) return;
     try {
       this._hass.callService('input_text', 'set_value', {
-        entity_id: entityId,
-        value:     `${manual.lat},${manual.lon}`,
+        entity_id: 'input_text.nida_location',
+        value:     `${m.lat},${m.lon}`,
       });
-    } catch (err) {
-      console.warn('[NidaLocation] HA sync mislukt:', err.message);
-    }
+    } catch (err) { console.warn('[NidaLocation] HA sync failed:', err.message); }
   }
 
   // -------------------------------------------------------------------------
-  // HULPMETHODEN
+  // HELPERS
   // -------------------------------------------------------------------------
 
   /**
-   * Bouwt een genormaliseerd `LocationResult`-object.
-   *
-   * @param {number}  lat         - Breedtegraad
-   * @param {number}  lon         - Lengtegraad
-   * @param {number}  layer       - LOCATION_LAYER enum-waarde
-   * @param {object}  [extras={}] - Extra velden (city, country, timezone, etc.)
-   * @returns {LocationResult}
+   * Builds a normalised LocationResult object.
    * @private
    */
   _buildResult(lat, lon, layer, extras = {}) {
     return {
-      lat:             parseFloat(lat.toFixed(6)),
-      lon:             parseFloat(lon.toFixed(6)),
-      city:            extras.city     || '',
-      country:         extras.country  || '',
-      timezone:        extras.timezone || null,
-      accuracy:        extras.accuracy || null,
+      lat:              parseFloat(Number(lat).toFixed(6)),
+      lon:              parseFloat(Number(lon).toFixed(6)),
+      city:             extras.city     || '',
+      country:          extras.country  || '',
+      timezone:         extras.timezone || null,
+      accuracy:         extras.accuracy || null,
       layer,
-      layerLabel:      LAYER_LABELS[layer] || 'Onbekend',
-      isFallback:      extras.isFallback      || layer === LOCATION_LAYER.FALLBACK,
+      layerLabel:       LAYER_LABELS[layer]  || 'Unknown',
+      layerIcon:        LAYER_ICONS[layer]   || '📍',
+      isFallback:       extras.isFallback       || layer === LOCATION_LAYER.FALLBACK,
       permissionDenied: extras.permissionDenied || false,
-      resolvedAt:      Date.now(),
+      resolvedAt:       Date.now(),
     };
   }
 
-  /**
-   * Slaat een LocationResult op in de cache en retourneert het.
-   *
-   * @param   {LocationResult} result
-   * @returns {LocationResult}
-   * @private
-   */
+  /** @private */
   _cacheAndReturn(result) {
-    this._locationCache = {
-      result,
-      expiresAt: Date.now() + LOCATION_CACHE_TTL_MS,
-    };
+    this._locationCache = { result, expiresAt: Date.now() + LOCATION_CACHE_TTL_MS };
     return result;
   }
 }
 
 // ---------------------------------------------------------------------------
-// MODULE-NIVEAU HULPFUNCTIES
+// MODULE-LEVEL EXPORTS
 // ---------------------------------------------------------------------------
 
 /**
- * Controleert of een lat/lon paar geldige coördinaten zijn.
+ * Calculates the shortest surface distance in km between two geo-coordinates
+ * using the Haversine formula.
  *
- * @param   {any} lat - Breedtegraad
- * @param   {any} lon - Lengtegraad
+ * Accuracy: ~0.5% (sufficient for drift detection at prayer-time granularity).
+ * Altitude above sea level is ignored.
+ *
+ * @param   {number} lat1 - Latitude of point 1
+ * @param   {number} lon1 - Longitude of point 1
+ * @param   {number} lat2 - Latitude of point 2
+ * @param   {number} lon2 - Longitude of point 2
+ * @returns {number}      Distance in kilometres
+ *
+ * @example
+ * haversine(52.37, 4.90, 51.92, 4.48) // Amsterdam → Rotterdam ≈ 57 km
+ */
+export function haversine(lat1, lon1, lat2, lon2) {
+  return _haversine(lat1, lon1, lat2, lon2);
+}
+
+// Internal variant called by the class (avoids export overhead)
+function _haversine(lat1, lon1, lat2, lon2) {
+  const R    = 6371;                                             // Earth radius in km
+  const dLat = _deg2rad(lat2 - lat1);
+  const dLon = _deg2rad(lon2 - lon1);
+  const a    =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(_deg2rad(lat1)) * Math.cos(_deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function _deg2rad(deg) { return deg * (Math.PI / 180); }
+
+/**
+ * Returns true when lat/lon form a valid coordinate pair.
+ * Rejects (0, 0) — almost always a placeholder error.
+ *
+ * @param   {any} lat
+ * @param   {any} lon
  * @returns {boolean}
  */
 function _isValidCoord(lat, lon) {
-  const numLat = Number(lat);
-  const numLon = Number(lon);
-  return (
-    !isNaN(numLat) && !isNaN(numLon) &&
-    numLat >= -90  && numLat <= 90   &&
-    numLon >= -180 && numLon <= 180  &&
-    // (0, 0) is technisch geldig maar bijna altijd een placeholder-fout
-    !(numLat === 0 && numLon === 0)
-  );
+  const a = Number(lat), b = Number(lon);
+  return !isNaN(a) && !isNaN(b)
+    && a >= -90  && a <= 90
+    && b >= -180 && b <= 180
+    && !(a === 0 && b === 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -762,20 +969,33 @@ function _isValidCoord(lat, lon) {
 // ---------------------------------------------------------------------------
 
 /**
- * Singleton instantie van de locatiemodule voor app-brede gebruik.
+ * App-wide singleton NidaLocation instance.
  *
- * Importeer en gebruik als:
+ * Minimal usage in a Lit component:
  * ```js
  * import { locator } from './nida-location.js';
  *
- * // HA-object injecteren (vanuit LitElement of HA card)
+ * // In setConfig() / connectedCallback():
  * locator.setHass(this.hass);
+ * locator.startWatching(); // Start the GPS watcher (on GPS-capable devices only)
  *
- * // Locatie ophalen
- * const loc = await locator.resolveLocation();
- * if (loc.isFallback) {
- *   console.warn('Geen locatie gevonden, Mekka-fallback gebruikt');
- * }
+ * // Drift callback — drives the subtle UI banner:
+ * locator.onDrift = ({ distanceKm, current, needsConfirm, autoUpdated }) => {
+ *   if (autoUpdated) {
+ *     // Show a brief toast: "Location updated to {current.city}"
+ *   } else if (needsConfirm) {
+ *     // Show a subtle banner: "You are {distanceKm} km from {current.city} — update?"
+ *     // User taps banner  → locator.confirmDrift()
+ *     // User taps ✕       → locator.dismissDrift()
+ *   }
+ * };
+ *
+ * // In disconnectedCallback():
+ * locator.stopWatching();
+ *
+ * // Fetch display info for the location badge:
+ * const info = locator.getDisplayInfo();
+ * // → { label: 'Jakarta', icon: '📍', canRefresh: true, hasDrift: false, ... }
  * ```
  *
  * @type {NidaLocation}
