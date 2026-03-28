@@ -1,43 +1,43 @@
 /**
- * @file nida-engine.js
- * @module NidaEngine
- * @version 2.0.0
+ * @file        nida-engine.js
+ * @module      NidaEngine
+ * @version     2.0.0
+ * @since       2026-03-28
+ * @description Core prayer-time calculation engine for Nida v2.
  *
- * Core gebedstijden-logica voor Nida v2.
+ * Responsibilities:
+ *   - Normalise raw API time strings into internal minute-based structures
+ *   - Determine the current and next prayer
+ *   - Countdown calculation with day-transition bug fix
+ *   - Progress-bar percentage between prayers
+ *   - Isha → Fajr (next day) transition — never rolls back to the same day
  *
- * Verantwoordelijkheden:
- *   - Normaliseren van ruwe API-tijden naar interne structuren
- *   - Bepalen van huidig / volgend gebed
- *   - Countdown berekening (inclusief dag-overgang bugfix)
- *   - Voortgangsbalk percentage
- *   - Isha → Fajr (volgende dag) overgang — nooit terug naar dezelfde dag
- *
- * DEVELOPER.md-conventies (samenvatting):
- *   - Elke functie heeft een JSDoc-header
- *   - Interne helpers beginnen met underscore (_)
- *   - Geen side-effects buiten publieke methoden
- *   - Alle tijden worden intern als minuten-na-middernacht (0-1439) opgeslagen
- *   - "Nextday-offset" = 1440 minuten wordt opgeteld wanneer een gebed
- *     in de toekomst ligt maar vóór middernacht staat geregistreerd
+ * DEVELOPER.md conventions (summary):
+ *   - Every function carries a JSDoc header
+ *   - Internal helpers are prefixed with an underscore (_)
+ *   - No side-effects outside public methods
+ *   - All times are stored internally as minutes-after-midnight (0–1439)
+ *   - "Next-day offset" = 1440 minutes is added when a prayer lies in the
+ *     future but is registered before midnight on the current calendar day
  *
  * @author  Nida v2 Team
  * @license MIT
  */
 
 // ---------------------------------------------------------------------------
-// CONSTANTEN
+// CONSTANTS
 // ---------------------------------------------------------------------------
 
 /**
- * Canonieke volgorde van de vijf dagelijkse gebeden.
- * Wordt gebruikt voor iteratie en array-indexering.
+ * Canonical order of the five daily prayers.
+ * Used for iteration and array indexing throughout the codebase.
  *
  * @constant {string[]}
  */
 export const PRAYER_KEYS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
 /**
- * Emoji-icoon per gebed voor weergave in de UI.
+ * Emoji icon per prayer for UI display.
  *
  * @constant {Record<string, string>}
  */
@@ -50,41 +50,41 @@ export const PRAYER_ICONS = {
 };
 
 /**
- * Imsak-offset in minuten vóór Fajr als de API geen Imsak geeft.
- * Standaard 10 minuten (meest gebruikte conventie).
+ * Imsak offset in minutes before Fajr when the API does not supply an Imsak time.
+ * 10 minutes is the most widely used convention.
  *
  * @constant {number}
  */
 const IMSAK_FALLBACK_OFFSET_MIN = 10;
 
 /**
- * Minimale cache-duur voor dagelijkse tijden in milliseconden.
- * Na deze tijd worden tijden opnieuw opgehaald, zelfs als de datum
- * hetzelfde lijkt. Vangt edge-cases op rond DST en tijdzone-sprongen.
+ * Minimum cache lifetime for daily times in milliseconds.
+ * After this period times are re-fetched even when the date appears unchanged.
+ * Guards against DST roll-overs and timezone-jump edge cases.
  *
  * @constant {number}
  */
-const DAILY_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 uur
+const DAILY_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 // ---------------------------------------------------------------------------
-// INTERNE HULPFUNCTIES
+// INTERNAL HELPERS
 // ---------------------------------------------------------------------------
 
 /**
- * Converteert een tijdstring in "HH:MM" of "HH:MM:SS" formaat naar
- * het aantal minuten na middernacht.
+ * Converts a time string in "HH:MM" or "HH:MM:SS" format to the number of
+ * minutes after midnight.
  *
- * @param  {string} timeStr - Bijv. "05:23" of "05:23:00"
- * @returns {number|null}   Minuten na middernacht, of null bij ongeldig formaat
+ * @param  {string} timeStr - e.g. "05:23" or "05:23:00"
+ * @returns {number|null}   Minutes after midnight, or null for invalid input
  *
  * @example
- * _timeToMinutes("05:23") // → 323
+ * _timeToMinutes("05:23")   // → 323
  * _timeToMinutes("invalid") // → null
  */
 function _timeToMinutes(timeStr) {
   if (!timeStr || typeof timeStr !== 'string') return null;
 
-  // Knip seconden af als die aanwezig zijn (HH:MM:SS → HH:MM)
+  // Strip optional seconds component (HH:MM:SS → HH:MM)
   const [hhStr, mmStr] = timeStr.trim().split(':');
   const hh = parseInt(hhStr, 10);
   const mm = parseInt(mmStr, 10);
@@ -96,18 +96,18 @@ function _timeToMinutes(timeStr) {
 }
 
 /**
- * Converteert minuten-na-middernacht terug naar "HH:MM" string.
- * Wrapat automatisch bij waarden >= 1440 (volgende dag).
+ * Converts minutes-after-midnight back to a "HH:MM" string.
+ * Automatically wraps values >= 1440 (next day).
  *
- * @param  {number} totalMinutes - Minuten na middernacht (mag >= 1440 zijn)
- * @returns {string}             Tijdstring "HH:MM"
+ * @param  {number} totalMinutes - Minutes after midnight (may be >= 1440)
+ * @returns {string}             Time string "HH:MM"
  *
  * @example
  * _minutesToTime(323)  // → "05:23"
- * _minutesToTime(1500) // → "01:00"  (volgende dag, 1500-1440=60)
+ * _minutesToTime(1500) // → "01:00"  (next day, 1500-1440=60)
  */
 function _minutesToTime(totalMinutes) {
-  // Wrap naar het bereik [0, 1439]
+  // Wrap into the [0, 1439] range
   const wrapped = ((totalMinutes % 1440) + 1440) % 1440;
   const hh = Math.floor(wrapped / 60);
   const mm = wrapped % 60;
@@ -115,9 +115,9 @@ function _minutesToTime(totalMinutes) {
 }
 
 /**
- * Geeft het huidige aantal seconden na middernacht op basis van Date.now().
+ * Returns the current number of seconds after midnight.
  *
- * @returns {number} Seconden in bereik [0, 86399]
+ * @returns {number} Seconds in range [0, 86399]
  */
 function _nowSeconds() {
   const d = new Date();
@@ -125,9 +125,9 @@ function _nowSeconds() {
 }
 
 /**
- * Geeft het huidige aantal minuten na middernacht.
+ * Returns the current number of minutes after midnight.
  *
- * @returns {number} Minuten in bereik [0, 1439]
+ * @returns {number} Minutes in range [0, 1439]
  */
 function _nowMinutes() {
   const d = new Date();
@@ -135,29 +135,29 @@ function _nowMinutes() {
 }
 
 // ---------------------------------------------------------------------------
-// HOOFD-KLASSE
+// MAIN CLASS
 // ---------------------------------------------------------------------------
 
 /**
  * @class NidaEngine
  *
- * De centrale berekeningsmotor voor Nida v2.
+ * Central calculation engine for Nida v2.
  *
- * Gebruik:
+ * Usage:
  * ```js
  * const engine = new NidaEngine();
  * engine.loadTimes({ fajr: "05:23", dhuhr: "12:15", ... });
- * const next = engine.getNextPrayer();
+ * const next     = engine.getNextPrayer();
  * const countdown = engine.getCountdown();
  * ```
  *
- * Singleton-patroon aanbevolen — één instantie per app-sessie.
+ * A singleton instance is recommended — one per app session.
  */
 export class NidaEngine {
   constructor() {
     /**
-     * Interne opslag van gebedstijden als minuten-na-middernacht.
-     * Sleutel = prayer key (bijv. 'fajr'), waarde = integer.
+     * Internal storage of prayer times as minutes-after-midnight.
+     * Key = prayer key (e.g. 'fajr'), value = integer minutes.
      *
      * @type {Record<string, number>}
      * @private
@@ -165,7 +165,7 @@ export class NidaEngine {
     this._times = {};
 
     /**
-     * Imsak-tijd in minuten (kan null zijn als niet beschikbaar).
+     * Imsak time in minutes after midnight (null when unavailable).
      *
      * @type {number|null}
      * @private
@@ -173,8 +173,8 @@ export class NidaEngine {
     this._imsak = null;
 
     /**
-     * Tijdstempel waarop de tijden voor het laatst zijn geladen.
-     * Wordt gebruikt voor cache-invalidatie.
+     * Timestamp of the last loadTimes() call.
+     * Used for cache invalidation.
      *
      * @type {number}
      * @private
@@ -182,7 +182,7 @@ export class NidaEngine {
     this._loadedAt = 0;
 
     /**
-     * Datumstring (YYYY-MM-DD) waarvoor de huidige tijden gelden.
+     * Date string (YYYY-MM-DD) for which the current times are valid.
      *
      * @type {string|null}
      * @private
@@ -191,64 +191,64 @@ export class NidaEngine {
   }
 
   // -------------------------------------------------------------------------
-  // PUBLIEKE METHODEN — DATA LADEN
+  // PUBLIC METHODS — LOADING DATA
   // -------------------------------------------------------------------------
 
   /**
-   * Laadt gebedstijden vanuit een ruwe tijden-map.
+   * Loads prayer times from a raw time map.
    *
-   * De `timesMap` kan afkomstig zijn van:
-   *   - AlaDhan API response (zie nida-api.js)
+   * The `timesMap` can originate from:
+   *   - An AlaDhan API response (see nida-api.js)
    *   - Home Assistant sensor states
-   *   - Handmatige configuratie
+   *   - Manual configuration
    *
-   * @param {object} timesMap            - Map met tijdstrings per gebed
-   * @param {string} timesMap.fajr       - Fajr-tijd "HH:MM"
-   * @param {string} timesMap.dhuhr      - Dhuhr-tijd "HH:MM"
-   * @param {string} timesMap.asr        - Asr-tijd "HH:MM"
-   * @param {string} timesMap.maghrib    - Maghrib-tijd "HH:MM"
-   * @param {string} timesMap.isha       - Isha-tijd "HH:MM"
-   * @param {string} [timesMap.imsak]    - Imsak-tijd "HH:MM" (optioneel)
-   * @param {string} [timesMap.sunrise]  - Zonsopgang "HH:MM" (optioneel, voor weergave)
-   * @param {string} [timesMap.sunset]   - Zonsondergang "HH:MM" (optioneel)
-   * @param {string} [dateKey]           - Datum "YYYY-MM-DD" waarvoor tijden gelden
-   * @returns {boolean}                  True als alle 5 gebedstijden succesvol zijn geladen
+   * @param {object} timesMap            - Map of time strings per prayer
+   * @param {string} timesMap.fajr       - Fajr time "HH:MM"
+   * @param {string} timesMap.dhuhr      - Dhuhr time "HH:MM"
+   * @param {string} timesMap.asr        - Asr time "HH:MM"
+   * @param {string} timesMap.maghrib    - Maghrib time "HH:MM"
+   * @param {string} timesMap.isha       - Isha time "HH:MM"
+   * @param {string} [timesMap.imsak]    - Imsak time "HH:MM" (optional)
+   * @param {string} [timesMap.sunrise]  - Sunrise "HH:MM" (optional, display only)
+   * @param {string} [timesMap.sunset]   - Sunset "HH:MM" (optional)
+   * @param {string} [dateKey]           - Date "YYYY-MM-DD" the times are valid for
+   * @returns {boolean}                  True when all 5 prayer times loaded successfully
    */
   loadTimes(timesMap, dateKey = null) {
     if (!timesMap || typeof timesMap !== 'object') {
-      console.warn('[NidaEngine] loadTimes: ongeldig timesMap argument');
+      console.warn('[NidaEngine] loadTimes: invalid timesMap argument');
       return false;
     }
 
-    // Reset interne state vóór het laden
+    // Reset internal state before loading
     this._times = {};
     this._imsak = null;
 
     let allLoaded = true;
 
-    // Verwerk de vijf verplichte gebeden
+    // Process the five required prayers
     for (const key of PRAYER_KEYS) {
       const raw = timesMap[key] || timesMap[key.toLowerCase()];
       const minutes = _timeToMinutes(raw);
 
       if (minutes === null) {
-        console.warn(`[NidaEngine] loadTimes: ongeldige of ontbrekende tijd voor '${key}':`, raw);
+        console.warn(`[NidaEngine] loadTimes: invalid or missing time for '${key}':`, raw);
         allLoaded = false;
       } else {
         this._times[key] = minutes;
       }
     }
 
-    // Imsak: gebruik API-waarde of bereken als fallback op Fajr - offset
+    // Imsak: use API value or fall back to Fajr minus the offset constant
     if (timesMap.imsak) {
       this._imsak = _timeToMinutes(timesMap.imsak);
     }
     if (this._imsak === null && this._times.fajr !== undefined) {
-      // Fallback: 10 minuten vóór Fajr
+      // Fallback: 10 minutes before Fajr
       this._imsak = this._times.fajr - IMSAK_FALLBACK_OFFSET_MIN;
     }
 
-    // Extra (optionele) tijden — opslaan maar niet verplicht
+    // Optional extra times — stored but not required
     for (const extra of ['sunrise', 'sunset', 'midnight']) {
       if (timesMap[extra]) {
         const m = _timeToMinutes(timesMap[extra]);
@@ -257,18 +257,18 @@ export class NidaEngine {
     }
 
     this._loadedAt = Date.now();
-    this._dateKey = dateKey || _todayKey();
+    this._dateKey  = dateKey || _todayKey();
 
     return allLoaded;
   }
 
   /**
-   * Controleert of de huidig geladen tijden nog geldig zijn.
-   * Wordt ongeldig als:
-   *   - De cache-TTL verstreken is
-   *   - De datum is veranderd (na middernacht)
+   * Checks whether the currently loaded times are still valid.
+   * Becomes invalid when:
+   *   - The cache TTL has expired
+   *   - The calendar date has changed (after midnight)
    *
-   * @returns {boolean} True als geldig en niet verlopen
+   * @returns {boolean} True when valid and not expired
    */
   isCacheValid() {
     if (!this._loadedAt || !this._dateKey) return false;
@@ -276,44 +276,44 @@ export class NidaEngine {
     const ageMs = Date.now() - this._loadedAt;
     if (ageMs > DAILY_CACHE_TTL_MS) return false;
 
-    // Controleer of we nog op dezelfde kalenderdag zitten
+    // Still on the same calendar day?
     if (this._dateKey !== _todayKey()) return false;
 
     return true;
   }
 
   // -------------------------------------------------------------------------
-  // PUBLIEKE METHODEN — GEBED-LOGICA
+  // PUBLIC METHODS — PRAYER LOGIC
   // -------------------------------------------------------------------------
 
   /**
-   * Bepaalt het volgende gebed op basis van de huidige tijd.
+   * Determines the next prayer based on the current time.
    *
-   * DAG-OVERGANG BUGFIX:
-   *   Na Isha is er geen volgend "dagelijks" gebed meer voor vandaag.
-   *   In dat geval tellen we altijd door naar Fajr van de *volgende* dag.
-   *   De geretourneerde `minutesUntil` kan hierdoor groter zijn dan de
-   *   resterende minuten tot middernacht — dit is correct gedrag.
+   * DAY-TRANSITION BUG FIX:
+   *   After Isha there are no more prayers left for today.
+   *   In that case we always count forward to Fajr of the *next* day.
+   *   The returned `minutesUntil` may therefore exceed the minutes
+   *   remaining until midnight — this is correct behaviour.
    *
-   *   Fout (v1): Na Isha werd Fajr van *dezelfde dag* als volgende
-   *              aangewezen, wat leidde tot een negatieve countdown.
-   *   Fix (v2):  We voegen 1440 minuten (= 1 dag) toe aan Fajr als
-   *              `nowMinutes > ishaMinutes`.
+   *   Bug (v1): After Isha, Fajr of the *same* day was returned as next,
+   *             causing a negative countdown.
+   *   Fix (v2): We add 1440 minutes (= 1 day) to Fajr whenever
+   *             `nowMinutes > ishaMinutes`.
    *
    * @returns {{
-   *   key:          string,   // Prayer key, bijv. 'fajr'
-   *   displayTime:  string,   // "HH:MM" van het volgende gebed
-   *   minutesUntil: number,   // Minuten tot het gebed (altijd >= 0)
-   *   isNextDay:    boolean,  // True als het Fajr van de volgende dag is
-   * }|null} Null als er geen tijden geladen zijn
+   *   key:          string,   // Prayer key, e.g. 'fajr'
+   *   displayTime:  string,   // "HH:MM" of the next prayer
+   *   minutesUntil: number,   // Minutes until the prayer (always >= 0)
+   *   isNextDay:    boolean,  // True when this is Fajr of the following day
+   * }|null} Null when no times have been loaded
    */
   getNextPrayer() {
     if (!this._hasAllTimes()) return null;
 
     const now = _nowMinutes();
 
-    // Loop door alle gebeden in chronologische volgorde.
-    // Zoek het eerste gebed dat nog niet voorbij is.
+    // Walk through all prayers in chronological order.
+    // Return the first one that has not yet passed.
     for (const key of PRAYER_KEYS) {
       const prayerMin = this._times[key];
       if (prayerMin > now) {
@@ -327,41 +327,40 @@ export class NidaEngine {
     }
 
     // -----------------------------------------------------------------------
-    // DAG-OVERGANG: we zijn voorbij Isha — volgende gebed is Fajr morgen.
+    // DAY TRANSITION: we are past Isha — next prayer is Fajr tomorrow.
     //
-    // Dit is de kern van de bugfix. We tellen NOOIT terug naar Fajr van
-    // dezelfde dag. Fajr morgen = fajr_minuten + 1440.
+    // This is the core of the bug fix. We NEVER roll back to Fajr of the
+    // same day. Fajr tomorrow = fajr_minutes + 1440.
     // -----------------------------------------------------------------------
     const fajrMin = this._times.fajr;
     const minutesUntilFajrTomorrow = (fajrMin + 1440) - now;
 
     return {
       key:          'fajr',
-      displayTime:  _minutesToTime(fajrMin),      // Toont de tijd van Fajr (zelfde weergave)
+      displayTime:  _minutesToTime(fajrMin),   // Display the Fajr time (same visual)
       minutesUntil: minutesUntilFajrTomorrow,
-      isNextDay:    true,                          // Markeer expliciet als "volgende dag"
+      isNextDay:    true,                       // Explicitly marked as "next day"
     };
   }
 
   /**
-   * Geeft het actieve (huidige) gebed terug.
+   * Returns the currently active prayer.
    *
-   * Een gebed is "actief" van het moment dat het begint tot het moment
-   * dat het volgende gebed begint. Isha blijft actief tot Fajr de
-   * volgende dag (via de dag-overgang-logica).
+   * A prayer is "active" from when it starts until the next prayer begins.
+   * Isha remains active until Fajr the following day (via day-transition logic).
    *
    * @returns {{
-   *   key:         string,  // Prayer key
-   *   displayTime: string,  // "HH:MM"
-   *   isPastMidnight: boolean // True als we Isha-sessie na middernacht zijn
-   * }|null} Null als er geen tijden geladen zijn
+   *   key:            string,  // Prayer key
+   *   displayTime:    string,  // "HH:MM"
+   *   isPastMidnight: boolean  // True when we are in the post-midnight Isha session
+   * }|null} Null when no times have been loaded
    */
   getCurrentPrayer() {
     if (!this._hasAllTimes()) return null;
 
     const now = _nowMinutes();
 
-    // Itereer achteruit: het laatste gebed dat al begonnen is, is het actieve
+    // Walk forward: the last prayer that has already started is the active one
     let current = null;
     for (const key of PRAYER_KEYS) {
       if (this._times[key] <= now) {
@@ -377,28 +376,28 @@ export class NidaEngine {
       };
     }
 
-    // Vóór Fajr: het "actieve" gebed is Isha van de vorige nacht
-    // (we zitten in de Isha-sessie die doorloopt na middernacht)
+    // Before Fajr: the "active" prayer is Isha from the previous night
+    // (we are in the Isha session that runs past midnight)
     return {
       key:            'isha',
       displayTime:    _minutesToTime(this._times.isha),
-      isPastMidnight: true,  // Middernacht is gepasseerd, Isha van gisteren loopt nog
+      isPastMidnight: true, // Midnight has passed; last night's Isha is still active
     };
   }
 
   /**
-   * Berekent de countdown in seconden naar het volgende gebed.
+   * Calculates the countdown in seconds to the next prayer.
    *
-   * Gebruikt seconden-precisie voor de live countdown-weergave.
-   * De dag-overgang wordt hier ook correct afgehandeld via `getNextPrayer`.
+   * Uses second-level precision for the live countdown display.
+   * Day-transition is handled correctly via getNextPrayer().
    *
    * @returns {{
-   *   totalSeconds: number,  // Totaal seconden tot het volgende gebed
-   *   hours:        number,  // Uren-component
-   *   minutes:      number,  // Minuten-component
-   *   seconds:      number,  // Seconden-component
-   *   formatted:    string,  // "H:MM:SS" of "MM:SS" als < 1 uur
-   * }|null} Null als er geen tijden zijn of berekening mislukt
+   *   totalSeconds: number,  // Total seconds until the next prayer
+   *   hours:        number,  // Hours component
+   *   minutes:      number,  // Minutes component
+   *   seconds:      number,  // Seconds component
+   *   formatted:    string,  // "H:MM:SS" or "MM:SS" when < 1 hour
+   * }|null} Null when no times are loaded or calculation fails
    */
   getCountdown() {
     const next = this.getNextPrayer();
@@ -406,10 +405,10 @@ export class NidaEngine {
 
     const nowSec = _nowSeconds();
 
-    // Seconden tot het volgende gebed, inclusief dag-overgang correctie
+    // Seconds until the next prayer, including day-transition correction
     let targetSec;
     if (next.isNextDay) {
-      // Fajr morgen: (fajr_minuten_vandaag + 1440) * 60 - nu
+      // Fajr tomorrow: (fajr_minutes_today + 1440) * 60 - now_seconds
       const fajrSec = this._times.fajr * 60;
       targetSec = fajrSec + 86400 - nowSec; // 86400 = 24 * 3600
     } else {
@@ -417,14 +416,14 @@ export class NidaEngine {
       targetSec = prayerSec - nowSec;
     }
 
-    // Veiligheidsneg: nooit negatief (kan < 0 zijn bij race-conditions)
+    // Safety floor: never negative (can be <0 in rare race conditions)
     const d = Math.max(0, Math.floor(targetSec));
 
     const hours   = Math.floor(d / 3600);
     const minutes = Math.floor((d % 3600) / 60);
     const seconds = d % 60;
 
-    // Formaat: toon uren alleen als relevant
+    // Show hours only when relevant
     const formatted = hours > 0
       ? `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
       : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
@@ -433,23 +432,20 @@ export class NidaEngine {
   }
 
   /**
-   * Berekent het voortgangspercentage tussen het vorige en het volgende gebed.
+   * Calculates the progress percentage between the previous and next prayer.
    *
-   * Gebruikt voor de progressiebalk in de UI.
-   * - 0% = direct na het vorige gebed
-   * - 100% = net voor het volgende gebed
+   * Used for the progress bar in the UI.
+   * - 0% = immediately after the previous prayer
+   * - 100% = just before the next prayer
    *
    * @returns {number} Integer percentage [0, 100]
    */
   getProgress() {
     if (!this._hasAllTimes()) return 0;
 
-    const now = _nowMinutes();
-
-    // Bouw een array van alle gebed-minuten in volgorde
+    const now   = _nowMinutes();
     const times = PRAYER_KEYS.map(k => this._times[k]);
 
-    // Zoek het vorige en volgende gebed
     let prev = null;
     let next = null;
 
@@ -462,13 +458,12 @@ export class NidaEngine {
       }
     }
 
-    // Dag-overgang: na Isha is prev=Isha, next=Fajr morgen
+    // Day transition: after Isha, prev = Isha, next = Fajr tomorrow
     if (next === null) {
-      // Na Isha: prev = Isha, next = Fajr + 1440 (morgen)
       prev = this._times.isha;
       next = this._times.fajr + 1440;
     }
-    // Vóór Fajr: prev = Isha gisteren (negatief), next = Fajr vandaag
+    // Before Fajr: prev = Isha yesterday (negative offset), next = Fajr today
     if (prev === null) {
       prev = this._times.isha - 1440;
     }
@@ -481,24 +476,24 @@ export class NidaEngine {
   }
 
   /**
-   * Geeft alle geladen gebedstijden terug als een array van objecten,
-   * gesorteerd chronologisch.
+   * Returns all loaded prayer times as a sorted array of objects.
    *
-   * Elke entry heeft:
+   * Each entry contains:
    *  - key:         prayer key
-   *  - minutes:     interne minuten-waarde
+   *  - minutes:     internal minute value
    *  - displayTime: "HH:MM" string
-   *  - isPast:      true als het gebed al voorbij is
-   *  - isActive:    true als dit het huidige gebed is
-   *  - isNext:      true als dit het volgende gebed is
+   *  - isPast:      true when the prayer has already passed
+   *  - isActive:    true when this is the current prayer
+   *  - isNext:      true when this is the upcoming prayer
+   *  - icon:        emoji icon
    *
-   * @returns {Array<object>} Gesorteerde array van gebed-objecten
+   * @returns {Array<object>} Chronologically sorted array of prayer objects
    */
   getPrayerList() {
     if (!this._hasAllTimes()) return [];
 
-    const now       = _nowMinutes();
-    const current   = this.getCurrentPrayer();
+    const now        = _nowMinutes();
+    const current    = this.getCurrentPrayer();
     const nextPrayer = this.getNextPrayer();
 
     return PRAYER_KEYS.map(key => {
@@ -516,10 +511,10 @@ export class NidaEngine {
   }
 
   /**
-   * Geeft de Imsak-tijd terug.
+   * Returns the Imsak time.
    *
-   * Imsak markeert het begin van de vastentijd (begin Ramadan-dag).
-   * Is ofwel afkomstig van de API of berekend als Fajr - 10 minuten.
+   * Imsak marks the start of the fasting period (beginning of a Ramadan day).
+   * Either sourced from the API or calculated as Fajr minus 10 minutes.
    *
    * @returns {{ minutes: number, displayTime: string }|null}
    */
@@ -532,33 +527,33 @@ export class NidaEngine {
   }
 
   /**
-   * Berekent de volgende relevante actie voor de UI-notificatie-rij.
+   * Calculates the next relevant action for the UI notification row.
    *
-   * Soorten acties (in prioriteitsvolgorde bij gelijke tijd):
-   *   1. suhoor  — wektijd voor suhoor (opgegeven of = imsak)
-   *   2. tarhim  — tarhim-tijdstip (Ramadan-specifiek, vóór Fajr)
-   *   3. adhan   — het gebed zelf
-   *   4. tadkir  — herinnering 5 of 10 minuten vóór adhan
+   * Action types (priority order when times are equal):
+   *   1. suhoor  — wake time for suhoor (provided or = imsak)
+   *   2. tarhim  — tarhim time (Ramadan-specific, before Fajr)
+   *   3. adhan   — the prayer itself
+   *   4. tadkir  — reminder 5 or 10 minutes before adhan
    *
-   * @param {object}  [opts={}]              - Opties
-   * @param {boolean} [opts.isRamadan=false] - True tijdens Ramadan
-   * @param {boolean} [opts.skipSuhoor=false]- True als gebruiker suhoor overslaat
-   * @param {number}  [opts.suhoorMinutes]   - Exacte suhoor-wektijd (optioneel)
-   * @param {number}  [opts.tarhimMinutes]   - Exacte tarhim-tijd (optioneel)
-   * @param {number[]} [opts.tadkirOffsets]  - Minuten vóór adhan voor tadkir [10, 5]
+   * @param {object}   [opts={}]               - Options
+   * @param {boolean}  [opts.isRamadan=false]  - True during Ramadan
+   * @param {boolean}  [opts.skipSuhoor=false] - True when the user skips suhoor
+   * @param {number}   [opts.suhoorMinutes]    - Exact suhoor wake time (optional)
+   * @param {number}   [opts.tarhimMinutes]    - Exact tarhim time (optional)
+   * @param {number[]} [opts.tadkirOffsets]    - Minutes before adhan for tadkir [10, 5]
    *
    * @returns {{
-   *   type:       'suhoor'|'tarhim'|'adhan'|'tadkir',
-   *   prayerKey:  string|null,
-   *   minutes:    number,
-   *   displayTime: string,
+   *   type:         'suhoor'|'tarhim'|'adhan'|'tadkir',
+   *   prayerKey:    string|null,
+   *   minutes:      number,
+   *   displayTime:  string,
    *   minutesUntil: number,
    * }|null}
    */
   getNextAction(opts = {}) {
     const {
-      isRamadan    = false,
-      skipSuhoor   = false,
+      isRamadan     = false,
+      skipSuhoor    = false,
       suhoorMinutes = null,
       tarhimMinutes = null,
       tadkirOffsets = [10, 5],
@@ -569,14 +564,14 @@ export class NidaEngine {
     const now = _nowMinutes();
 
     /**
-     * Hulpfunctie: zet een absolute minuten-waarde om naar een "toekomstige"
-     * waarde door 1440 op te tellen als de tijd al voorbij is.
+     * Helper: shifts an absolute minute value into the future by adding 1440
+     * when the time has already passed today.
      */
     const toFuture = (m) => m > now ? m : m + 1440;
 
     const candidates = [];
 
-    // ---- 1. Tadkir (herinnering vóór adhan) ---------------------------------
+    // ---- 1. Tadkir (reminder before adhan) ----------------------------------
     for (const key of PRAYER_KEYS) {
       const prayerMin = this._times[key];
       const futureMin = toFuture(prayerMin);
@@ -585,56 +580,56 @@ export class NidaEngine {
         const tadkirMin = futureMin - offset;
         if (tadkirMin > now) {
           candidates.push({
-            type:        'tadkir',
-            prayerKey:   key,
-            minutes:     tadkirMin,
-            displayTime: _minutesToTime(tadkirMin),
+            type:         'tadkir',
+            prayerKey:    key,
+            minutes:      tadkirMin,
+            displayTime:  _minutesToTime(tadkirMin),
             minutesUntil: tadkirMin - now,
           });
         }
       }
 
-      // ---- 2. Adhan zelf ------------------------------------------------------
+      // ---- 2. Adhan itself --------------------------------------------------
       if (futureMin > now) {
         candidates.push({
-          type:        'adhan',
-          prayerKey:   key,
-          minutes:     futureMin,
-          displayTime: _minutesToTime(prayerMin), // Toon de "echte" tijd, niet wrapped
+          type:         'adhan',
+          prayerKey:    key,
+          minutes:      futureMin,
+          displayTime:  _minutesToTime(prayerMin), // Show the real time, not the wrapped value
           minutesUntil: futureMin - now,
         });
       }
     }
 
-    // ---- 3. Suhoor (alleen als niet overgeslagen) ----------------------------
+    // ---- 3. Suhoor (only when not skipped) -----------------------------------
     if (!skipSuhoor) {
-      // Gebruik opgegeven suhoor-tijd, anders imsak als fallback
+      // Use the provided suhoor time; fall back to imsak
       const rawSuhoor = suhoorMinutes ?? this._imsak;
       if (rawSuhoor !== null) {
         const futureSuhoor = toFuture(rawSuhoor);
         if (futureSuhoor > now) {
           candidates.push({
-            type:        'suhoor',
-            prayerKey:   null,
-            minutes:     futureSuhoor,
-            displayTime: _minutesToTime(rawSuhoor),
+            type:         'suhoor',
+            prayerKey:    null,
+            minutes:      futureSuhoor,
+            displayTime:  _minutesToTime(rawSuhoor),
             minutesUntil: futureSuhoor - now,
           });
         }
       }
     }
 
-    // ---- 4. Tarhim (alleen tijdens Ramadan, niet overgeslagen) ---------------
+    // ---- 4. Tarhim (Ramadan only, not skipped) -------------------------------
     if (isRamadan && !skipSuhoor) {
-      // Gebruik opgegeven tarhim-tijd, anders schat op Fajr - 10 minuten
-      const rawTarhim = tarhimMinutes ?? (this._times.fajr - 10);
+      // Use the provided tarhim time; estimate as Fajr minus 10 minutes
+      const rawTarhim    = tarhimMinutes ?? (this._times.fajr - 10);
       const futureTarhim = toFuture(rawTarhim);
       if (futureTarhim > now) {
         candidates.push({
-          type:        'tarhim',
-          prayerKey:   null,
-          minutes:     futureTarhim,
-          displayTime: _minutesToTime(rawTarhim),
+          type:         'tarhim',
+          prayerKey:    null,
+          minutes:      futureTarhim,
+          displayTime:  _minutesToTime(rawTarhim),
           minutesUntil: futureTarhim - now,
         });
       }
@@ -642,15 +637,15 @@ export class NidaEngine {
 
     if (candidates.length === 0) return null;
 
-    // Sorteer op minutesUntil (laagste eerst), bij gelijke tijd op type-prioriteit
+    // Sort by minutesUntil (lowest first); break ties with type priority
     const PRIORITY = { suhoor: 0, tarhim: 1, adhan: 2, tadkir: 3 };
     candidates.sort((a, b) => {
       if (a.minutesUntil !== b.minutesUntil) return a.minutesUntil - b.minutesUntil;
       return (PRIORITY[a.type] ?? 9) - (PRIORITY[b.type] ?? 9);
     });
 
-    // Suhoor/tarhim heeft speciale voorrang: als de eerste actie een tadkir is
-    // maar er is een suhoor/tarhim binnen 90 minuten, toon die eerst.
+    // Suhoor/tarhim get special precedence: if the first candidate is a tadkir
+    // but a suhoor/tarhim is within 90 minutes, show that one first.
     const first = candidates[0];
     if (first.type === 'tadkir') {
       const priorityAction = candidates.find(
@@ -663,16 +658,16 @@ export class NidaEngine {
   }
 
   /**
-   * Geeft de Iftar-countdown terug (Maghrib = iftartijd tijdens Ramadan).
+   * Returns the Iftar countdown (Maghrib = iftar time during Ramadan).
    *
-   * Aftellen naar de volgende Maghrib:
-   *   - Als Maghrib nog niet voorbij is: tel naar vandaag
-   *   - Als Maghrib voorbij is: tel naar Maghrib morgen
+   * Counts down to the next Maghrib:
+   *   - If Maghrib has not yet occurred today: count to today's time
+   *   - If Maghrib has already passed: count to tomorrow's Maghrib
    *
    * @returns {{
    *   totalSeconds: number,
-   *   formatted:    string,  // "HH:MM" als > 1 uur, "MM:SS" als <= 1 uur
-   *   isPast:       boolean, // True als Maghrib (iftar) al was
+   *   formatted:    string,  // "HH:MM" when > 1 hour; "MM:SS" when <= 1 hour
+   *   isPast:       boolean, // True when today's Maghrib (iftar) has passed
    * }|null}
    */
   getIftarCountdown() {
@@ -681,12 +676,12 @@ export class NidaEngine {
     const nowSec     = _nowSeconds();
     const maghribSec = this._times.maghrib * 60;
 
-    // Bepaal seconden tot de volgende Maghrib
+    // Seconds until the next Maghrib
     let diff = maghribSec - nowSec;
     const isPast = diff <= 0;
 
     if (isPast) {
-      // Maghrib was vandaag al — tel naar morgen
+      // Today's Maghrib has passed — count to tomorrow
       diff += 86400;
     }
 
@@ -695,7 +690,7 @@ export class NidaEngine {
     const minutes = Math.floor((d % 3600) / 60);
     const seconds = d % 60;
 
-    // Toon HH:MM als meer dan een uur, anders MM:SS (nauwkeuriger)
+    // Show HH:MM when more than an hour away; MM:SS for the final hour (more precise)
     const formatted = hours >= 1
       ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
       : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
@@ -704,11 +699,11 @@ export class NidaEngine {
   }
 
   // -------------------------------------------------------------------------
-  // PRIVÉ-HULPMETHODEN
+  // PRIVATE HELPERS
   // -------------------------------------------------------------------------
 
   /**
-   * Controleert of alle vijf verplichte gebedstijden beschikbaar zijn.
+   * Returns true when all five required prayer times are present.
    *
    * @returns {boolean}
    * @private
@@ -719,14 +714,14 @@ export class NidaEngine {
 }
 
 // ---------------------------------------------------------------------------
-// MODULE-NIVEAU HULPFUNCTIES (geëxporteerd voor gebruik in andere modules)
+// MODULE-LEVEL EXPORTS
 // ---------------------------------------------------------------------------
 
 /**
- * Geeft de datum-sleutel voor vandaag in "YYYY-MM-DD" formaat.
- * Wordt gebruikt voor cache-vergelijking.
+ * Returns today's date key in "YYYY-MM-DD" format.
+ * Used for cache comparisons.
  *
- * @returns {string} Bijv. "2026-03-28"
+ * @returns {string} e.g. "2026-03-28"
  */
 export function _todayKey() {
   const d = new Date();
@@ -734,11 +729,11 @@ export function _todayKey() {
 }
 
 /**
- * Maan-fase emoji op basis van de Hijri-dag.
- * Benaderende cyclus van 30 dagen.
+ * Returns a moon-phase emoji based on the Hijri day number.
+ * Approximate 30-day cycle.
  *
- * @param   {number} hijriDay - Dag van de Hijri-maand (1-30)
- * @returns {string}          Emoji karakter
+ * @param   {number} hijriDay - Day of the Hijri month (1–30)
+ * @returns {string}          Emoji character
  */
 export function moonPhaseEmoji(hijriDay) {
   const d = ((parseInt(hijriDay, 10) || 1) - 1) % 30;
@@ -754,9 +749,9 @@ export function moonPhaseEmoji(hijriDay) {
 }
 
 /**
- * Singleton instantie van de engine voor app-brede gebruik.
+ * App-wide singleton instance of the engine.
  *
- * Importeer en gebruik als:
+ * Import and use as:
  * ```js
  * import { engine } from './nida-engine.js';
  * engine.loadTimes({ fajr: "05:23", ... });
