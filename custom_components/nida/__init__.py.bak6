@@ -1,0 +1,527 @@
+"""Nida Integration."""
+from __future__ import annotations
+
+from datetime import timedelta, datetime
+import logging
+import asyncio
+import os
+import shutil
+
+import aiohttp
+import voluptuous as vol
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.event import async_track_time_change
+
+import homeassistant.helpers.config_validation as cv
+CONFIG_SCHEMA = cv.config_entry_only_config_schema("nida")
+
+from .const import (
+    DOMAIN, CONF_CITY, CONF_COUNTRY, CONF_METHOD,
+    CONF_PLAY_METHOD, CONF_FAJR_SPEAKER, CONF_FAJR_VOLUME, CONF_FAJR_SOUND,
+    CONF_DAY_SPEAKER, CONF_DAY_VOLUME, CONF_DAY_SOUND,
+    CONF_TARHIM_ENABLED, CONF_TARHIM_SPEAKER, CONF_TARHIM_VOLUME, CONF_TARHIM_SOUND,
+)
+from .config import NidaConfig
+from .helpers import async_copy_sounds, async_ensure_helpers
+from .media.audio import async_get_sound_duration, get_mp3_duration as _get_mp3_duration
+from .volume import get_volume as _get_volume
+from .media.player import (
+    get_media_url as _get_media_url,
+    get_logo_url as _get_logo_url,
+    play_media_with_volume as _play_media_with_volume,
+)
+from .media.adhan import play_adhan
+from .media.reminder import check_reminders
+from .media.tarhim import check_tarhim
+from .media.suhoor import check_suhoor, check_reset_skip_suhoor
+from .notify import send_notification as async_send_notification
+
+_LOGGER = logging.getLogger(__name__)
+PLATFORMS = ["sensor"]
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    coordinator = PrayerTimesCoordinator(hass, entry)
+    await coordinator.async_config_entry_first_refresh()
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = coordinator
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    entry.async_on_unload(entry.add_update_listener(update_listener))
+    await async_copy_sounds(hass, os.path.dirname(__file__))
+    await async_setup_adhan_scheduler(hass, entry, coordinator)
+    await async_update_services_yaml(hass)
+    await async_setup_services(hass, entry)
+    await async_ensure_helpers(hass)
+    return True
+
+
+async def async_setup_adhan_scheduler(hass: HomeAssistant, entry: ConfigEntry, coordinator):
+    """Plan adhan op gebedstijden."""
+
+    @callback
+    def check_prayer_time(now):
+        if not coordinator.data:
+            return
+        timings = coordinator.data["data"]["timings"]
+        prayers = {
+            "Fajr": timings["Fajr"],
+            "Dhuhr": timings["Dhuhr"],
+            "Asr": timings["Asr"],
+            "Maghrib": timings["Maghrib"],
+            "Isha": timings["Isha"],
+        }
+        current_time = now.strftime("%H:%M")
+        now_ts = now.timestamp()
+
+        is_friday = now.weekday() == 4
+        if is_friday and "Dhuhr" in prayers:
+            prayers["Jumat"] = prayers.pop("Dhuhr")
+
+        for prayer, time_str in prayers.items():
+            if current_time == time_str:
+                prayer_key = "jumat" if prayer == "Jumat" else prayer.lower()
+                _LOGGER.info("Playing adhan for %s", prayer)
+                hass.async_create_task(play_adhan(hass, entry, prayer_key))
+
+        hass.async_create_task(check_tarhim(hass, entry, coordinator, now_ts))
+        hass.async_create_task(check_suhoor(hass, entry, coordinator, now_ts))
+        hass.async_create_task(check_reminders(hass, entry, coordinator, now_ts, prayers))
+        hass.async_create_task(check_reset_skip_suhoor(hass, coordinator, now_ts))
+        hass.async_create_task(update_nida_sensors(hass, entry, coordinator))
+
+    entry.async_on_unload(
+        async_track_time_change(hass, check_prayer_time, second=0)
+    )
+
+
+async def update_nida_sensors(hass: HomeAssistant, entry: ConfigEntry, coordinator) -> None:
+    """Bereken en zet sensor waarden die de card nodig heeft."""
+    try:
+        if not coordinator.data:
+            return
+        options = entry.options if entry.options else entry.data
+        timings = coordinator.data["data"]["timings"]
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        # sensor.nida_suhoor_readable — alarm tijd X minuten voor Fajr
+        if options.get("suhoor_alarm_enabled", True):
+            fajr_ts = datetime.strptime(
+                f"{today} {timings['Fajr']}", "%Y-%m-%d %H:%M"
+            ).timestamp()
+            minutes = int(options.get("suhoor_alarm_minutes", 30))
+            suhoor_ts = fajr_ts - (minutes * 60)
+            # Als suhoor al voorbij is vandaag, toon morgen
+            if suhoor_ts < datetime.now().timestamp():
+                tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+                fajr_ts = datetime.strptime(
+                    f"{tomorrow} {timings['Fajr']}", "%Y-%m-%d %H:%M"
+                ).timestamp()
+                suhoor_ts = fajr_ts - (minutes * 60)
+            hass.states.async_set(
+                "sensor.nida_suhoor_readable",
+                datetime.fromtimestamp(suhoor_ts).strftime("%H:%M"),
+                {"friendly_name": "Nida Suhoor Alarm Time", "icon": "mdi:food"},
+            )
+    except Exception as e:
+        _LOGGER.debug("update_nida_sensors error: %s", e)
+
+
+
+
+async def async_setup_services(hass: HomeAssistant, entry: ConfigEntry):
+    """Registreer services."""
+
+    async def handle_preview(call):
+        """Preview een adhan geluid."""
+        sound = call.data.get("sound")
+        options = entry.options if entry.options else entry.data
+        speaker = call.data.get("speaker", options.get(CONF_DAY_SPEAKER, "media_player.adhan_speakers"))
+        if isinstance(speaker, str):
+            speaker = [speaker]
+        raw = call.data.get("volume", options.get(CONF_DAY_VOLUME, 30))
+        volume = raw / 100 if isinstance(raw, (int, float)) and raw > 1 else float(raw)
+        volume = max(0.0, min(1.0, volume))
+        play_method = options.get(CONF_PLAY_METHOD, "media_player")
+        media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+
+        if play_method == "chime_tts":
+            await hass.services.async_call(
+                "chime_tts", "say",
+                {"entity_id": speaker, "chime_path": media_url,
+                 "volume_level": volume, "announce": True}
+            )
+        else:
+            await _play_media_with_volume(
+                hass, speaker, media_url, volume,
+                cover_url=_get_logo_url(hass),
+                restore_delay=30.0,
+            )
+
+    async def handle_test_prayer(call):
+        """Test adhan voor een specifiek gebed."""
+        prayer = call.data.get("prayer", "dhuhr")
+        await play_adhan(hass, entry, prayer)
+
+    async def handle_test_tarhim(call):
+        """Test tarhim."""
+        options = entry.options if entry.options else entry.data
+        speaker = call.data.get("speaker", options.get(CONF_TARHIM_SPEAKER, "media_player.adhan_speakers"))
+        if isinstance(speaker, str):
+            speaker = [speaker]
+        raw = call.data.get("volume", options.get(CONF_TARHIM_VOLUME, 15))
+        volume = raw / 100 if isinstance(raw, (int, float)) and raw > 1 else float(raw)
+        volume = max(0.0, min(1.0, volume))
+        sound = call.data.get("sound", options.get(CONF_TARHIM_SOUND, ""))
+        if not sound:
+            _LOGGER.warning("Geen tarhim sound geconfigureerd")
+            return
+        media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+        await _play_media_with_volume(
+            hass, speaker, media_url, volume,
+            cover_url=_get_logo_url(hass),
+            restore_delay=60.0,
+        )
+
+    async def handle_test_reminder(call):
+        """Test pre-adhan reminder (sound + TTS)."""
+        options = entry.options if entry.options else entry.data
+        r_raw = call.data.get("reminder", "reminder_1")
+        # Ondersteuning voor zowel "reminder_1" als legacy int waarden
+        if isinstance(r_raw, str) and r_raw.startswith("reminder_"):
+            r_num = int(r_raw.split("_")[1])
+        else:
+            r_num = int(r_raw)
+        minutes = options.get(f"reminder_{r_num}_minutes", 10)
+        prayer = call.data.get("prayer", "Dhuhr")
+        sound = options.get(f"reminder_{r_num}_sound", "")
+        lang = options.get(f"reminder_{r_num}_lang", "nl")
+        text = options.get(f"reminder_{r_num}_tts", "Over [minutes] minuten is het tijd voor [prayer]")
+        text = text.replace("[minutes]", str(int(minutes))).replace("[prayer]", prayer)
+        speaker = options.get(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"])
+        if isinstance(speaker, str): speaker = [speaker]
+        volume = _get_volume(options, CONF_DAY_VOLUME, 50)
+
+        if sound:
+            media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+            await _play_media_with_volume(
+                hass, speaker, media_url, volume,
+                cover_url=_get_logo_url(hass),
+                restore_delay=10.0,
+            )
+            await asyncio.sleep(3)
+
+        if text:
+            lang_map = {"nl": "nl-NL", "en": "en-US", "ar": "ar-SA", "tr": "tr-TR"}
+            tts_lang = lang_map.get(lang, lang)
+            await hass.services.async_call(
+                "tts", "speak",
+                {
+                    "entity_id": "tts.home_assistant_cloud",
+                    "media_player_entity_id": speaker,
+                    "message": text,
+                    "language": tts_lang,
+                    "options": {"voice": "HamedNeural"} if tts_lang == "ar-SA" else {},
+                }
+            )
+
+    async def handle_test_notification(call):
+        """Test notificatie."""
+        options = entry.options if entry.options else entry.data
+        title = call.data.get("title", options.get("notify_title", "🕌 Nida"))
+        message = call.data.get("message", options.get("notify_message", "Test notificatie van Nida"))
+        await async_send_notification(hass, entry, message, title)
+
+    async def handle_test_suhoor(call):
+        """Test suhoor alarm."""
+        options = entry.options if entry.options else entry.data
+        speaker = call.data.get("speaker", options.get("suhoor_speaker", options.get(CONF_DAY_SPEAKER, "media_player.adhan_speakers")))
+        if isinstance(speaker, str):
+            speaker = [speaker]
+        raw = call.data.get("volume", options.get("suhoor_volume", 50))
+        volume = raw / 100 if isinstance(raw, (int, float)) and raw > 1 else float(raw)
+        volume = max(0.0, min(1.0, volume))
+        sound = call.data.get("sound", options.get("suhoor_sound", ""))
+        if not sound:
+            _LOGGER.warning("Geen suhoor sound geconfigureerd")
+            return
+        media_url = await _get_media_url(hass, f"/local/nida/sounds/{sound}")
+        await _play_media_with_volume(
+            hass, speaker, media_url, volume,
+            cover_url=_get_logo_url(hass),
+            restore_delay=30.0,
+        )
+        await async_send_notification(
+            hass, entry,
+            message=options.get("notify_msg_suhoor", "Last chance for Suhoor 🍽️"),
+            notify_type="suhoor",
+        )
+
+    hass.services.async_register(
+        DOMAIN, "preview_adhan", handle_preview,
+        schema=vol.Schema({
+            vol.Required("sound"): str,
+            vol.Optional("speaker"): str,
+            vol.Optional("volume"): vol.Any(None, vol.Coerce(int)),
+        })
+    )
+    hass.services.async_register(
+        DOMAIN, "test_prayer", handle_test_prayer,
+        schema=vol.Schema({
+            vol.Optional("prayer", default="dhuhr"): vol.In(
+                ["fajr", "dhuhr", "asr", "maghrib", "isha", "jumat"]
+            ),
+        })
+    )
+    hass.services.async_register(
+        DOMAIN, "test_tarhim", handle_test_tarhim,
+        schema=vol.Schema({
+            vol.Optional("sound"): str,
+            vol.Optional("speaker"): str,
+            vol.Optional("volume"): vol.Any(None, vol.Coerce(int)),
+        })
+    )
+    hass.services.async_register(
+        DOMAIN, "test_suhoor", handle_test_suhoor,
+        schema=vol.Schema({
+            vol.Optional("sound"): str,
+            vol.Optional("speaker"): str,
+            vol.Optional("volume"): vol.Any(None, vol.Coerce(int)),
+        })
+    )
+    hass.services.async_register(
+        DOMAIN, "test_reminder", handle_test_reminder,
+        schema=vol.Schema({
+            vol.Optional("reminder", default=1): vol.In([1, 2]),
+            vol.Optional("prayer", default="Dhuhr"): str,
+        })
+    )
+    hass.services.async_register(
+        DOMAIN, "test_notification", handle_test_notification,
+        schema=vol.Schema({
+            vol.Optional("title"): str,
+            vol.Optional("message"): str,
+        })
+    )
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok:
+        hass.data[DOMAIN].pop(entry.entry_id)
+    return unload_ok
+
+
+async def update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    await hass.config_entries.async_reload(entry.entry_id)
+
+
+class PrayerTimesCoordinator(DataUpdateCoordinator):
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=DOMAIN,
+            update_interval=timedelta(hours=12),
+        )
+        self.entry = entry
+
+    async def _async_update_data(self):
+        method = int(self.entry.options.get(CONF_METHOD, self.entry.data.get(CONF_METHOD, 3)))
+
+        lat = self.hass.config.latitude
+        lon = self.hass.config.longitude
+
+        if lat and lon:
+            from datetime import date
+            today = date.today().strftime("%d-%m-%Y")
+            url = f"https://api.aladhan.com/v1/timings/{today}?latitude={lat}&longitude={lon}&method={method}"
+        else:
+            city = self.entry.options.get(CONF_CITY, self.entry.data.get(CONF_CITY, "Amsterdam"))
+            country = self.entry.options.get(CONF_COUNTRY, self.entry.data.get(CONF_COUNTRY, "Netherlands"))
+            url = f"https://api.aladhan.com/v1/timingsByCity?city={city}&country={country}&method={method}"
+
+        try:
+            connector = aiohttp.TCPConnector(ssl=False)
+            async with aiohttp.ClientSession(connector=connector) as session:
+                async with asyncio.timeout(30):
+                    async with session.get(url, allow_redirects=True) as response:
+                        if response.status != 200:
+                            raise UpdateFailed(f"API error: {response.status}")
+                        data = await response.json()
+                        timings = data.get("data", {}).get("timings", {})
+                        _LOGGER.debug("API timings: %s", list(timings.keys()))
+                        return data
+        except aiohttp.ClientError as err:
+            raise UpdateFailed(f"API error: {err}")
+
+
+async def async_update_services_yaml(hass: HomeAssistant):
+    """Dynamisch services.yaml bijwerken op basis van beschikbare geluiden."""
+    import yaml
+
+    def _build_and_write():
+        sounds_path = hass.config.path("www/nida/sounds")
+        fajr_options = []
+        day_options = []
+        tarhim_options = []
+        suhoor_options = []
+
+        def _label(f):
+            import re
+            name = f.replace(".mp3", "")
+            m = re.match(r'^.+?\[.+?\]\s*-\s*(.+)$', name)
+            return m.group(1).strip() if m else name.replace("-", " ").title()
+
+        if os.path.isdir(sounds_path):
+            for f in sorted(os.listdir(sounds_path)):
+                if not f.endswith(".mp3"):
+                    continue
+                fl = f.lower()
+                label = _label(f)
+                if "[fajr]" in fl:
+                    fajr_options.append({"label": label, "value": f})
+                elif "[tarhim]" in fl or "tarhim" in fl:
+                    tarhim_options.append({"label": label, "value": f})
+                elif "[suhoor]" in fl or "suhoor" in fl:
+                    suhoor_options.append({"label": label, "value": f})
+                elif "[day]" in fl or ("adhan" in fl and "fajr" not in fl and "tarhim" not in fl and "suhoor" not in fl):
+                    day_options.append({"label": label, "value": f})
+
+        jingle_options = []
+        for f in sorted(os.listdir(sounds_path)) if os.path.isdir(sounds_path) else []:
+            if not f.endswith(".mp3"):
+                continue
+            fl = f.lower()
+            if "[jingle]" in fl or "jingle" in fl:
+                jingle_options.append({"label": _label(f), "value": f})
+
+        _volume_field = {
+            "name": "Volume",
+            "description": "Volume (0-100%). Leeg laten voor geconfigureerd volume.",
+            "required": False,
+            "default": 30,
+            "selector": {"number": {"min": 0, "max": 100, "step": 5,
+                                    "unit_of_measurement": "%", "mode": "slider"}}
+        }
+        _speaker_field = {
+            "name": "Speaker",
+            "description": "Welke speaker wil je gebruiken?",
+            "required": False,
+            "selector": {"entity": {"domain": "media_player"}}
+        }
+
+        services = {
+            "preview_adhan": {
+                "name": "Preview Adhan",
+                "description": "Speel een adhan of jingle als preview op een speaker.",
+                "fields": {
+                    "sound": {
+                        "name": "Sound",
+                        "description": "Welk geluid wil je afspelen?",
+                        "required": True,
+                        "selector": {"select": {"options": fajr_options + day_options + tarhim_options + jingle_options}}
+                    },
+                    "speaker": {**_speaker_field, "required": True},
+                    "volume": _volume_field,
+                }
+            },
+            "test_prayer": {
+                "name": "Test Prayer",
+                "description": "Test de adhan voor een specifiek gebed.",
+                "fields": {
+                    "prayer": {
+                        "name": "Prayer",
+                        "description": "Welk gebed wil je testen?",
+                        "required": True,
+                        "default": "dhuhr",
+                        "selector": {"select": {"options": [
+                            {"label": "Fajr",            "value": "fajr"},
+                            {"label": "Dhuhr",           "value": "dhuhr"},
+                            {"label": "Asr",             "value": "asr"},
+                            {"label": "Maghrib",         "value": "maghrib"},
+                            {"label": "Isha",            "value": "isha"},
+                            {"label": "Jumat (vrijdag)", "value": "jumat"},
+                        ]}}
+                    }
+                }
+            },
+            "test_tarhim": {
+                "name": "Test Tarhim",
+                "description": "Test de Tarhim recitatie voor Fajr.",
+                "fields": {
+                    "sound": {
+                        "name": "Sound",
+                        "description": "Welk tarhim wil je afspelen?",
+                        "required": False,
+                        "selector": {"select": {"options": tarhim_options}}
+                    },
+                    "speaker": _speaker_field,
+                    "volume": _volume_field,
+                }
+            },
+            "test_suhoor": {
+                "name": "Test Suhoor",
+                "description": "Test het suhoor alarm.",
+                "fields": {
+                    "sound": {
+                        "name": "Sound",
+                        "description": "Welk suhoor geluid wil je afspelen?",
+                        "required": False,
+                        "selector": {"select": {"options": suhoor_options}}
+                    },
+                    "speaker": _speaker_field,
+                    "volume": _volume_field,
+                }
+            },
+            "test_reminder": {
+                "name": "Test Reminder",
+                "description": "Test een pre-adhan reminder (geluid + TTS).",
+                "fields": {
+                    "reminder": {
+                        "name": "Reminder",
+                        "description": "Welke reminder wil je testen?",
+                        "required": False,
+                        "default": 1,
+                        "selector": {"select": {"options": [
+                            {"label": "Reminder 1", "value": 1},
+                            {"label": "Reminder 2", "value": 2},
+                        ]}}
+                    },
+                    "prayer": {
+                        "name": "Gebed",
+                        "description": "Naam van het gebed (voor in de TTS tekst).",
+                        "required": False,
+                        "default": "Dhuhr",
+                        "selector": {"text": {}}
+                    },
+                }
+            },
+            "test_notification": {
+                "name": "Test Notificatie",
+                "description": "Stuur een test notificatie naar geconfigureerde apparaten.",
+                "fields": {
+                    "title": {
+                        "name": "Titel",
+                        "description": "Titel van de notificatie (optioneel).",
+                        "required": False,
+                        "selector": {"text": {}}
+                    },
+                    "message": {
+                        "name": "Bericht",
+                        "description": "Tekst van de notificatie (optioneel).",
+                        "required": False,
+                        "selector": {"text": {}}
+                    },
+                }
+            },
+        }
+
+        services_path = os.path.join(os.path.dirname(__file__), "services.yaml")
+        with open(services_path, "w") as f:
+            yaml.dump(services, f, allow_unicode=True, default_flow_style=False)
+
+    await hass.async_add_executor_job(_build_and_write)
+    _LOGGER.info("services.yaml bijgewerkt met beschikbare geluiden")
