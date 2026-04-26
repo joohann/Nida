@@ -166,17 +166,12 @@ async def check_reminders(
         if not options.get(f"reminder_{r_num}_enabled", False):
             continue
 
+        # Alleen 'minutes' is nodig om het reminder-tijdstip te bepalen —
+        # andere velden (sound, tts, speaker, volume) worden pas opgehaald
+        # binnen de window-check, om onnodige werk + log-spam te voorkomen.
         minutes = options.get(
             f"reminder_{r_num}_minutes", 10 if r_num == 1 else 5
         )
-        sound = options.get(f"reminder_{r_num}_sound", "")
-        tts_text = options.get(f"reminder_{r_num}_tts", "")
-        lang = options.get(f"reminder_{r_num}_lang", "nl")
-
-        speaker = options.get(CONF_DAY_SPEAKER, DEFAULT_SPEAKERS)
-        if isinstance(speaker, str):
-            speaker = [speaker]
-        volume = get_volume(options, CONF_DAY_VOLUME, 50, hass=hass)
 
         for prayer_name, time_str in prayers.items():
             today = datetime.now().strftime("%Y-%m-%d")
@@ -197,6 +192,15 @@ async def check_reminders(
                 continue
 
             _LOGGER.info("Reminder %d for %s in %d min", r_num, prayer_name, minutes)
+
+            # We zitten in het reminder-window — nú pas alle config lezen
+            sound = options.get(f"reminder_{r_num}_sound", "")
+            tts_text = options.get(f"reminder_{r_num}_tts", "")
+            lang = options.get(f"reminder_{r_num}_lang", "nl")
+            speaker = options.get(CONF_DAY_SPEAKER, DEFAULT_SPEAKERS)
+            if isinstance(speaker, str):
+                speaker = [speaker]
+            volume = get_volume(options, CONF_DAY_VOLUME, 50, hass=hass)
 
             # 1. Chime
             chime_wait = 0.0
