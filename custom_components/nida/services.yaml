@@ -1,139 +1,235 @@
 preview_adhan:
-  name: "[%key:component::nida::services::preview_adhan::name%]"
-  description: "[%key:component::nida::services::preview_adhan::description%]"
+  description: Speel een adhan of jingle als preview op een speaker.
   fields:
     sound:
-      name: "[%key:component::nida::services::preview_adhan::fields::sound::name%]"
-      description: "[%key:component::nida::services::preview_adhan::fields::sound::description%]"
+      description: Welk geluid wil je afspelen?
+      name: Sound
       required: true
       selector:
         select:
           options:
-            - label: 01 Adhan Fajr
-              value: "01-adhan-fajr.mp3"
-            - label: 02 Adhan Fajr
-              value: "02-adhan-fajr.mp3"
-            - label: 03 Adhan Fajr
-              value: "03-adhan-fajr.mp3"
+          - label: Ahmed Saeed Al-Omrany
+            value: Adhan [fajr] - Ahmed Saeed Al-Omrany.mp3
+          - label: Al-Fajer Saba
+            value: Adhan [fajr] - Al-Fajer Saba.mp3
+          - label: Amer Marei
+            value: Adhan [fajr] - Amer Marei.mp3
+          - label: Hafiz Fahad Shah
+            value: Adhan [fajr] - Hafiz Fahad Shah.mp3
+          - label: ION TV UK
+            value: Adhan [fajr] - ION TV UK.mp3
+          - label: Ibrahim Al-Silawi
+            value: Adhan [fajr] - Ibrahim Al-Silawi.mp3
+          - label: Mehdi Yarrahi
+            value: Adhan [fajr] - Mehdi Yarrahi.mp3
+          - label: Mishary Rashid Alafasy
+            value: Adhan [fajr] - Mishary Rashid Alafasy.mp3
+          - label: Muhammad bin Marwan Qassas
+            value: Adhan [fajr] - Muhammad bin Marwan Qassas.mp3
+          - label: NTV Islamic Show
+            value: Adhan [fajr] - NTV Islamic Show.mp3
+          - label: Qari Abdulbasit(1980)
+            value: Adhan [fajr] - Qari Abdulbasit(1980).mp3
+          - label: Sheikh Adnan bin Abdullah al-Qattan
+            value: Adhan [fajr] - Sheikh Adnan bin Abdullah al-Qattan.mp3
+          - label: Sheikh Sunbal
+            value: Adhan [fajr] - Sheikh Sunbal.mp3
+          - label: Sheikh Zayed Grand Mosque (live)
+            value: Adhan [fajr] - Sheikh Zayed Grand Mosque (live).mp3
+          - label: Sufiyum Sujathayum
+            value: Adhan [fajr] - Sufiyum Sujathayum.mp3
+          - label: Syeikh Mishary Rashid Al Afasy
+            value: Adhan [fajr] - Syeikh Mishary Rashid Al Afasy.mp3
+          - label: Ahmed Saeed Al-Omrany
+            value: Adhan [day] - Ahmed Saeed Al-Omrany.mp3
+          - label: Al-Fajer Saba
+            value: Adhan [day] - Al-Fajer Saba.mp3
+          - label: Amer Marei
+            value: Adhan [day] - Amer Marei.mp3
+          - label: Hafiz Fahad Shah
+            value: Adhan [day] - Hafiz Fahad Shah.mp3
+          - label: ION TV UK
+            value: Adhan [day] - ION TV UK.mp3
+          - label: Ibrahim Al-Silawi
+            value: Adhan [day] - Ibrahim Al-Silawi.mp3
+          - label: Mehdi Yarrahi
+            value: Adhan [day] - Mehdi Yarrahi.mp3
+          - label: Mishary Rashid Alafasy
+            value: Adhan [day] - Mishary Rashid Alafasy.mp3
+          - label: Muhammad bin Marwan Qassas
+            value: Adhan [day] - Muhammad bin Marwan Qassas.mp3
+          - label: NTV Islamic Show
+            value: Adhan [day] - NTV Islamic Show.mp3
+          - label: Qari Abdulbasit(1980)
+            value: Adhan [day] - Qari Abdulbasit(1980).mp3
+          - label: Sheikh Adnan bin Abdullah al-Qattan
+            value: Adhan [day] - Sheikh Adnan bin Abdullah al-Qattan.mp3
+          - label: Sheikh Sunbal
+            value: Adhan [day] - Sheikh Sunbal.mp3
+          - label: Sheikh Zayed Grand Mosque (live)
+            value: Adhan [day] - Sheikh Zayed Grand Mosque (live).mp3
+          - label: Sufiyum Sujathayum
+            value: Adhan [day] - Sufiyum Sujathayum.mp3
+          - label: Syeikh Mishary Rashid Al Afasy
+            value: Adhan [day] - Syeikh Mishary Rashid Al Afasy.mp3
+          - &id003
+            label: Auteur 2
+            value: Ramadan [tarhim] - Auteur 2.mp3
+          - &id004
+            label: Auteur
+            value: Ramadan [tarhim] - Auteur.mp3
+          - &id005
+            label: Auteur
+            value: Ramdan [tarhim] - Auteur.mp3
+          - &id006
+            label: Mbah Nun
+            value: Ramdan [tarhim] - Mbah Nun.mp3
+          - label: Airplane Ding Dong
+            value: Nadir [jingle] - Airplane Ding Dong.mp3
+          - label: Annoucment 1
+            value: Nadir [jingle] - Annoucment 1.mp3
+          - label: Annoucment 2
+            value: Nadir [jingle] - Annoucment 2.mp3
+          - label: Annoucment 3
+            value: Nadir [jingle] - Annoucment 3.mp3
+          - label: Annoucment 4
+            value: Nadir [jingle] - Annoucment 4.mp3
+          - label: Annoucment 5
+            value: Nadir [jingle] - Annoucment 5.mp3
+          - label: Annoucment
+            value: Nadir [jingle] - Annoucment.mp3
+          - label: Bleep Bleep
+            value: Nadir [jingle] - Bleep Bleep.mp3
+          - label: Buzzer
+            value: Nadir [jingle] - Buzzer.mp3
+          - label: Ding Dong
+            value: Nadir [jingle] - Ding Dong.mp3
+          - label: Glass
+            value: Nadir [jingle] - Glass.mp3
+          - label: Notification 1
+            value: Nadir [jingle] - Notification 1.mp3
+          - label: Notification 2
+            value: Nadir [jingle] - Notification 2.mp3
+          - label: Ting Ting Ting Ting
+            value: Nadir [jingle] - Ting Ting Ting Ting.mp3
+          - label: Warning
+            value: Nadir [jingle] - Warning.mp3
     speaker:
-      name: "[%key:component::nida::services::preview_adhan::fields::speaker::name%]"
-      description: "[%key:component::nida::services::preview_adhan::fields::speaker::description%]"
+      description: Welke speaker wil je gebruiken?
+      name: Speaker
       required: true
-      selector:
+      selector: &id001
         entity:
           domain: media_player
-    volume:
-      name: "[%key:component::nida::services::common::fields::volume::name%]"
-      description: "[%key:component::nida::services::common::fields::volume::description%]"
+    volume: &id002
+      default: 30
+      description: Volume (0-100%). Leeg laten voor geconfigureerd volume.
+      name: Volume
       required: false
-      default: 0.5
       selector:
         number:
-          min: 0.0
-          max: 1.0
-          step: 0.05
+          max: 100
+          min: 0
           mode: slider
-
-test_prayer:
-  name: "[%key:component::nida::services::test_prayer::name%]"
-  description: "[%key:component::nida::services::test_prayer::description%]"
-  fields:
-    prayer:
-      name: "[%key:component::nida::services::common::fields::prayer::name%]"
-      description: "[%key:component::nida::services::common::fields::prayer::description%]"
-      required: true
-      default: "dhuhr"
-      selector:
-        select:
-          options:
-            - label: Fajr
-              value: "fajr"
-            - label: Dhuhr
-              value: "dhuhr"
-            - label: Asr
-              value: "asr"
-            - label: Maghrib
-              value: "maghrib"
-            - label: Isha
-              value: "isha"
-            - label: "Jumat (vrijdag)"
-              value: "jumat"
-
-test_tarhim:
-  name: "[%key:component::nida::services::test_tarhim::name%]"
-  description: "[%key:component::nida::services::test_tarhim::description%]"
-  fields:
-    sound:
-      name: "[%key:component::nida::services::test_tarhim::fields::sound::name%]"
-      description: "[%key:component::nida::services::test_tarhim::fields::sound::description%]"
-      required: false
-      selector:
-        select:
-          options:
-            - label: 01 Tarhim
-              value: "01-tarhim.mp3"
-            - label: 02 Tarhim
-              value: "02-tarhim.mp3"
-    speaker:
-      name: "[%key:component::nida::services::common::fields::speaker::name%]"
-      description: "[%key:component::nida::services::common::fields::speaker::description%]"
-      required: false
-      selector:
-        entity:
-          domain: media_player
-    volume:
-      name: "[%key:component::nida::services::common::fields::volume::name%]"
-      description: "[%key:component::nida::services::common::fields::volume::description%]"
-      required: false
-      default: 0.4
-      selector:
-        number:
-          min: 0.0
-          max: 1.0
-          step: 0.05
-          mode: slider
-
-test_reminder:
-  name: "[%key:component::nida::services::test_reminder::name%]"
-  description: "[%key:component::nida::services::test_reminder::description%]"
-  fields:
-    reminder:
-      name: "[%key:component::nida::services::test_reminder::fields::reminder::name%]"
-      description: "[%key:component::nida::services::test_reminder::fields::reminder::description%]"
-      required: false
-      default: "reminder_1"
-      selector:
-        select:
-          options:
-            - label: Reminder 1
-              value: "reminder_1"
-            - label: Reminder 2
-              value: "reminder_2"
-    prayer:
-      name: "[%key:component::nida::services::common::fields::prayer::name%]"
-      description: "[%key:component::nida::services::common::fields::prayer::description%]"
-      required: false
-      default: "dhuhr"
-      selector:
-        select:
-          options:
-            - label: Fajr
-              value: "fajr"
-            - label: Dhuhr
-              value: "dhuhr"
-            - label: Asr
-              value: "asr"
-            - label: Maghrib
-              value: "maghrib"
-            - label: Isha
-              value: "isha"
-
+          step: 5
+          unit_of_measurement: '%'
+  name: Preview Adhan
 test_notification:
-  name: "[%key:component::nida::services::test_notification::name%]"
-  description: "[%key:component::nida::services::test_notification::description%]"
-  fields: {}
-
+  description: Stuur een test notificatie naar geconfigureerde apparaten.
+  fields:
+    message:
+      description: Tekst van de notificatie (optioneel).
+      name: Bericht
+      required: false
+      selector:
+        text: {}
+    title:
+      description: Titel van de notificatie (optioneel).
+      name: Titel
+      required: false
+      selector:
+        text: {}
+  name: Test Notificatie
+test_prayer:
+  description: Test de adhan voor een specifiek gebed.
+  fields:
+    prayer:
+      default: dhuhr
+      description: Welk gebed wil je testen?
+      name: Prayer
+      required: true
+      selector:
+        select:
+          options:
+          - label: Fajr
+            value: fajr
+          - label: Dhuhr
+            value: dhuhr
+          - label: Asr
+            value: asr
+          - label: Maghrib
+            value: maghrib
+          - label: Isha
+            value: isha
+          - label: Jumat (vrijdag)
+            value: jumat
+  name: Test Prayer
+test_reminder:
+  description: Test een pre-adhan reminder (geluid + TTS).
+  fields:
+    prayer:
+      default: Dhuhr
+      description: Naam van het gebed (voor in de TTS tekst).
+      name: Gebed
+      required: false
+      selector:
+        text: {}
+    reminder:
+      default: reminder_1
+      description: Welke reminder wil je testen?
+      name: Reminder
+      required: false
+      selector:
+        select:
+          options:
+          - label: Reminder 1
+            value: reminder_1
+          - label: Reminder 2
+            value: reminder_2
+  name: Test Reminder
 test_suhoor:
-  name: "[%key:component::nida::services::test_suhoor::name%]"
-  description: "[%key:component::nida::services::test_suhoor::description%]"
-  fields: {}
+  description: Test het suhoor alarm.
+  fields:
+    sound:
+      description: Welk suhoor geluid wil je afspelen?
+      name: Sound
+      required: false
+      selector:
+        select:
+          options:
+          - label: Artiest
+            value: Ramadan [suhoor] - Artiest.mp3
+    speaker: &id007
+      description: Welke speaker wil je gebruiken?
+      name: Speaker
+      required: false
+      selector: *id001
+    volume: *id002
+  name: Test Suhoor
+test_tarhim:
+  description: Test de Tarhim recitatie voor Fajr.
+  fields:
+    sound:
+      description: Welk tarhim wil je afspelen?
+      name: Sound
+      required: false
+      selector:
+        select:
+          options:
+          - *id003
+          - *id004
+          - *id005
+          - *id006
+    speaker: *id007
+    volume: *id002
+  name: Test Tarhim

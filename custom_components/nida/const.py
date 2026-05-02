@@ -6,6 +6,13 @@ CONF_CITY = "city"
 CONF_COUNTRY = "country"
 CONF_METHOD = "method"
 
+# ── Fasting (binary_sensor + switch) ─────────────────────────────────────
+# Naam van het attribuut dat de switch op de DataUpdateCoordinator zet
+# wanneer de gebruiker "ik vast vandaag" aan/uit zet. De
+# NidaCurrentlyFastingSensor leest deze flag uit zonder via hass.states
+# te hoeven gaan.
+ATTR_USER_INTENDS_FAST = "_nida_user_intends_fast"
+
 # Adhan settings
 CONF_PLAY_METHOD = "play_method"
 CONF_FAJR_SPEAKER = "fajr_speaker"
