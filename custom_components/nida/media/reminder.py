@@ -1,6 +1,12 @@
 """Nida pre-adhan reminders — chime + optionele TTS, X minuten voor het gebed.
 
-BUG FIX in deze module:
+VOLUME FIX in deze module (v1.1.5):
+  Chime en TTS draaien nu binnen één snapshot/set/restore-cyclus, zodat
+  ze gegarandeerd op hetzelfde volume klinken. De oude implementatie
+  gebruikte twee losse cycli waarbij de restore-task van de chime
+  midden in de TTS vuurde — hoorbaar als een volume-sprong.
+
+EERDERE FIX:
   Het oude `await asyncio.sleep(3)` na het afspelen van de chime werd vervangen
   door een dynamische wachttijd op basis van de werkelijke MP3-duur, zodat de
   TTS niet meer afgesneden wordt door langere jingles.
@@ -22,14 +28,25 @@ from ..const import (
 from ..volume import get_volume
 from ..notify import send_notification, get_default_message
 from .audio import async_get_sound_duration
-from .player import get_media_url, get_logo_url, play_media_with_volume
+from .player import get_media_url, get_logo_url
 
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_SPEAKERS: list[str] = ["media_player.adhan_speakers"]
 REMINDER_WINDOW_SECONDS = 30        # tolerantie rond reminder-tijdstip
 TTS_BUFFER_SECONDS = 1.0            # extra wachttijd na chime voor speaker-stabiliteit
-DEFAULT_REMINDER_RESTORE_DELAY = 10.0
+RESTORE_TAIL_SECONDS = 1.5          # extra marge na laatste audio voor restore
+
+# Heuristiek voor TTS-duur. Cloud TTS-services geven geen length terug, dus
+# schatten we op basis van karakter-lengte. ~10 karakters per seconde sluit
+# aan op de werkelijke spraaksnelheid van Nabu Casa Cloud TTS in NL/EN/AR.
+# Voor langere teksten wordt de schatting nauwkeuriger; voor korte teksten
+# zorgt de minimum-grens van 3s ervoor dat we niet te vroeg restoren.
+TTS_CHARS_PER_SECOND = 10.0
+TTS_MIN_SECONDS = 3.0
+TTS_BUFFER_AFTER = 2.0
+
+CHIME_DURATION_FALLBACK = 3.0       # fallback als MP3-duur niet leesbaar is
 
 # TTS taalmap — uitgebreidbaar zonder bestaande gedrag te breken
 LANG_MAP = {
@@ -45,6 +62,19 @@ LANG_MAP = {
     "fa": "fa-IR",
 }
 DEFAULT_TTS_ENTITY = "tts.home_assistant_cloud"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Helpers
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _estimate_tts_duration(text: str) -> float:
+    """Schat hoe lang TTS-afspelen ongeveer duurt op basis van tekstlengte."""
+    if not text:
+        return 0.0
+    seconds = len(text) / TTS_CHARS_PER_SECOND
+    return max(TTS_MIN_SECONDS, seconds) + TTS_BUFFER_AFTER
 
 
 async def _should_skip_for_tarhim(
@@ -83,31 +113,95 @@ async def _should_skip_for_tarhim(
     return False
 
 
-async def _play_reminder_chime(
-    hass: HomeAssistant,
-    speaker: list[str],
-    sound: str,
-    volume: float,
-) -> float:
-    """Speel reminder-chime af en geef terug hoe lang erop te wachten.
+# ─────────────────────────────────────────────────────────────────────────────
+# Volume-aware combined chime + TTS playback
+# ─────────────────────────────────────────────────────────────────────────────
 
-    Returns:
-        Aantal seconden om te wachten voor de chime klaar is. Met deze waarde
-        kan de caller de TTS NA de chime starten i.p.v. eroverheen.
+
+async def _snapshot_volumes(
+    hass: HomeAssistant,
+    speakers: list[str],
+) -> dict[str, float | None]:
+    """Lees huidige volume_level van alle speakers (None = onbekend)."""
+    volumes: dict[str, float | None] = {}
+    for speaker in speakers:
+        state = hass.states.get(speaker)
+        if state:
+            vol = state.attributes.get("volume_level")
+            volumes[speaker] = float(vol) if vol is not None else None
+        else:
+            volumes[speaker] = None
+    return volumes
+
+
+async def _set_volume(
+    hass: HomeAssistant,
+    speakers: list[str],
+    volume: float,
+) -> None:
+    """Zet doel-volume voor alle speakers."""
+    try:
+        await hass.services.async_call(
+            "media_player",
+            "volume_set",
+            {"entity_id": speakers, "volume_level": volume},
+        )
+    except Exception as e:  # noqa: BLE001
+        _LOGGER.warning("Volume set mislukt: %s", e)
+
+
+async def _restore_volumes(
+    hass: HomeAssistant,
+    original_volumes: dict[str, float | None],
+) -> None:
+    """Zet originele volumes terug, één per speaker."""
+    for speaker, orig_vol in original_volumes.items():
+        if orig_vol is None:
+            continue
+        try:
+            await hass.services.async_call(
+                "media_player",
+                "volume_set",
+                {"entity_id": speaker, "volume_level": orig_vol},
+            )
+        except Exception as e:  # noqa: BLE001
+            _LOGGER.debug("Volume restore mislukt voor %s: %s", speaker, e)
+
+
+async def _play_chime(
+    hass: HomeAssistant,
+    speakers: list[str],
+    sound: str,
+) -> float:
+    """Speel chime en geef terug hoeveel seconden te wachten tot hij klaar is.
+
+    Zet géén volume — dat heeft de caller al gedaan en blijft staan voor
+    de TTS die er direct na komt.
     """
     duration = await async_get_sound_duration(hass, sound)
     media_url = await get_media_url(hass, f"/local/nida/sounds/{sound}")
+
+    extra: dict = {}
+    cover_url = get_logo_url(hass)
+    if cover_url:
+        extra["thumbnail"] = cover_url
+        extra["media_image_url"] = cover_url
+
     try:
-        await play_media_with_volume(
-            hass, speaker, media_url, volume,
-            cover_url=get_logo_url(hass),
-            restore_delay=max(duration + 5.0, DEFAULT_REMINDER_RESTORE_DELAY),
+        await hass.services.async_call(
+            "media_player",
+            "play_media",
+            {
+                "entity_id": speakers,
+                "media_content_id": media_url,
+                "media_content_type": "music",
+                **({"extra": extra} if extra else {}),
+            },
         )
     except Exception as e:  # noqa: BLE001
         _LOGGER.warning("Could not play reminder chime: %s", e)
         return 0.0
 
-    # ✅ BUG FIX: Wacht werkelijke duur i.p.v. hardcoded 3 seconden
     if duration > 0:
         wait = duration + TTS_BUFFER_SECONDS
         _LOGGER.debug(
@@ -115,20 +209,25 @@ async def _play_reminder_chime(
             sound, duration, wait,
         )
         return wait
-    # Onbekende duur → behoud oud gedrag (3s) als veilige fallback
+
     _LOGGER.warning(
-        "Kon duur van '%s' niet lezen — fallback naar 3s wachttijd voor TTS", sound
+        "Kon duur van '%s' niet lezen — fallback naar %.0fs wachttijd voor TTS",
+        sound, CHIME_DURATION_FALLBACK,
     )
-    return 3.0
+    return CHIME_DURATION_FALLBACK
 
 
-async def _play_reminder_tts(
+async def _play_tts(
     hass: HomeAssistant,
-    speaker: list[str],
+    speakers: list[str],
     text: str,
     lang: str,
 ) -> None:
-    """Speel TTS-reminder af via tts.speak service."""
+    """Speel TTS af via tts.speak service.
+
+    Zet géén volume — die staat al op het reminder-volume vanuit de caller
+    en blijft staan tot _restore_volumes() na alle audio uitgevoerd is.
+    """
     tts_lang = LANG_MAP.get(lang, lang)
     tts_options: dict = {}
     if tts_lang == "ar-SA":
@@ -139,7 +238,7 @@ async def _play_reminder_tts(
             "tts", "speak",
             {
                 "entity_id": DEFAULT_TTS_ENTITY,
-                "media_player_entity_id": speaker,
+                "media_player_entity_id": speakers,
                 "message": text,
                 "language": tts_lang,
                 "options": tts_options,
@@ -147,6 +246,54 @@ async def _play_reminder_tts(
         )
     except Exception as e:  # noqa: BLE001
         _LOGGER.warning("Could not play TTS reminder: %s", e)
+
+
+async def _play_chime_and_tts(
+    hass: HomeAssistant,
+    speakers: list[str],
+    sound: str,
+    tts_text: str,
+    tts_lang: str,
+    volume: float,
+) -> None:
+    """Speel chime en TTS opeenvolgend af, beide op hetzelfde volume.
+
+    Eén snapshot/set/restore-cyclus om beide audio-bronnen heen, zodat
+    de TTS niet meer naar een ander volume springt halverwege.
+    """
+    original_volumes = await _snapshot_volumes(hass, speakers)
+    await _set_volume(hass, speakers, volume)
+    # Korte pauze zodat de speaker-firmware tijd heeft om het nieuwe
+    # volume toe te passen voordat de eerste audio binnenkomt.
+    await asyncio.sleep(0.5)
+
+    chime_wait = 0.0
+    if sound:
+        chime_wait = await _play_chime(hass, speakers, sound)
+        if chime_wait > 0:
+            await asyncio.sleep(chime_wait)
+
+    tts_wait = 0.0
+    if tts_text:
+        await _play_tts(hass, speakers, tts_text, tts_lang)
+        tts_wait = _estimate_tts_duration(tts_text)
+        _LOGGER.debug(
+            "TTS '%s...' (%d chars) — geschatte duur %.1fs",
+            tts_text[:30], len(tts_text), tts_wait,
+        )
+
+    # Restore async — niet wachten op return — zodat de scheduler
+    # niet geblokkeerd wordt voor de duur van de TTS.
+    async def _delayed_restore() -> None:
+        await asyncio.sleep(tts_wait + RESTORE_TAIL_SECONDS)
+        await _restore_volumes(hass, original_volumes)
+
+    hass.async_create_task(_delayed_restore())
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Main entry point
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 async def check_reminders(
@@ -195,33 +342,41 @@ async def check_reminders(
 
             # We zitten in het reminder-window — nú pas alle config lezen
             sound = options.get(f"reminder_{r_num}_sound", "")
-            tts_text = options.get(f"reminder_{r_num}_tts", "")
+            tts_text_template = options.get(f"reminder_{r_num}_tts", "")
             lang = options.get(f"reminder_{r_num}_lang", "nl")
             speaker = options.get(CONF_DAY_SPEAKER, DEFAULT_SPEAKERS)
             if isinstance(speaker, str):
                 speaker = [speaker]
             volume = get_volume(options, CONF_DAY_VOLUME, 50, hass=hass)
 
-            # 1. Chime
-            chime_wait = 0.0
-            if sound:
-                chime_wait = await _play_reminder_chime(hass, speaker, sound, volume)
-
-            # 2. TTS — wacht eerst tot chime klaar is
-            if tts_text or chime_wait == 0.0 and tts_text:
-                if chime_wait > 0:
-                    await asyncio.sleep(chime_wait)
-                text = tts_text or REMINDER_DEFAULT_TEXTS.get(
-                    lang, REMINDER_DEFAULT_TEXTS["en"]
-                )
-                text = (
-                    text
+            # TTS-tekst expanderen (alleen als TTS gewenst is)
+            tts_text = ""
+            if tts_text_template:
+                tts_text = (
+                    tts_text_template
                     .replace("[minutes]", str(int(minutes)))
                     .replace("[prayer]", prayer_name)
                 )
-                await _play_reminder_tts(hass, speaker, text, lang)
+            elif not sound:
+                # Geen sound én geen TTS-template → val terug op default
+                # reminder-tekst, anders zou er helemaal geen audio zijn.
+                default = REMINDER_DEFAULT_TEXTS.get(
+                    lang, REMINDER_DEFAULT_TEXTS["en"]
+                )
+                tts_text = (
+                    default
+                    .replace("[minutes]", str(int(minutes)))
+                    .replace("[prayer]", prayer_name)
+                )
+            # else: alleen sound, geen TTS — chime-only (oude gedrag)
 
-            # 3. Push notification
+            # Eén gecombineerde call voor chime + TTS op consistent volume
+            if sound or tts_text:
+                await _play_chime_and_tts(
+                    hass, speaker, sound, tts_text, lang, volume,
+                )
+
+            # Push notification (volume-onafhankelijk)
             notify_lang = options.get("notify_lang", "nl")
             fallback_msg = get_default_message(
                 "pre_adhan",
