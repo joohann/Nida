@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "https://unpkg.com/lit-element@2.4.0/lit-element.js?module";
-// NIDA CARD v53 — Ramadan balk, header stijl fix, sensor.nida_tarhim_readable, tarhim buffer 10s
+// NIDA CARD v54 — disabled-state UI, sensor-availability detectie, settings status-rij, selectieve v2.1.0 polish
 
 // Hijri maandnamen per taal
 const HIJRI_MONTHS = {
@@ -125,6 +125,145 @@ const INTRO_TRANSLATIONS = {
 
 function getIntroT(lang, key) {
   return (INTRO_TRANSLATIONS[lang] || INTRO_TRANSLATIONS.en)[key] || INTRO_TRANSLATIONS.en[key] || '';
+}
+
+// ── STATUS / DISABLED-STATE TRANSLATIONS ─────────────────────────────────────
+// Gescheiden van de hoofd-TRANSLATIONS object zodat het zelfstandig uitbreidbaar is.
+const STATUS_TRANSLATIONS = {
+  nl: {
+    loading:           'Laden…',
+    disabled_title:    'Integratie inactief',
+    disabled_body:     'De Nida-integratie is uitgeschakeld of niet geïnstalleerd. Activeer hem via Instellingen → Apparaten & Diensten.',
+    unavailable_title: 'Sensors niet beschikbaar',
+    unavailable_body:  'De integratie draait, maar levert geen gebedstijden. Controleer de Home Assistant logs.',
+    status:            'Status',
+    status_ok:         'Actief',
+    status_disabled:   'Inactief',
+    status_unavailable:'Sensors niet beschikbaar',
+    status_loading:    'Bezig met laden',
+    open_settings:     'Open Instellingen',
+  },
+  en: {
+    loading:           'Loading…',
+    disabled_title:    'Integration inactive',
+    disabled_body:     'The Nida integration is disabled or not installed. Enable it via Settings → Devices & Services.',
+    unavailable_title: 'Sensors unavailable',
+    unavailable_body:  'The integration is running but not returning prayer times. Check the Home Assistant logs.',
+    status:            'Status',
+    status_ok:         'Active',
+    status_disabled:   'Inactive',
+    status_unavailable:'Sensors unavailable',
+    status_loading:    'Loading',
+    open_settings:     'Open Settings',
+  },
+  ar: {
+    loading:           'جارٍ التحميل…',
+    disabled_title:    'التكامل غير مفعّل',
+    disabled_body:     'تكامل ندى معطّل أو غير مثبَّت. فعّله عبر الإعدادات ← الأجهزة والخدمات.',
+    unavailable_title: 'المستشعرات غير متاحة',
+    unavailable_body:  'التكامل يعمل لكنه لا يُرجع أوقات الصلاة. تحقّق من سجلات Home Assistant.',
+    status:            'الحالة',
+    status_ok:         'نشط',
+    status_disabled:   'غير نشط',
+    status_unavailable:'المستشعرات غير متاحة',
+    status_loading:    'جارٍ التحميل',
+    open_settings:     'فتح الإعدادات',
+  },
+  de: {
+    loading:           'Lädt…',
+    disabled_title:    'Integration inaktiv',
+    disabled_body:     'Die Nida-Integration ist deaktiviert oder nicht installiert. Aktiviere sie unter Einstellungen → Geräte & Dienste.',
+    unavailable_title: 'Sensoren nicht verfügbar',
+    unavailable_body:  'Die Integration läuft, liefert jedoch keine Gebetszeiten. Prüfe die Home-Assistant-Logs.',
+    status:            'Status',
+    status_ok:         'Aktiv',
+    status_disabled:   'Inaktiv',
+    status_unavailable:'Sensoren nicht verfügbar',
+    status_loading:    'Wird geladen',
+    open_settings:     'Einstellungen öffnen',
+  },
+  fr: {
+    loading:           'Chargement…',
+    disabled_title:    'Intégration inactive',
+    disabled_body:     "L'intégration Nida est désactivée ou non installée. Activez-la via Paramètres → Appareils et services.",
+    unavailable_title: 'Capteurs indisponibles',
+    unavailable_body:  "L'intégration fonctionne mais ne renvoie pas les heures de prière. Vérifiez les journaux Home Assistant.",
+    status:            'Statut',
+    status_ok:         'Actif',
+    status_disabled:   'Inactif',
+    status_unavailable:'Capteurs indisponibles',
+    status_loading:    'Chargement',
+    open_settings:     'Ouvrir les paramètres',
+  },
+  id: {
+    loading:           'Memuat…',
+    disabled_title:    'Integrasi tidak aktif',
+    disabled_body:     'Integrasi Nida dinonaktifkan atau belum terpasang. Aktifkan via Pengaturan → Perangkat & Layanan.',
+    unavailable_title: 'Sensor tidak tersedia',
+    unavailable_body:  'Integrasi berjalan tetapi tidak mengembalikan waktu sholat. Periksa log Home Assistant.',
+    status:            'Status',
+    status_ok:         'Aktif',
+    status_disabled:   'Tidak aktif',
+    status_unavailable:'Sensor tidak tersedia',
+    status_loading:    'Memuat',
+    open_settings:     'Buka Pengaturan',
+  },
+  ms: {
+    loading:           'Memuatkan…',
+    disabled_title:    'Integrasi tidak aktif',
+    disabled_body:     'Integrasi Nida dilumpuhkan atau tidak dipasang. Aktifkan melalui Tetapan → Peranti & Perkhidmatan.',
+    unavailable_title: 'Sensor tidak tersedia',
+    unavailable_body:  'Integrasi berjalan tetapi tidak memulangkan waktu solat. Semak log Home Assistant.',
+    status:            'Status',
+    status_ok:         'Aktif',
+    status_disabled:   'Tidak aktif',
+    status_unavailable:'Sensor tidak tersedia',
+    status_loading:    'Memuatkan',
+    open_settings:     'Buka Tetapan',
+  },
+  tr: {
+    loading:           'Yükleniyor…',
+    disabled_title:    'Entegrasyon pasif',
+    disabled_body:     'Nida entegrasyonu devre dışı veya kurulu değil. Ayarlar → Cihazlar ve Hizmetler üzerinden etkinleştirin.',
+    unavailable_title: 'Sensörler kullanılamıyor',
+    unavailable_body:  'Entegrasyon çalışıyor ancak namaz vakitlerini döndürmüyor. Home Assistant günlüklerini kontrol edin.',
+    status:            'Durum',
+    status_ok:         'Aktif',
+    status_disabled:   'Pasif',
+    status_unavailable:'Sensörler kullanılamıyor',
+    status_loading:    'Yükleniyor',
+    open_settings:     'Ayarları aç',
+  },
+  ur: {
+    loading:           'لوڈ ہو رہا ہے…',
+    disabled_title:    'انٹیگریشن غیر فعال',
+    disabled_body:     'ندا انٹیگریشن غیر فعال ہے یا انسٹال نہیں۔ ترتیبات ← آلات اور خدمات سے فعال کریں۔',
+    unavailable_title: 'سینسرز دستیاب نہیں',
+    unavailable_body:  'انٹیگریشن چل رہا ہے مگر نماز کے اوقات نہیں دے رہا۔ Home Assistant لاگز چیک کریں۔',
+    status:            'حیثیت',
+    status_ok:         'فعال',
+    status_disabled:   'غیر فعال',
+    status_unavailable:'سینسرز دستیاب نہیں',
+    status_loading:    'لوڈ ہو رہا ہے',
+    open_settings:     'ترتیبات کھولیں',
+  },
+  fa: {
+    loading:           'در حال بارگذاری…',
+    disabled_title:    'یکپارچه‌سازی غیرفعال',
+    disabled_body:     'یکپارچه‌سازی ندا غیرفعال یا نصب‌نشده است. از تنظیمات ← دستگاه‌ها و سرویس‌ها فعالش کنید.',
+    unavailable_title: 'حسگرها در دسترس نیستند',
+    unavailable_body:  'یکپارچه‌سازی در حال اجراست اما اوقات نماز را برنمی‌گرداند. لاگ‌های Home Assistant را بررسی کنید.',
+    status:            'وضعیت',
+    status_ok:         'فعال',
+    status_disabled:   'غیرفعال',
+    status_unavailable:'حسگرها در دسترس نیستند',
+    status_loading:    'در حال بارگذاری',
+    open_settings:     'باز کردن تنظیمات',
+  },
+};
+
+function getStatusT(lang, key) {
+  return (STATUS_TRANSLATIONS[lang] || STATUS_TRANSLATIONS.en)[key] || STATUS_TRANSLATIONS.en[key] || key;
 }
 
 const LANG_LABELS = { nl:'Nederlands', en:'English', ar:'العربية', de:'Deutsch', fr:'Français', id:'Indonesia', ms:'Melayu', tr:'Türkçe', ur:'اردو', fa:'فارسی' };
@@ -268,6 +407,35 @@ class NidaCard extends LitElement {
   _s(e) { return this.hass?.states[e]?.state; }
   _a(e,a) { return this.hass?.states[e]?.attributes?.[a]; }
   _isRamadan() { return this._s('binary_sensor.is_ramadan') === 'on' || this._s('sensor.is_ramadan') === 'on'; }
+
+  // ── INTEGRATION STATUS DETECTION ────────────────────────────────────────────
+  // Returnt 'loading' | 'disabled' | 'unavailable' | 'ok'.
+  //  - loading      : hass nog niet aangesloten (eerste render)
+  //  - disabled     : geen van de kern-sensors bestaat → integratie disabled / verwijderd
+  //  - unavailable  : sensors bestaan maar zijn allemaal unavailable/unknown → coordinator faalt
+  //  - ok           : minstens één gebedstijd-sensor heeft een geldige waarde
+  _integrationStatus() {
+    if (!this.hass) return 'loading';
+
+    const keys = [
+      'sensor.02_fajr_readable',
+      'sensor.04_dhuhr_readable',
+      'sensor.05_asr_readable',
+      'sensor.07_maghrib_readable',
+      'sensor.08_isha_readable',
+    ];
+    const entries = keys.map(e => this.hass.states?.[e]);
+
+    // Geen enkele entity gevonden → niet geladen
+    if (entries.every(s => !s)) return 'disabled';
+
+    // Allemaal aanwezig maar leeg/unavailable → coordinator-probleem
+    const isBlank = (s) => !s || s.state === 'unavailable' || s.state === 'unknown' || s.state === '';
+    if (entries.every(isBlank)) return 'unavailable';
+
+    return 'ok';
+  }
+
 
   // Toggle collapsed + sla op in localStorage
   _toggleCollapse(e) {
@@ -941,12 +1109,175 @@ class NidaCard extends LitElement {
         box-shadow: 0 0 0 3px rgba(201,168,76,0.4) !important;
         border-radius: 8px;
       }
+
+      /* ── STATUS / DISABLED-STATE OVERLAY ──────────────────────────────────── */
+      .status-card {
+        position: relative;
+        width: 100%;
+        padding: 28px 24px;
+        border-radius: var(--ha-card-border-radius, 12px);
+        background: linear-gradient(135deg, #1a1308 0%, #2a2010 100%);
+        border: 1px solid rgba(201,168,76,0.25);
+        color: #e8d9b0;
+        font-family: 'Cairo', sans-serif;
+        text-align: center;
+        box-sizing: border-box;
+      }
+      .status-card.light {
+        background: linear-gradient(135deg, #f5ecd4 0%, #ebe0c2 100%);
+        border-color: rgba(201,168,76,0.45);
+        color: #3a2c10;
+      }
+      .status-card.rtl { direction: rtl; }
+
+      .status-icon {
+        font-size: 44px;
+        line-height: 1;
+        margin-bottom: 12px;
+        display: inline-block;
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,.25));
+      }
+      .status-card.disabled .status-icon { opacity: .85; }
+      .status-card.unavailable .status-icon { opacity: .9; }
+
+      .status-title {
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: .2px;
+        margin: 0 0 6px;
+        color: #c9a84c;
+      }
+      .status-card.light .status-title { color: #8a6d20; }
+
+      .status-body {
+        font-size: 13px;
+        line-height: 1.5;
+        opacity: .85;
+        max-width: 460px;
+        margin: 0 auto 14px;
+      }
+
+      .status-meta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        opacity: .55;
+        font-family: 'Courier New', monospace;
+        letter-spacing: .3px;
+      }
+      .status-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #c97c4c;
+        box-shadow: 0 0 6px rgba(201,124,76,0.6);
+        animation: nida-pulse 2.2s ease-in-out infinite;
+      }
+      .status-card.disabled .status-dot { background: #888; box-shadow: none; animation: none; }
+      .status-card.loading .status-dot { background: #c9a84c; }
+
+      @keyframes nida-pulse {
+        0%, 100% { opacity: 1; }
+        50%      { opacity: .35; }
+      }
+
+      .status-actions {
+        margin-top: 14px;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .status-btn {
+        background: rgba(201,168,76,.14);
+        color: #c9a84c;
+        border: 1px solid rgba(201,168,76,.45);
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: background .15s ease, transform .1s ease;
+      }
+      .status-btn:hover { background: rgba(201,168,76,.24); }
+      .status-btn:active { transform: scale(.97); }
+      .status-card.light .status-btn { color: #8a6d20; border-color: rgba(138,109,32,.5); background: rgba(201,168,76,.18); }
+
+      /* ── STATUS-RIJ IN SETTINGS PANEL ─────────────────────────────────────── */
+      .settings-status-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        margin: 4px 0 12px;
+        border-radius: 10px;
+        background: rgba(201,168,76,.06);
+        border: 1px solid rgba(201,168,76,.2);
+        font-size: 12px;
+      }
+      .settings-status-row .label { opacity: .7; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; font-size: 10px; }
+      .settings-status-row .value { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+      .settings-status-row .dot {
+        width: 7px; height: 7px; border-radius: 50%;
+        background: #888;
+      }
+      .settings-status-row.ok .dot         { background: #6ec46e; box-shadow: 0 0 5px rgba(110,196,110,0.6); }
+      .settings-status-row.unavailable .dot{ background: #c97c4c; box-shadow: 0 0 5px rgba(201,124,76,0.6); }
+      .settings-status-row.disabled .dot   { background: #888; }
+      .settings-status-row.loading .dot    { background: #c9a84c; animation: nida-pulse 1.6s ease-in-out infinite; }
     `;
   }
 
+  // ── STATUS-OVERLAY RENDERER ────────────────────────────────────────────────
+  // Wordt gerenderd in plaats van de normale kaart wanneer integratie niet OK is.
+  _renderStatus(status) {
+    const lang = this._lang || 'en';
+    const isRtl = RTL_LANGS.has(lang);
+    const themeClass = this._dark ? 'dark' : 'light';
+    const t = (k) => getStatusT(lang, k);
+
+    let icon, title, body;
+    switch (status) {
+      case 'loading':
+        icon = '⏳';
+        title = t('loading');
+        body  = '';
+        break;
+      case 'unavailable':
+        icon = '⚠️';
+        title = t('unavailable_title');
+        body  = t('unavailable_body');
+        break;
+      case 'disabled':
+      default:
+        icon = '🌙';
+        title = t('disabled_title');
+        body  = t('disabled_body');
+        break;
+    }
+
+    return html`
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+      <div class="status-card ${themeClass} ${status} ${isRtl?'rtl':''}">
+        <div class="status-icon">${icon}</div>
+        <div class="status-title">${title}</div>
+        ${body ? html`<div class="status-body">${body}</div>` : ''}
+        <div class="status-meta">
+          <span class="status-dot"></span>
+          <span>nida · ${status}</span>
+        </div>
+      </div>`;
+  }
+
   render() {
-    if (!this.hass) return html``;
+    if (!this.hass) return this._renderStatus('loading');
     if (!this._lang) this._lang = this._detectLang();
+
+    // Short-circuit: toon status-overlay als integratie niet OK is
+    const integrationStatus = this._integrationStatus();
+    if (integrationStatus !== 'ok') {
+      return this._renderStatus(integrationStatus);
+    }
 
     const now = new Date();
     const nowMin = now.getHours()*60+now.getMinutes();
@@ -1124,6 +1455,14 @@ class NidaCard extends LitElement {
 
           <div class="settings-title">${this._t('settings')}</div>
 
+          <div class="settings-status-row ${integrationStatus}">
+            <span class="label">${getStatusT(this._lang,'status')}</span>
+            <span class="value">
+              <span class="dot"></span>
+              ${getStatusT(this._lang, 'status_'+integrationStatus)}
+            </span>
+          </div>
+
           <div class="settings-row">
             <label>${this._t('show_title')}</label>
             <button class="settings-toggle ${this._showTitle?'on':'off'}" tabindex="2"
@@ -1212,4 +1551,4 @@ class NidaCard extends LitElement {
 }
 
 customElements.define('nida-card', NidaCard);
-console.log('%c NIDA CARD v53 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');
+console.log('%c NIDA CARD v54 geladen ✓ ', 'background:#c9a84c;color:#000;font-weight:bold;');

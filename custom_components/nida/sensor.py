@@ -35,6 +35,19 @@ HIJRI_SENSORS = [
 ]
 
 
+def _nida_device_info(entry):
+    """Eén device 'Nida' voor alle entities. Vervangt de oude opsplitsing
+    in Nida / Nida Readable / Hijri Calendar (zie _async_cleanup_legacy_devices
+    in __init__.py voor de migratie).
+    """
+    return {
+        "identifiers": {(DOMAIN, entry.entry_id)},
+        "name": "Nida",
+        "manufacturer": "AlAdhan",
+        "model": "AlAdhan API",
+    }
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -58,12 +71,20 @@ async def async_setup_entry(
 
 
 class PrayerTimeSensor(CoordinatorEntity, SensorEntity):
+    # TIMESTAMP-sensor voor power users die `at: sensor.02_fajr` automations
+    # willen bouwen. Disabled-by-default: zichtbaar via "+ X disabled entities"
+    # in Devices & Services. Bij een nieuwe install verschijnen ze niet
+    # automatisch in de UI.
+    _attr_entity_registry_enabled_default = False
+
     def __init__(self, coordinator, entry, prayer_name, order, icon):
         super().__init__(coordinator)
         self._prayer_name = prayer_name
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_{prayer_name.lower()}"
         self._attr_name = f"{order}. {prayer_name}"
+        # Forceer schone entity_id zonder devicenaam-prefix → sensor.02_fajr
+        self._attr_suggested_object_id = f"{order}_{prayer_name.lower()}"
         self._attr_device_class = SensorDeviceClass.TIMESTAMP
         self._attr_icon = icon
         self._attr_entity_category = EntityCategory.DIAGNOSTIC
@@ -81,12 +102,7 @@ class PrayerTimeSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"{self._entry.entry_id}_prayer")},
-            "name": "Nida",
-            "manufacturer": "AlAdhan",
-            "model": "AlAdhan API",
-        }
+        return _nida_device_info(self._entry)
 
 
 class PrayerTimeReadableSensor(CoordinatorEntity, SensorEntity):
@@ -96,6 +112,8 @@ class PrayerTimeReadableSensor(CoordinatorEntity, SensorEntity):
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_{prayer_name.lower()}_readable"
         self._attr_name = f"{order}. {prayer_name} Readable"
+        # Forceer schone entity_id → sensor.02_fajr_readable
+        self._attr_suggested_object_id = f"{order}_{prayer_name.lower()}_readable"
         self._attr_icon = icon
 
     @property
@@ -107,12 +125,7 @@ class PrayerTimeReadableSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"{self._entry.entry_id}_readable")},
-            "name": "Nida Readable",
-            "manufacturer": "AlAdhan",
-            "model": "AlAdhan API",
-        }
+        return _nida_device_info(self._entry)
 
 
 class HijriSensor(CoordinatorEntity, SensorEntity):
@@ -122,6 +135,8 @@ class HijriSensor(CoordinatorEntity, SensorEntity):
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_{key}"
         self._attr_name = name
+        # Forceer schone entity_id → sensor.hijri_date, sensor.hijri_day, ...
+        self._attr_suggested_object_id = key
         self._attr_icon = icon
 
     @property
@@ -170,12 +185,7 @@ class HijriSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"{self._entry.entry_id}_hijri")},
-            "name": "Hijri Calendar",
-            "manufacturer": "AlAdhan",
-            "model": "AlAdhan API",
-        }
+        return _nida_device_info(self._entry)
 
 
 class NextPrayerSensor(CoordinatorEntity, SensorEntity):
@@ -186,6 +196,8 @@ class NextPrayerSensor(CoordinatorEntity, SensorEntity):
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_next_prayer"
         self._attr_name = "Next Prayer"
+        # Forceer schone entity_id → sensor.next_prayer
+        self._attr_suggested_object_id = "next_prayer"
         self._attr_icon = "mdi:skip-next-circle"
 
     @property
@@ -232,12 +244,7 @@ class NextPrayerSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"{self._entry.entry_id}_prayer")},
-            "name": "Nida",
-            "manufacturer": "AlAdhan",
-            "model": "AlAdhan API",
-        }
+        return _nida_device_info(self._entry)
 
 
 class IsRamadanSensor(CoordinatorEntity):
@@ -248,6 +255,8 @@ class IsRamadanSensor(CoordinatorEntity):
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_is_ramadan"
         self._attr_name = "Is Ramadan"
+        # Forceer schone entity_id → sensor.is_ramadan
+        self._attr_suggested_object_id = "is_ramadan"
         self._attr_icon = "mdi:star-crescent"
 
     @property
@@ -274,12 +283,7 @@ class IsRamadanSensor(CoordinatorEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"{self._entry.entry_id}_hijri")},
-            "name": "Hijri Calendar",
-            "manufacturer": "AlAdhan",
-            "model": "AlAdhan API",
-        }
+        return _nida_device_info(self._entry)
 
 
 class IslamicHolidayBinarySensor(CoordinatorEntity):
@@ -290,6 +294,8 @@ class IslamicHolidayBinarySensor(CoordinatorEntity):
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_is_holiday"
         self._attr_name = "Islamic Holiday Today"
+        # Forceer schone entity_id → sensor.islamic_holiday_today
+        self._attr_suggested_object_id = "islamic_holiday_today"
         self._attr_icon = "mdi:star-crescent"
 
     @property
@@ -310,9 +316,4 @@ class IslamicHolidayBinarySensor(CoordinatorEntity):
 
     @property
     def device_info(self):
-        return {
-            "identifiers": {(DOMAIN, f"{self._entry.entry_id}_hijri")},
-            "name": "Hijri Calendar",
-            "manufacturer": "AlAdhan",
-            "model": "AlAdhan API",
-        }
+        return _nida_device_info(self._entry)
