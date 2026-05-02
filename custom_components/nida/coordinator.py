@@ -9,6 +9,7 @@ import aiohttp
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
@@ -67,15 +68,15 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         """Fetch fresh timings van de API."""
         url = self._build_url()
+        session = async_get_clientsession(self.hass)
         try:
-            async with aiohttp.ClientSession() as session:
-                async with asyncio.timeout(API_TIMEOUT_SECONDS):
-                    async with session.get(url, allow_redirects=True) as response:
-                        if response.status != 200:
-                            raise UpdateFailed(f"API error: {response.status}")
-                        data = await response.json()
-                        timings = data.get("data", {}).get("timings", {})
-                        _LOGGER.debug("API timings: %s", list(timings.keys()))
-                        return data
+            async with asyncio.timeout(API_TIMEOUT_SECONDS):
+                async with session.get(url, allow_redirects=True) as response:
+                    if response.status != 200:
+                        raise UpdateFailed(f"API error: {response.status}")
+                    data = await response.json()
+                    timings = data.get("data", {}).get("timings", {})
+                    _LOGGER.debug("API timings: %s", list(timings.keys()))
+                    return data
         except aiohttp.ClientError as err:
             raise UpdateFailed(f"API error: {err}") from err
