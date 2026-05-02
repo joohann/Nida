@@ -66,6 +66,10 @@ class NidaIntendToFastSwitch(SwitchEntity, RestoreEntity):
         if last is not None and last.state == "on":
             self._is_on = True
             setattr(self._coordinator, ATTR_USER_INTENDS_FAST, True)
+            # Notify binary_sensor.nida_currently_fasting immediately so it
+            # reflects the restored intent on the next state read instead of
+            # waiting for its 1-minute tick.
+            self._coordinator.async_update_listeners()
 
     @property
     def is_on(self) -> bool:
