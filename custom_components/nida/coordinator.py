@@ -68,8 +68,7 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
         """Fetch fresh timings van de API."""
         url = self._build_url()
         try:
-            connector = aiohttp.TCPConnector(ssl=False)
-            async with aiohttp.ClientSession(connector=connector) as session:
+            async with aiohttp.ClientSession() as session:
                 async with asyncio.timeout(API_TIMEOUT_SECONDS):
                     async with session.get(url, allow_redirects=True) as response:
                         if response.status != 200:
