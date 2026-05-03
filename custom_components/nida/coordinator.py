@@ -10,6 +10,7 @@ import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
@@ -25,7 +26,13 @@ API_BASE = "https://api.aladhan.com/v1"
 
 
 class PrayerTimesCoordinator(DataUpdateCoordinator):
-    """Coordinator dat dagelijkse prayer-timings ophaalt."""
+    """Coordinator dat dagelijkse prayer-timings ophaalt.
+
+    Naast de standaard 12-uurs polling triggert deze coordinator ook een
+    extra refresh op 00:01 lokale tijd — _build_url() gebruikt date.today()
+    waardoor je anders het hele uur na middernacht nog gisterens timings
+    serveert tot de volgende reguliere refresh.
+    """
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         super().__init__(
@@ -35,6 +42,23 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
             update_interval=UPDATE_INTERVAL,
         )
         self.entry = entry
+        self._unsub_midnight = None
+
+    async def async_config_entry_first_refresh(self) -> None:  # type: ignore[override]
+        await super().async_config_entry_first_refresh()
+        # Plan een extra refresh net na middernacht zodat date.today() in
+        # _build_url() de nieuwe dag oppakt zonder te wachten op het
+        # 12-uurs interval.
+        self._unsub_midnight = async_track_time_change(
+            self.hass,
+            self._async_midnight_refresh,
+            hour=0, minute=1, second=0,
+        )
+        self.entry.async_on_unload(self._unsub_midnight)
+
+    async def _async_midnight_refresh(self, _now) -> None:
+        _LOGGER.debug("Midnight refresh — fetching timings for new date")
+        await self.async_request_refresh()
 
     def _build_url(self) -> str:
         """Bouw API-URL — gebruikt coordinaten als beschikbaar, anders city/country."""

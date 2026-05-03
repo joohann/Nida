@@ -8,6 +8,7 @@ Ondersteunt:
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any, Mapping
 
@@ -114,9 +115,9 @@ async def send_notification(
 
     extra = _build_critical_payload(critical)
 
-    for target in targets:
+    async def _send_one(target: str) -> None:
         if not target:
-            continue
+            return
         service = target.replace("notify.", "")
         data: dict[str, Any] = {
             "title": final_title,
@@ -127,3 +128,11 @@ async def send_notification(
             await hass.services.async_call("notify", service, data)
         except Exception as e:  # noqa: BLE001
             _LOGGER.warning("Could not send notification to %s: %s", target, e)
+
+    # Parallel verzenden zodat één traag/falend doel de rest niet blokkeert.
+    # return_exceptions=True voorkomt dat één opgegooide exception (b.v.
+    # vóór het try/except hierboven) de gather afbreekt.
+    await asyncio.gather(
+        *(_send_one(t) for t in targets),
+        return_exceptions=True,
+    )
