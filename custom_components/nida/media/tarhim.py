@@ -25,10 +25,15 @@ SKIP_BOOLEAN_ENTITY = "input_boolean.nida_skip_suhoor"
 
 
 def _is_ramadan(coordinator) -> bool:
-    """Of het op dit moment Ramadan is volgens de coordinator data."""
+    """Of het op dit moment Ramadan is volgens de coordinator data.
+
+    Gebruikt month.number (int 9) i.p.v. substring-match op month.en.
+    """
     try:
-        hijri_month = coordinator.data["data"]["date"]["hijri"]["month"]["en"]
-        return "Rama" in hijri_month
+        month_num = int(
+            coordinator.data["data"]["date"]["hijri"]["month"]["number"]
+        )
+        return month_num == 9
     except Exception:  # noqa: BLE001
         return False
 
@@ -87,13 +92,6 @@ async def check_tarhim(
             "Tarhim timing: Fajr=%s, duur=%.1fs, buffer=%ds → start om %s",
             timings["Fajr"], duration, TARHIM_BUFFER_SECONDS,
             datetime.fromtimestamp(tarhim_ts).strftime("%H:%M:%S"),
-        )
-
-        # Sla tarhim tijd op als sensor zodat de card hem kan tonen
-        hass.states.async_set(
-            "sensor.nida_tarhim_readable",
-            datetime.fromtimestamp(tarhim_ts).strftime("%H:%M"),
-            {"friendly_name": "Nida Tarhim Time", "icon": "mdi:music"},
         )
 
         if abs(now_ts - tarhim_ts) >= TARHIM_WINDOW_SECONDS:

@@ -209,7 +209,11 @@ async def _handle_test_notification(hass: HomeAssistant, entry: ConfigEntry, cal
 
 
 async def _handle_test_suhoor(hass: HomeAssistant, entry: ConfigEntry, call: ServiceCall) -> None:
-    """Test suhoor alarm."""
+    """Test suhoor alarm.
+
+    Leest 'suhoor_alarm_*' keys (geschreven door config_flow) met fallback
+    naar legacy 'suhoor_*' keys.
+    """
     options = entry.options if entry.options else entry.data
     speakers = _ensure_list(
         call.data.get(
@@ -218,9 +222,15 @@ async def _handle_test_suhoor(hass: HomeAssistant, entry: ConfigEntry, call: Ser
         )
     )
     volume = _normalize_volume(
-        call.data.get("volume", options.get("suhoor_volume", 50))
+        call.data.get(
+            "volume",
+            options.get("suhoor_alarm_volume", options.get("suhoor_volume", 50)),
+        )
     )
-    sound = call.data.get("sound", options.get("suhoor_sound", ""))
+    sound = call.data.get(
+        "sound",
+        options.get("suhoor_alarm_sound", options.get("suhoor_sound", "")),
+    )
     if not sound:
         _LOGGER.warning("test_suhoor: geen suhoor sound geconfigureerd")
         return

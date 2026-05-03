@@ -95,8 +95,10 @@ async def _should_skip_for_tarhim(
     if not options.get(CONF_TARHIM_ENABLED, True):
         return False
     try:
-        hijri_month = coordinator.data["data"]["date"]["hijri"]["month"]["en"]
-        if "Rama" not in hijri_month:
+        month_num = int(
+            coordinator.data["data"]["date"]["hijri"]["month"]["number"]
+        )
+        if month_num != 9:
             return False
 
         tarhim_sound = options.get(CONF_TARHIM_SOUND, "")

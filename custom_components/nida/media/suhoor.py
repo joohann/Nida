@@ -21,10 +21,16 @@ SKIP_BOOLEAN_ENTITY = "input_boolean.nida_skip_suhoor"
 
 
 def _is_ramadan(coordinator) -> bool:
-    """Of het op dit moment Ramadan is volgens de coordinator data."""
+    """Of het op dit moment Ramadan is volgens de coordinator data.
+
+    Gebruikt month.number (int 9) i.p.v. substring-match op month.en
+    omdat Aladhan ooit kan veranderen van 'Ramadan' naar 'Ramaḍān' o.i.d.
+    """
     try:
-        hijri_month = coordinator.data["data"]["date"]["hijri"]["month"]["en"]
-        return "Rama" in hijri_month
+        month_num = int(
+            coordinator.data["data"]["date"]["hijri"]["month"]["number"]
+        )
+        return month_num == 9
     except Exception:  # noqa: BLE001
         return False
 
@@ -67,10 +73,18 @@ async def check_suhoor(
     coordinator,
     now_ts: float,
 ) -> None:
-    """Speel suhoor alarm X minuten vóór Fajr tijdens Ramadan."""
+    """Speel suhoor alarm X minuten vóór Fajr tijdens Ramadan.
+
+    Note: het config_flow schrijft 'suhoor_alarm_*' keys (suhoor_alarm_enabled,
+    suhoor_alarm_minutes, suhoor_alarm_sound, suhoor_alarm_volume). Deze
+    functie leest die keys met een fallback naar de oude 'suhoor_*' keys
+    voor backward-compatibiliteit met installaties die nog niet door de
+    options-flow zijn gegaan na de v1.1.x rename.
+    """
     options = entry.options if entry.options else entry.data
 
-    if not options.get("suhoor_enabled", True):
+    enabled = options.get("suhoor_alarm_enabled", options.get("suhoor_enabled", True))
+    if not enabled:
         return
 
     if _is_skip_active(hass):
@@ -87,15 +101,10 @@ async def check_suhoor(
             f"{today} {timings['Fajr']}", "%Y-%m-%d %H:%M"
         ).timestamp()
 
-        minutes = int(options.get("suhoor_minutes", 30))
-        suhoor_ts = fajr_ts - (minutes * 60)
-
-        # Sla suhoor alarm tijd op als sensor zodat de card hem kan tonen
-        hass.states.async_set(
-            "sensor.nida_suhoor_readable",
-            datetime.fromtimestamp(suhoor_ts).strftime("%H:%M"),
-            {"friendly_name": "Nida Suhoor Alarm Time", "icon": "mdi:food"},
+        minutes = int(
+            options.get("suhoor_alarm_minutes", options.get("suhoor_minutes", 30))
         )
+        suhoor_ts = fajr_ts - (minutes * 60)
 
         _LOGGER.debug(
             "Suhoor timing: %d min voor Fajr (%s) → alarm om %s",
@@ -106,14 +115,19 @@ async def check_suhoor(
         if abs(now_ts - suhoor_ts) >= SUHOOR_WINDOW_SECONDS:
             return
 
-        sound = options.get("suhoor_sound", "")
+        sound = options.get("suhoor_alarm_sound", options.get("suhoor_sound", ""))
         speaker = options.get(
             "suhoor_speaker",
             options.get(CONF_DAY_SPEAKER, DEFAULT_SPEAKERS),
         )
         if isinstance(speaker, str):
             speaker = [speaker]
-        volume = get_volume(options, "suhoor_volume", 50, hass=hass)
+        # get_volume kan maar één key tegelijk lezen; probeer eerst de nieuwe key,
+        # val terug op de legacy key alleen als de nieuwe ontbreekt.
+        if "suhoor_alarm_volume" in options:
+            volume = get_volume(options, "suhoor_alarm_volume", 10, hass=hass)
+        else:
+            volume = get_volume(options, "suhoor_volume", 10, hass=hass)
 
         _LOGGER.info("Suhoor alarm: %d min voor Fajr", minutes)
 
