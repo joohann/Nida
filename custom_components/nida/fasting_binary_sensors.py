@@ -25,7 +25,7 @@ need to be adjusted.
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, time, timedelta
+from datetime import datetime, time, timedelta
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -66,7 +66,7 @@ class _BaseFastingSensor(CoordinatorEntity, BinarySensorEntity):
     def _status(self) -> FastingStatus:
         h = self._hijri()
         return get_fasting_status(
-            gregorian=date.today(),
+            gregorian=dt_util.now().date(),
             hijri_day=h["day"],
             hijri_month=h["month"],
             hijri_year=h["year"],
@@ -224,14 +224,22 @@ def _parse_today(hhmm: str | None) -> datetime | None:
     """Parse 'HH:MM' or 'HH:MM (CET)' into today's local datetime.
 
     Aladhan returns timings with a parenthesised timezone suffix.
+
+    DST safety: we use dt_util.as_local() to attach the timezone, which
+    consults the local zoneinfo for the actual date being constructed
+    rather than just the current UTC offset. On DST-switch days Fajr
+    (early) and Maghrib (late) can be on different sides of the switch,
+    so naive .replace(tzinfo=now.tzinfo) would assign the same offset
+    to both and skew one of them by an hour.
     """
     if not hhmm:
         return None
     try:
         clean = hhmm.split(" ", 1)[0]
         h, m = clean.split(":")
-        naive = datetime.combine(date.today(), time(int(h), int(m)))
-        return naive.replace(tzinfo=dt_util.now().tzinfo)
+        local_today = dt_util.now().date()
+        naive = datetime.combine(local_today, time(int(h), int(m)))
+        return dt_util.as_local(naive)
     except (ValueError, AttributeError):
         return None
 
