@@ -1,12 +1,12 @@
 """Nida scheduler — triggert media flows op de juiste tijdstippen.
 
 Wordt elke minuut (op second=0) aangeroepen door async_track_time_change.
-Vanuit hier worden alle media-flows en sensor updates gestart.
+Vanuit hier worden alle media-flows gestart.
 """
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -30,44 +30,6 @@ def _build_prayers(timings: dict, is_friday: bool) -> dict[str, str]:
     if is_friday and "Dhuhr" in prayers:
         prayers["Jumat"] = prayers.pop("Dhuhr")
     return prayers
-
-
-async def update_nida_sensors(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    coordinator,
-) -> None:
-    """Bereken en zet sensor-waarden die de Lovelace card nodig heeft."""
-    try:
-        if not coordinator.data:
-            return
-        options = entry.options if entry.options else entry.data
-        timings = coordinator.data["data"]["timings"]
-        today = datetime.now().strftime("%Y-%m-%d")
-
-        # sensor.nida_suhoor_readable — alarm tijd X minuten voor Fajr
-        if options.get("suhoor_alarm_enabled", True):
-            fajr_ts = datetime.strptime(
-                f"{today} {timings['Fajr']}", "%Y-%m-%d %H:%M"
-            ).timestamp()
-            minutes = int(options.get("suhoor_alarm_minutes", 30))
-            suhoor_ts = fajr_ts - (minutes * 60)
-
-            # Als suhoor al voorbij is vandaag, toon morgen
-            if suhoor_ts < datetime.now().timestamp():
-                tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
-                fajr_ts = datetime.strptime(
-                    f"{tomorrow} {timings['Fajr']}", "%Y-%m-%d %H:%M"
-                ).timestamp()
-                suhoor_ts = fajr_ts - (minutes * 60)
-
-            hass.states.async_set(
-                "sensor.nida_suhoor_readable",
-                datetime.fromtimestamp(suhoor_ts).strftime("%H:%M"),
-                {"friendly_name": "Nida Suhoor Alarm Time", "icon": "mdi:food"},
-            )
-    except Exception as e:  # noqa: BLE001
-        _LOGGER.debug("update_nida_sensors error: %s", e)
 
 
 async def async_setup_adhan_scheduler(
@@ -115,7 +77,6 @@ async def async_setup_adhan_scheduler(
 
         # Maintenance
         hass.async_create_task(check_reset_skip_suhoor(hass, coordinator, now_ts))
-        hass.async_create_task(update_nida_sensors(hass, entry, coordinator))
 
     entry.async_on_unload(
         async_track_time_change(hass, check_prayer_time, second=0)
