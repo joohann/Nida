@@ -1,55 +1,65 @@
-# Nida v1.1.5 — Vasten platform & volume fix
+# Nida v1.1.6 — Correctness sweep
 
-## What's Changed
+Dit is een gerichte stabiliteits- en correctheidsrelease bovenop v1.1.5. Geen nieuwe gebruikersfeatures — alle wijzigingen lossen bugs op die in een diepte-analyse van de codebase naar boven kwamen, of versterken bestaande gedragingen die onder edge cases stuk gingen.
 
-### 🌙 Nieuw: Vasten (sunnah & fard)
-Nida ondersteunt nu volledige vasten-tracking als losse platform, zonder dat je een Hijri-kalender hoeft te combineren met automations.
+## 🐛 Bugs opgelost
 
-**Drie nieuwe binary sensors:**
-- `binary_sensor.nida_fasting_recommended` — `on` op dagen waarop vasten verdienstelijk is (Ramadan, maandag/donderdag, witte dagen 13-14-15 van elke Hijri-maand, Ashura/Tasua, Arafah, Dhul-Hijjah 1-8, Shawwal-6). Het attribuut `fasting_type` geeft het exacte type terug.
-- `binary_sensor.nida_fasting_forbidden` — `on` op dagen waarop vasten verboden is (Eid al-Fitr, Eid al-Adha, Tashreeq 11-13 Dhul-Hijjah). Attribuut `reason` toont de grond.
-- `binary_sensor.nida_currently_fasting` — `on` zodra de switch hieronder aan staat én we in het Fajr→Maghrib venster zitten. Schakelt automatisch uit bij Maghrib.
+### Pre-adhan reminder volume-sprong (échte fix dit keer)
+v1.1.5 claimde dat de hoorbare volume-sprong tussen chime en TTS was opgelost, maar de nieuwe single-snapshot/restore code stond in een bestand dat door niets werd geïmporteerd — `media/reminder.py` (de live versie) bevatte nog steeds het oude tweede-cyclus pad. v1.1.6 mergt de fix in op de juiste locatie en verwijdert de orphaned top-level reminder.py.
 
-**Eén nieuwe switch:**
-- `switch.nida_intend_to_fast` — gebruikersintentie "ik vast vandaag". State wordt bewaard over HA-restarts via `RestoreEntity`. Handig om een dagelijkse automation te koppelen ("Reset om 03:00", "Zet aan tijdens hele Ramadan").
+### Suhoor alarm speelde geen geluid bij verse installaties
+Het config_flow schreef opties weg onder de keys `suhoor_alarm_enabled` / `suhoor_alarm_minutes` / `suhoor_alarm_sound` / `suhoor_alarm_volume`, terwijl `media/suhoor.py` en `services.py` de oude keys `suhoor_enabled` / `suhoor_minutes` / `suhoor_sound` / `suhoor_volume` lazen. Effect: de UI toonde een geselecteerde sound, maar runtime kreeg een lege string en sloeg het afspelen stilletjes over. Reads accepteren nu beide key-formaten met de nieuwe vorm als primair en de oude als fallback voor bestaande installaties.
 
-De vasten-logica zit in een pure `fasting.py` module zonder HA-imports, dus volledig unit-testbaar. Edge cases die afhankelijk zijn van persoonlijke status (pelgrim op Arafah, offer op Tashreeq) worden in de attribuut-tekst gemeld in plaats van automatisch uitgesloten.
+### `binary_sensor.nida_currently_fasting` bleef tot 60s achterlopen na restart
+De fasting-intent switch wordt via `RestoreEntity` hersteld na herstart, maar de coordinator kreeg geen `async_update_listeners()` ping. De gekoppelde `currently_fasting` sensor bleef daardoor `off` tot zijn eigen minuten-tick een keer vuurde. Nu update de sensor onmiddellijk.
 
-### 🔊 Volume fix in pre-adhan reminder
-- **Volume-sprong tussen chime en TTS opgelost** — chime en TTS draaien nu binnen één snapshot/set/restore cyclus. De oude implementatie gebruikte twee aparte cycli waarbij de restore-task van de chime midden in de TTS vuurde, hoorbaar als een plotselinge volume-sprong tijdens de aankondiging.
-- **Restore-marge verlengd** — extra `RESTORE_TAIL_SECONDS` na laatste audio voorkomt dat het oorspronkelijke volume terugkeert vóór de speaker klaar is met afspelen.
+### Stale prayer times in het uur na middernacht
+De coordinator polde elke 12 uur en gebruikte `date.today()` om de API-URL te bouwen. Tussen middernacht en de volgende reguliere refresh kon Fajr van vandaag dus nog op gisterens timestamp staan — typisch ~1 minuut afwijking, soms meer rond DST-switches. Er draait nu een extra refresh om 00:01 lokale tijd zodat `date.today()` de nieuwe dag direct meepakt.
 
-### ⚡ Performance
-- **Reminder config resolution** — de pre-adhan reminder lost zijn configuratie nu alleen op binnen het reminder-venster (~30s vóór gebed) in plaats van bij elke scheduler-tick. Minder log-spam, lagere idle-load.
+### `_parse_today` was niet DST-safe
+De fasting binary sensors parseten `"HH:MM"` strings naar lokaal datetime door `dt_util.now().tzinfo` te koppelen aan een naïeve datetime van vandaag. Op DST-overgangsdagen kunnen Fajr (vroeg) en Maghrib (laat) aan verschillende kanten van de switch liggen, waardoor één van de twee een uur verschoof. Nu via `dt_util.as_local()` dat de zoneinfo voor de exacte datum raadpleegt.
 
-### ♻️ Architectuur
-- **`__init__.py` afgeslankt naar 78 regels** — alle lifecycle-logica blijft daar, alle functionaliteit is verdeeld over `coordinator.py`, `scheduler.py`, `volume.py`, `helpers.py`, `media/*`, `notify/*`, `services.py`, `services_yaml.py`.
-- **`media/__init__.py.bak6` en `.bak7` verwijderd** — backup-files uit eerdere refactor-rondes opgeruimd.
-- **Nieuw constant `ATTR_USER_INTENDS_FAST`** in `const.py` — wordt door de switch op de coordinator gezet zodat de binary sensors niet via `hass.states` hoeven te lezen.
+### Ramadan-detectie via fragiele substring-match
+`_is_ramadan()` checkte `"Rama" in coordinator.data["data"]["date"]["hijri"]["month"]["en"]`. Werkt prima zolang Aladhan "Ramadan" blijft schrijven, maar breekt zodra ze ooit naar "Ramaḍān" of "Ramazan" overstappen. Nu via `month.number == 9` — het canonieke veld in de API.
 
-### 🛠️ Services
-- **`services.yaml` herzien** — schemas en velden bijgewerkt voor consistente UI in de Developer Tools, inclusief duidelijkere selectors en omschrijvingen voor de nieuwe vasten-services.
+## 🔒 Security & best practices
 
-### 🕌 Nida Card
-- **`nida-card.js` bijgewerkt** — kleine UI-tweaks gesynchroniseerd met de live HA-instance.
+### SSL-verificatie staat weer aan
+De coordinator zette `aiohttp.TCPConnector(ssl=False)`, wat zinloos was — `api.aladhan.com` heeft een geldig Let's Encrypt certificaat. Het uitschakelen creëerde een onnodig MITM-risico op het lokale netwerk waarop iemand timing- en Hijri-data zou kunnen manipuleren. Verwijderd.
 
-## Upgrade notes
+### Gedeelde aiohttp session
+De coordinator maakte voor elke fetch een nieuwe `aiohttp.ClientSession()` aan. Nu via `async_get_clientsession(hass)` — connection pooling, juiste lifecycle, lagere overhead. Standaardpatroon voor alle HA-integraties.
+
+## ⚡ Performance & architectuur
+
+### Echte SensorEntity voor `nida_suhoor_readable` en `nida_tarhim_readable`
+Deze sensors werden tot v1.1.5 als "ghost entities" weggeschreven via `hass.states.async_set()` direct vanuit de scheduler en de media-modules. Gevolg: ze omzeilden het entity registry, hadden geen `unique_id`, hingen niet onder het Nida device, en waren kort `unavailable` na elke restart tot de scheduler ze opnieuw plaatste.
+
+In v1.1.6 zijn het echte `SensorEntity` instances onder het Nida device:
+
+- `NidaSuhoorReadableSensor` — leest `suhoor_alarm_enabled` + `suhoor_alarm_minutes`, berekent `Fajr - X minuten`, rolt automatisch door naar morgen wanneer vandaag's tijd voorbij is.
+- `NidaTarhimReadableSensor` — cachet de tarhim MP3-duur bij setup, berekent `Fajr - duration - 10s buffer`, retourneert alleen een waarde tijdens Ramadan.
+
+Beide tikken elke minuut via `async_track_time_interval` zodat de getoonde tijd accuraat blijft over rollovers heen.
+
+### Parallelle push-notifications
+De notify-loop verstuurde naar elk target sequentieel. Bij drie of meer devices kon één traag of falend doel (offline telefoon die TLS opnieuw probeerde) de hele dispatch boven een seconde duwen. Nu via `asyncio.gather` met `return_exceptions=True` zodat één falende target de rest niet blokkeert.
+
+## ⬆️ Upgrade notes
 
 Geen handmatige acties vereist. Bij eerste laad na update:
-- De drie `binary_sensor.nida_fasting_*` entities en `switch.nida_intend_to_fast` worden automatisch aangemaakt onder het bestaande Nida apparaat.
-- De switch start in `off` — zet hem aan op een dag dat je daadwerkelijk vast als je `nida_currently_fasting` wilt laten triggeren.
-- Bestaande sensors, automations en de Nida card blijven werken zoals voorheen.
 
-**Wil je auto-reset van de intent-switch?** Dat is bewust niet in code gedaan. Voorbeeld-automation:
+- `sensor.nida_suhoor_readable` en `sensor.nida_tarhim_readable` verschijnen als echte entities onder het Nida device. Eventuele bestaande Lovelace cards die naar deze entity-IDs verwijzen blijven gewoon werken — de entity-IDs zijn bewust gelijk gebleven.
+- Bestaande automations, sensors, switches en de Nida card zijn ongewijzigd.
+- Suhoor alarms die in v1.1.5 stilletjes faalden vanwege de key-mismatch werken nu zonder dat je iets in de options-flow hoeft te wijzigen.
 
-```yaml
-trigger:
-  - platform: time
-    at: "03:00:00"
-action:
-  - service: switch.turn_off
-    target:
-      entity_id: switch.nida_intend_to_fast
+## 📦 Changelog (commits)
+
 ```
-
-Of laat 'm de hele Ramadan aan staan via een blueprint die op `binary_sensor.nida_fasting_recommended` met `fasting_type: ramadan` triggert.
+58790f3 fase 6: midnight refresh, DST-safe parsing, parallel notifications
+594981f fase 5+6: real sensors, suhoor key fix, robust Ramadan check
+aa1592b perf(coordinator): use HA shared aiohttp session
+b58e821 fix(coordinator): re-enable SSL verification
+cb9b2d4 fix(switch): notify listeners after restoring intent flag
+c78d89c fix(reminder): apply volume-jump fix in media/reminder.py (was dead code)
+```
