@@ -13,28 +13,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Define base sounds
-        run: |
-          SOUNDS="www/nida/sounds"
-          BASE_FILES=(
-            "$SOUNDS/Adhan [day] - Ahmed Saeed Al-Omrany.mp3"
-            "$SOUNDS/Adhan [day] - Amer Marei.mp3"
-            "$SOUNDS/Adhan [day] - Hafiz Fahad Shah.mp3"
-            "$SOUNDS/Adhan [fajr] - Ahmed Saeed Al-Omrany.mp3"
-            "$SOUNDS/Adhan [fajr] - Amer Marei.mp3"
-            "$SOUNDS/Adhan [fajr] - Hafiz Fahad Shah.mp3"
-            "$SOUNDS/Nida [jingle] - Announcement.mp3"
-            "$SOUNDS/Ramadan [tarhim] - Ustaz Hendra.mp3"
-          )
-          for f in "${BASE_FILES[@]}"; do
-            if [ -f "$f" ]; then
-              echo "✅ $f"
-            else
-              echo "⚠️  Niet gevonden: $f"
-            fi
-          done
-          printf '%s\n' "${BASE_FILES[@]}" > /tmp/base_sounds.txt
-      - name: Create nida.zip
+
+      - name: Create nida.zip (met standaard sounds)
         run: |
           cd custom_components/nida
           zip -r ../../nida.zip . \
@@ -42,35 +22,54 @@ jobs:
             --exclude "__pycache__/*" \
             --exclude ".DS_Store"
           cd ../..
+
+          # Standaard sounds: 1x fajr, 1x day, 1x jingle
+          SOUNDS="www/nida/sounds"
+          DEFAULTS=(
+            "$SOUNDS/adhan_fajr_ahmed_saeed_al_omrany.mp3"
+            "$SOUNDS/adhan_day_ahmed_saeed_al_omrany.mp3"
+            "$SOUNDS/nadir_jingle_annoucment.mp3"
+          )
+          for f in "${DEFAULTS[@]}"; do
+            if [ -f "$f" ]; then
+              zip nida.zip "$f"
+              echo "✅ Toegevoegd: $f"
+            else
+              echo "⚠️  Niet gevonden: $f"
+            fi
+          done
+
           if [ -f "www/nida/nida-card.js" ]; then
             zip nida.zip www/nida/nida-card.js
             echo "✅ www/nida/nida-card.js toegevoegd"
           else
             echo "⚠️  www/nida/nida-card.js niet gevonden"
           fi
-          while IFS= read -r f; do
-            [ -f "$f" ] && zip nida.zip "$f" && echo "➕ $f"
-          done < /tmp/base_sounds.txt
+
           echo "=== nida.zip inhoud ==="
           unzip -l nida.zip
+          echo "=== nida.zip grootte ==="
+          du -sh nida.zip
+
       - name: Create extension packs
         run: |
           SOUNDS="www/nida/sounds"
-          mapfile -t ADHAN < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "\[(day|fajr)\]" | sort)
+          mapfile -t ADHAN < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "adhan_(fajr|day)_" | sort)
           if [ ${#ADHAN[@]} -gt 0 ]; then
             zip pack-adhan.zip "${ADHAN[@]}"
             echo "✅ pack-adhan.zip: ${#ADHAN[@]} bestanden"
           fi
-          mapfile -t RAMADAN < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "\[(salawat|suhoor)\]" | sort)
+          mapfile -t RAMADAN < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "ramadan_(tarhim|suhoor)_" | sort)
           if [ ${#RAMADAN[@]} -gt 0 ]; then
             zip pack-ramadan.zip "${RAMADAN[@]}"
             echo "✅ pack-ramadan.zip: ${#RAMADAN[@]} bestanden"
           fi
-          mapfile -t JINGLES < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "\[jingle\]" | sort)
+          mapfile -t JINGLES < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "(nadir|nida)_jingle_" | sort)
           if [ ${#JINGLES[@]} -gt 0 ]; then
             zip pack-jingles.zip "${JINGLES[@]}"
             echo "✅ pack-jingles.zip: ${#JINGLES[@]} bestanden"
           fi
+
       - name: Upload to release
         uses: softprops/action-gh-release@v1
         with:
