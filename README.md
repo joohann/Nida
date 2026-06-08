@@ -136,13 +136,11 @@ Place your MP3 files in the `sounds/` folder of the integration. Files are autom
 **Recommended naming:**
 ```
 sounds/
-  01-adhan-fajr.mp3
-  02-adhan-fajr.mp3
-  01-adhan-day.mp3
-  02-adhan-day.mp3
-  01-tarhim.mp3
-  01-suhoor.mp3
-  01-jingle.mp3
+  adhan_fajr_ahmed_saeed_al-omrany.mp3
+  adhan_day_ahmed_saeed_al-omrany.mp3
+  ramadan_tarhim_ustaz_hendra.mp3
+  ramadan_suhoor_ustaz_hendra.mp3
+  nadir_jingle_annoucment.mp3
 ```
 
 Sound files are automatically copied to `/www/nida/sounds/` on installation so media players can access them without authentication issues.
@@ -190,7 +188,7 @@ Play an adhan as a preview.
 ```yaml
 service: nida.preview_adhan
 data:
-  sound: 01-adhan-day.mp3
+  sound: adhan_day_ahmed_saeed_al-omrany.mp3
   speaker: media_player.living_room
   volume: 0.5
 ```
@@ -212,7 +210,7 @@ Test the tarhim recitation.
 ```yaml
 service: nida.test_tarhim
 data:
-  sound: 01-tarhim.mp3
+  sound: nadir_jingle_annoucment.mp3
   speaker: media_player.bedroom
   volume: 0.4
 ```

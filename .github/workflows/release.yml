@@ -26,8 +26,8 @@ jobs:
           # Standaard sounds: 1x fajr, 1x day, 1x jingle
           SOUNDS="www/nida/sounds"
           DEFAULTS=(
-            "$SOUNDS/adhan_fajr_ahmed_saeed_al_omrany.mp3"
-            "$SOUNDS/adhan_day_ahmed_saeed_al_omrany.mp3"
+            "$SOUNDS/adhan_fajr_ahmed_saeed_al-omrany.mp3"
+            "$SOUNDS/adhan_day_ahmed_saeed_al-omrany.mp3"
             "$SOUNDS/nadir_jingle_annoucment.mp3"
           )
           for f in "${DEFAULTS[@]}"; do

@@ -128,7 +128,7 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="fajr",
             data_schema=vol.Schema({
-                vol.Required(CONF_FAJR_SOUND, default=next(iter(get_fajr_sounds()), "01-adhan-fajr.mp3")): _make_select(get_fajr_sounds()),
+                vol.Required(CONF_FAJR_SOUND, default=next(iter(get_fajr_sounds()), "adhan_fajr_ahmed_saeed_al-omrany.mp3")): _make_select(get_fajr_sounds()),
                 vol.Required(CONF_FAJR_SPEAKER, default=["media_player.adhan_speakers"]): _speaker_sel(),
                 vol.Required(CONF_FAJR_VOLUME, default=10): _volume_sel(),
             }),
@@ -141,7 +141,7 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="adhan",
             data_schema=vol.Schema({
-                vol.Required(CONF_DAY_SOUND, default=next(iter(get_day_sounds()), "01-adhan.mp3")): _make_select(get_day_sounds()),
+                vol.Required(CONF_DAY_SOUND, default=next(iter(get_day_sounds()), "adhan_day_ahmed_saeed_al-omrany.mp3")): _make_select(get_day_sounds()),
                 vol.Required(CONF_DAY_SPEAKER, default=["media_player.adhan_speakers"]): _speaker_sel(),
                 vol.Required(CONF_DAY_VOLUME, default=20): _volume_sel(),
                 vol.Optional("night_volume_enabled", default=False): bool,
@@ -187,7 +187,7 @@ class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional("suhoor_alarm_volume", default=10): _volume_sel(),
                 vol.Optional("suhoor_scene", default=""): _scene_sel(),
                 vol.Optional(CONF_TARHIM_ENABLED, default=True): bool,
-                vol.Optional(CONF_TARHIM_SOUND, default=next(iter(get_tarhim_sounds()), "01-tarhim.mp3")): _make_select(get_tarhim_sounds()),
+                vol.Optional(CONF_TARHIM_SOUND, default=next(iter(get_tarhim_sounds()), "nadir_jingle_annoucment.mp3")): _make_select(get_tarhim_sounds()),
                 vol.Optional(CONF_TARHIM_SPEAKER, default=["media_player.adhan_speakers"]): _speaker_sel(),
                 vol.Optional(CONF_TARHIM_VOLUME, default=10): _volume_sel(),
             }),
@@ -260,7 +260,7 @@ class PrayerTimesOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="fajr",
             data_schema=vol.Schema({
-                vol.Required(CONF_FAJR_SOUND, default=self._get(CONF_FAJR_SOUND, next(iter(get_fajr_sounds()), "01-adhan-fajr.mp3"))): _make_select(get_fajr_sounds()),
+                vol.Required(CONF_FAJR_SOUND, default=self._get(CONF_FAJR_SOUND, next(iter(get_fajr_sounds()), "adhan_fajr_ahmed_saeed_al-omrany.mp3"))): _make_select(get_fajr_sounds()),
                 vol.Required(CONF_FAJR_SPEAKER, default=self._get_list(CONF_FAJR_SPEAKER, ["media_player.adhan_speakers"])): _speaker_sel(),
                 vol.Required(CONF_FAJR_VOLUME, default=self._get_vol(CONF_FAJR_VOLUME, 30)): _volume_sel(),
             }),
@@ -273,7 +273,7 @@ class PrayerTimesOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="adhan",
             data_schema=vol.Schema({
-                vol.Required(CONF_DAY_SOUND, default=self._get(CONF_DAY_SOUND, next(iter(get_day_sounds()), "01-adhan.mp3"))): _make_select(get_day_sounds()),
+                vol.Required(CONF_DAY_SOUND, default=self._get(CONF_DAY_SOUND, next(iter(get_day_sounds()), "adhan_day_ahmed_saeed_al-omrany.mp3"))): _make_select(get_day_sounds()),
                 vol.Required(CONF_DAY_SPEAKER, default=self._get_list(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"])): _speaker_sel(),
                 vol.Required(CONF_DAY_VOLUME, default=self._get_vol(CONF_DAY_VOLUME, 50)): _volume_sel(),
                 vol.Optional("night_volume_enabled", default=self._get("night_volume_enabled", False)): bool,
@@ -320,7 +320,7 @@ class PrayerTimesOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional("suhoor_alarm_volume", default=self._get_vol("suhoor_alarm_volume", 10)): _volume_sel(),
                 vol.Optional("suhoor_scene", default=self._get("suhoor_scene", "")): _scene_sel(),
                 vol.Optional(CONF_TARHIM_ENABLED, default=self._get(CONF_TARHIM_ENABLED, True)): bool,
-                vol.Optional(CONF_TARHIM_SOUND, default=self._get(CONF_TARHIM_SOUND, next(iter(get_tarhim_sounds()), "01-tarhim.mp3"))): _make_select(get_tarhim_sounds()),
+                vol.Optional(CONF_TARHIM_SOUND, default=self._get(CONF_TARHIM_SOUND, next(iter(get_tarhim_sounds()), "nadir_jingle_annoucment.mp3"))): _make_select(get_tarhim_sounds()),
                 vol.Optional(CONF_TARHIM_SPEAKER, default=self._get_list(CONF_TARHIM_SPEAKER, ["media_player.adhan_speakers"])): _speaker_sel(),
                 vol.Optional(CONF_TARHIM_VOLUME, default=self._get_vol(CONF_TARHIM_VOLUME, 40)): _volume_sel(),
             }),
