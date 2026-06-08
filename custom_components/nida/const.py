@@ -147,7 +147,19 @@ def _load_sounds_cache() -> dict:
                 continue
             label = _format_sound_label(f)
             fl = f.lower()
-            if "fajr" in fl:
+            # New underscore format (checked first)
+            if fl.startswith("adhan_fajr_"):
+                result["fajr"][f] = label
+            elif fl.startswith("adhan_day_"):
+                result["day"][f] = label
+            elif fl.startswith("ramadan_tarhim_"):
+                result["tarhim"][f] = label
+            elif fl.startswith("ramadan_suhoor_"):
+                result["suhoor"][f] = label
+            elif fl.startswith("nadir_jingle_") or fl.startswith("nida_jingle_"):
+                result["jingle"][f] = label
+            # Legacy bracket format
+            elif "fajr" in fl:
                 result["fajr"][f] = label
             elif "tarhim" in fl:
                 result["tarhim"][f] = label
@@ -171,15 +183,25 @@ async def async_load_sounds_cache(hass) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Audio filename parser (Nida bracket-tag formaat)
+# Audio filename parser (Nida underscore format + legacy bracket-tag format)
 # ---------------------------------------------------------------------------
 import re as _re
 
-_AUDIO_RE = _re.compile(
+# New underscore format: adhan_fajr_<author>.mp3 / ramadan_tarhim_<author>.mp3
+_AUDIO_RE_NEW = _re.compile(
+    r"^(?P<category>adhan|ramadan|nadir|nida)"
+    r"_(?P<tag>fajr|day|tarhim|suhoor|jingle)"
+    r"_(?P<author>.+?)"
+    r"\.mp3$",
+    _re.IGNORECASE,
+)
+
+# Legacy bracket format: 'Adhan [fajr] - Mehdi Yarrahi.mp3'
+_AUDIO_RE_LEGACY = _re.compile(
     r"^(?P<prefix>[A-Za-z]+)"      # "Adhan" / "Ramadan" / "Nadir"
-    r"\s*\[(?P<tag>[^\]]+)\]"    # "[fajr]" / "[day]" / "[tarhim]"
+    r"\s*\[(?P<tag>[^\]]+)\]"      # "[fajr]" / "[day]" / "[tarhim]"
     r"\s*-\s*"                     # " - "
-    r"(?P<author>.+?)"              # "Mehdi Yarrahi"
+    r"(?P<author>.+?)"             # "Mehdi Yarrahi"
     r"\.mp3$",                     # ".mp3"
     _re.IGNORECASE,
 )
@@ -199,10 +221,10 @@ def parse_audio_filename(filename: str) -> "dict | None":
     """
     Parseer een Nida MP3-bestandsnaam naar metadata.
 
-    Voorbeeld:
-        parse_audio_filename("Adhan [fajr] - Mehdi Yarrahi.mp3")
+    Supports new underscore format:
+        parse_audio_filename("adhan_fajr_mehdi_yarrahi.mp3")
         → {
-            "filename":     "Adhan [fajr] - Mehdi Yarrahi.mp3",
+            "filename":     "adhan_fajr_mehdi_yarrahi.mp3",
             "category":     "adhan",
             "tag":          "fajr",
             "author":       "Mehdi Yarrahi",
@@ -210,11 +232,35 @@ def parse_audio_filename(filename: str) -> "dict | None":
             "display_name": "Fajr - Mehdi Yarrahi",
           }
 
+    And legacy bracket format:
+        parse_audio_filename("Adhan [fajr] - Mehdi Yarrahi.mp3")
+        → same result
+
     Returns None voor niet-mp3 bestanden of onbekend formaat.
     """
     if not filename.lower().endswith(".mp3"):
         return None
-    m = _AUDIO_RE.match(filename.strip())
+
+    # Try new underscore format first
+    m = _AUDIO_RE_NEW.match(filename.strip())
+    if m:
+        category = m.group("category").lower()
+        tag      = m.group("tag").strip().lower()
+        author   = m.group("author").replace("_", " ").replace("-", " ").title()
+        gui_label    = _TAG_LABELS.get(tag, tag.capitalize())
+        display_name = f"{gui_label} - {author}"
+        prayer_type  = "fajr" if tag == "fajr" else "other"
+        return {
+            "filename":     filename,
+            "category":     category,
+            "tag":          tag,
+            "author":       author,
+            "prayer_type":  prayer_type,
+            "display_name": display_name,
+        }
+
+    # Fall back to legacy bracket format
+    m = _AUDIO_RE_LEGACY.match(filename.strip())
     if not m:
         return None
 
@@ -228,11 +274,11 @@ def parse_audio_filename(filename: str) -> "dict | None":
 
     return {
         "filename":     filename,
-        "category":     prefix,       # "adhan" | "ramadan" | "nadir"
-        "tag":          tag,           # "fajr" | "day" | "tarhim" | …
+        "category":     prefix,
+        "tag":          tag,
         "author":       author,
-        "prayer_type":  prayer_type,   # "fajr" | "other"
-        "display_name": display_name,  # GUI label
+        "prayer_type":  prayer_type,
+        "display_name": display_name,
     }
 
 

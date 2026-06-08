@@ -24,22 +24,44 @@ _LOGGER = logging.getLogger(__name__)
 def _label_for(filename: str) -> str:
     """Maak een leesbaar label van een Nida MP3-filename.
 
-    'Adhan [day] - Ahmed Saeed Al-Omrany.mp3' → 'Ahmed Saeed Al-Omrany'
-    Voor onbekende formaten: filename zonder extensie en streepjes.
+    New format: 'adhan_fajr_ahmed_saeed_al-omrany.mp3' → 'Ahmed Saeed Al-Omrany'
+    Legacy format: 'Adhan [day] - Ahmed Saeed Al-Omrany.mp3' → 'Ahmed Saeed Al-Omrany'
+    Voor onbekende formaten: filename zonder extensie en underscores/streepjes.
     """
     name = filename.replace(".mp3", "")
+    # New underscore format: adhan_fajr_<author> or nadir_jingle_<author>
+    m = re.match(r"^(?:adhan_(?:fajr|day)|ramadan_tarhim|ramadan_suhoor|nadir_jingle|nida_jingle)_(.+)$", name, re.IGNORECASE)
+    if m:
+        author = m.group(1).replace("_", " ").replace("-", " ")
+        return author.title()
+    # Legacy bracket format: 'Adhan [day] - Author'
     m = re.match(r"^.+?\[.+?\]\s*-\s*(.+)$", name)
     if m:
         return m.group(1).strip()
-    return name.replace("-", " ").title()
+    return name.replace("_", " ").replace("-", " ").title()
 
 
 def _categorize_sound(filename: str) -> str | None:
     """Bepaal in welke categorie een sound thuishoort.
 
+    Supports new underscore format (adhan_fajr_*, adhan_day_*, ramadan_tarhim_*,
+    nadir_jingle_*, nida_jingle_*, ramadan_suhoor_*) and legacy bracket format.
+
     Returns: 'fajr' | 'day' | 'tarhim' | 'suhoor' | 'jingle' | None
     """
     fl = filename.lower()
+    # New underscore format (checked first)
+    if fl.startswith("adhan_fajr_"):
+        return "fajr"
+    if fl.startswith("adhan_day_"):
+        return "day"
+    if fl.startswith("ramadan_tarhim_"):
+        return "tarhim"
+    if fl.startswith("ramadan_suhoor_"):
+        return "suhoor"
+    if fl.startswith("nadir_jingle_") or fl.startswith("nida_jingle_"):
+        return "jingle"
+    # Legacy bracket format
     if "[fajr]" in fl:
         return "fajr"
     if "[tarhim]" in fl or "tarhim" in fl:
