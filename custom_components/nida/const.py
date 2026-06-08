@@ -28,15 +28,11 @@ PLAY_METHODS = {
 }
 
 FAJR_SOUNDS = {
-    "01-01-adhan-fajr.mp3": "Adhan Fajr 1",
-    "02-01-adhan-fajr.mp3": "Adhan Fajr 2",
-    "03-01-adhan-fajr.mp3": "Adhan Fajr 3",
+    "adhan_fajr_ahmed_saeed_al-omrany.mp3": "Fajr - Ahmed Saeed Al-Omrany",
 }
 
 DAY_SOUNDS = {
-    "01-02-adhan-day.mp3": "Adhan Day 1",
-    "02-02-adhan-day.mp3": "Adhan Day 2",
-    "03-02-adhan-day.mp3": "Adhan Day 3",
+    "adhan_day_ahmed_saeed_al-omrany.mp3": "Adhan - Ahmed Saeed Al-Omrany",
 }
 
 CALCULATION_METHODS = {
@@ -65,7 +61,7 @@ CONF_TARHIM_SOUND = "tarhim_sound"
 CONF_TARHIM_OFFSET = "tarhim_offset"
 
 TARHIM_SOUNDS = {
-    "tarhim.mp3": "Tarhim 1",
+    "nadir_jingle_annoucment.mp3": "Jingle - Nadir Announcement",
 }
 
 # Pad naar de sounds map (www/sounds/ in de repo = /config/www/sounds/ op HA)
@@ -308,15 +304,15 @@ def _build_sound_options_from_dir(sounds_dir: str, category: str,
 
 def get_fajr_sounds() -> dict:
     c = _load_sounds_cache()
-    return c["fajr"] if c["fajr"] else {"01-adhan-fajr.mp3": "Adhan Fajr 01"}
+    return c["fajr"] if c["fajr"] else {"adhan_fajr_ahmed_saeed_al-omrany.mp3": "Fajr - Ahmed Saeed Al-Omrany"}
 
 def get_day_sounds() -> dict:
     c = _load_sounds_cache()
-    return c["day"] if c["day"] else {"01-adhan.mp3": "Adhan 01"}
+    return c["day"] if c["day"] else {"adhan_day_ahmed_saeed_al-omrany.mp3": "Adhan - Ahmed Saeed Al-Omrany"}
 
 def get_tarhim_sounds() -> dict:
     c = _load_sounds_cache()
-    return c["tarhim"] if c["tarhim"] else {"01-tarhim.mp3": "Tarhim 01"}
+    return c["tarhim"] if c["tarhim"] else {"nadir_jingle_annoucment.mp3": "Jingle - Nadir Announcement"}
 
 def get_jingle_sounds() -> dict:
     c = _load_sounds_cache()
@@ -324,7 +320,7 @@ def get_jingle_sounds() -> dict:
 
 def get_suhoor_sounds() -> dict:
     c = _load_sounds_cache()
-    return c["suhoor"] if c["suhoor"] else {"01-suhoor.mp3": "Suhoor 01"}
+    return c["suhoor"] if c["suhoor"] else {"nadir_jingle_annoucment.mp3": "Jingle - Nadir Announcement"}
 
 # Load cache at import time (outside async loop)
 try:
