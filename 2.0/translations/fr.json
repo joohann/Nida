@@ -1,0 +1,65 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nida",
+        "description": "Ajoutez l'intégration Nida. Tous les paramètres sont gérés depuis le panneau Nida dans la barre latérale."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Une seule instance de Nida peut être configurée."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "fajr": {
+        "name": "Fajr"
+      },
+      "dhuhr": {
+        "name": "Dhuhr"
+      },
+      "asr": {
+        "name": "Asr"
+      },
+      "maghrib": {
+        "name": "Maghrib"
+      },
+      "isha": {
+        "name": "Isha"
+      },
+      "fajr_readable": {
+        "name": "Fajr (lisible)"
+      },
+      "dhuhr_readable": {
+        "name": "Dhuhr (lisible)"
+      },
+      "asr_readable": {
+        "name": "Asr (lisible)"
+      },
+      "maghrib_readable": {
+        "name": "Maghrib (lisible)"
+      },
+      "isha_readable": {
+        "name": "Isha (lisible)"
+      },
+      "hijri_date": {
+        "name": "Date hégirienne"
+      },
+      "hijri_day": {
+        "name": "Jour hégirien"
+      },
+      "hijri_month": {
+        "name": "Mois hégirien"
+      },
+      "hijri_year": {
+        "name": "Année hégirienne"
+      },
+      "hijri_holiday": {
+        "name": "Fête hégirienne"
+      },
+      "next_prayer": {
+        "name": "Prochaine prière"
+      }
+    }
+  }
+}

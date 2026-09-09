@@ -1,230 +1,65 @@
 {
   "config": {
     "step": {
-      "intro": {
-        "title": "Nida — Waktu Solat Islam",
-        "description": "Selamat datang ke Nida — teman solat Islam anda untuk Home Assistant. 🕌\n\nSemasa persediaan anda akan mengkonfigurasi:\n\n1. 📍 Lokasi & kaedah pengiraan\n2. 🔔 Peringatan pra-azan (5 atau 10 minit sebelumnya)\n3. 🕋 Pembesar suara & bunyi azan Fajr\n4. 📢 Pembesar suara & bunyi azan harian\n5. 📱 Pemberitahuan (pilihan)\n6. 🌙 Tetapan Ramadan — tarhim & penggera sahur (pilihan)\n\nTekan Hantar untuk bermula."
-      },
-      "location": {
-        "title": "Lokasi & Kaedah Pengiraan",
-        "description": "Masukkan bandar dan negara anda untuk mendapatkan waktu solat yang tepat.",
-        "data": {
-          "city": "Bandar",
-          "country": "Negara",
-          "method": "Kaedah Pengiraan"
-        }
-      },
-      "reminders": {
-        "title": "Peringatan Sebelum Azan",
-        "description": "Mainkan bunyi dan mesej sebelum setiap solat. Gunakan [minutes] dan [prayer] dalam mesej anda.",
-        "data": {
-          "reminder_1_enabled": "Peringatan pertama",
-          "reminder_1_minutes": "Minit sebelum azan",
-          "reminder_1_sound": "Bunyi",
-          "reminder_1_lang": "Bahasa",
-          "reminder_1_tts": "Mesej",
-          "reminder_2_enabled": "Peringatan kedua",
-          "reminder_2_minutes": "Minit sebelum azan",
-          "reminder_2_sound": "Bunyi",
-          "reminder_2_lang": "Bahasa",
-          "reminder_2_tts": "Mesej"
-        }
-      },
-      "fajr": {
-        "title": "Azan Subuh",
-        "description": "Konfigurasi azan Subuh — solat pertama pada hari.",
-        "data": {
-          "fajr_sound": "Bunyi Subuh",
-          "fajr_speaker": "Pembesar suara",
-          "fajr_volume": "Kelantangan"
-        }
-      },
-      "adhan": {
-        "title": "Tetapan Azan",
-        "description": "Konfigurasi azan untuk semua solat.",
-        "data": {
-          "day_sound": "Bunyi Azan",
-          "day_speaker": "Pembesar suara",
-          "day_volume": "Kelantangan siang",
-          "night_volume_enabled": "Kelantangan rendah pada malam",
-          "night_volume": "Kelantangan malam",
-          "night_start_hour": "Malam bermula pada (jam)"
-        },
-        "data_description": {
-          "open_sensor_enabled": "Kurangkan kelantangan apabila tingkap atau pintu terbuka",
-          "open_sensor_entities": "Pilih satu atau lebih penderia tingkap/pintu. Jika mana-mana terbuka, kelantangan yang dikurangkan akan digunakan.",
-          "open_sensor_volume": "Kelantangan (%) yang digunakan apabila tingkap atau pintu terbuka"
-        }
-      },
-      "notifications": {
-        "title": "Pemberitahuan",
-        "description": "Hantar pemberitahuan pada setiap waktu solat.",
-        "data": {
-          "notify_on_prayer": "Beritahu pada setiap solat",
-          "notify_target": "Perkhidmatan pemberitahuan",
-          "notify_title": "Tajuk",
-          "notify_message": "Mesej (gunakan [prayer])"
-        }
-      },
-      "ramadan": {
-        "title": "Ramadan 🌙",
-        "description": "Ciri istimewa untuk bulan Ramadan yang mulia.",
-        "data": {
-          "suhoor_alarm_enabled": "Aktifkan penggera Sahur",
-          "suhoor_alarm_minutes": "Minit sebelum Subuh",
-          "suhoor_alarm_sound": "Bunyi Sahur",
-          "suhoor_alarm_volume": "Kelantangan Sahur",
-          "tarhim_enabled": "Aktifkan Tarhim sebelum Subuh",
-          "tarhim_sound": "Bunyi Tarhim",
-          "tarhim_speaker": "Pembesar suara",
-          "tarhim_volume": "Kelantangan",
-          "suhoor_scene": "Babak semasa penggera Suhoor"
-        }
+      "user": {
+        "title": "Nida",
+        "description": "Tambah integrasi Nida. Semua tetapan diurus melalui panel Nida di bar sisi."
       }
-    },
-    "error": {
-      "cannot_connect": "Tidak dapat sambung ke AlAdhan API",
-      "invalid_location": "Bandar atau negara tidak sah"
     },
     "abort": {
-      "already_configured": "Nida sudah dikonfigurasi"
+      "single_instance_allowed": "Hanya satu contoh Nida boleh dikonfigurasikan."
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Lokasi & Kaedah Pengiraan",
-        "data": {
-          "city": "Bandar",
-          "country": "Negara",
-          "method": "Kaedah Pengiraan"
-        }
-      },
-      "reminders": {
-        "title": "Peringatan Sebelum Azan",
-        "data": {
-          "reminder_1_enabled": "Peringatan pertama",
-          "reminder_1_minutes": "Minit sebelum azan",
-          "reminder_1_sound": "Bunyi",
-          "reminder_1_lang": "Bahasa",
-          "reminder_1_tts": "Mesej",
-          "reminder_2_enabled": "Peringatan kedua",
-          "reminder_2_minutes": "Minit sebelum azan",
-          "reminder_2_sound": "Bunyi",
-          "reminder_2_lang": "Bahasa",
-          "reminder_2_tts": "Mesej"
-        }
-      },
+  "entity": {
+    "sensor": {
       "fajr": {
-        "title": "Azan Subuh",
-        "data": {
-          "fajr_sound": "Bunyi Subuh",
-          "fajr_speaker": "Pembesar suara",
-          "fajr_volume": "Kelantangan"
-        }
+        "name": "Subuh"
       },
-      "adhan": {
-        "title": "Tetapan Azan",
-        "data": {
-          "day_sound": "Bunyi Azan",
-          "day_speaker": "Pembesar suara",
-          "day_volume": "Kelantangan siang",
-          "night_volume_enabled": "Kelantangan rendah malam",
-          "night_volume": "Kelantangan malam",
-          "night_start_hour": "Malam bermula"
-        }
+      "dhuhr": {
+        "name": "Zohor"
       },
-      "notifications": {
-        "title": "Pemberitahuan",
-        "data": {
-          "notify_on_prayer": "Beritahu setiap solat",
-          "notify_target": "Perkhidmatan",
-          "notify_title": "Tajuk",
-          "notify_message": "Mesej"
-        }
+      "asr": {
+        "name": "Asar"
       },
-      "ramadan": {
-        "title": "Ramadan 🌙",
-        "data": {
-          "suhoor_alarm_enabled": "Penggera Sahur",
-          "suhoor_alarm_minutes": "Minit sebelum Subuh",
-          "suhoor_alarm_sound": "Bunyi Sahur",
-          "suhoor_alarm_volume": "Kelantangan",
-          "tarhim_enabled": "Tarhim",
-          "tarhim_sound": "Bunyi Tarhim",
-          "tarhim_speaker": "Pembesar suara",
-          "tarhim_volume": "Kelantangan",
-          "suhoor_scene": "Babak semasa penggera Suhoor"
-        }
+      "maghrib": {
+        "name": "Maghrib"
+      },
+      "isha": {
+        "name": "Isyak"
+      },
+      "fajr_readable": {
+        "name": "Subuh (mudah dibaca)"
+      },
+      "dhuhr_readable": {
+        "name": "Zohor (mudah dibaca)"
+      },
+      "asr_readable": {
+        "name": "Asar (mudah dibaca)"
+      },
+      "maghrib_readable": {
+        "name": "Maghrib (mudah dibaca)"
+      },
+      "isha_readable": {
+        "name": "Isyak (mudah dibaca)"
+      },
+      "hijri_date": {
+        "name": "Tarikh Hijri"
+      },
+      "hijri_day": {
+        "name": "Hari Hijri"
+      },
+      "hijri_month": {
+        "name": "Bulan Hijri"
+      },
+      "hijri_year": {
+        "name": "Tahun Hijri"
+      },
+      "hijri_holiday": {
+        "name": "Perayaan Hijri"
+      },
+      "next_prayer": {
+        "name": "Solat seterusnya"
       }
-    }
-  },
-  "services": {
-    "common": {
-      "fields": {
-        "speaker": {
-          "name": "Pembesar Suara",
-          "description": "Pembesar suara mana untuk dimainkan?"
-        },
-        "volume": {
-          "name": "Kelantangan",
-          "description": "Kelantangan (0.0 - 1.0)"
-        },
-        "prayer": {
-          "name": "Solat",
-          "description": "Solat yang mana?"
-        }
-      }
-    },
-    "preview_adhan": {
-      "name": "Pratonton Azan",
-      "description": "Mainkan azan sebagai pratonton",
-      "fields": {
-        "sound": {
-          "name": "Bunyi",
-          "description": "Azan mana yang anda mahu mainkan?"
-        },
-        "speaker": {
-          "name": "Pembesar Suara",
-          "description": "Pembesar suara mana untuk dimainkan?"
-        }
-      }
-    },
-    "test_prayer": {
-      "name": "Uji Azan Solat",
-      "description": "Uji azan untuk solat tertentu"
-    },
-    "test_tarhim": {
-      "name": "Uji Tarhim",
-      "description": "Uji bacaan tarhim",
-      "fields": {
-        "sound": {
-          "name": "Bunyi Tarhim",
-          "description": "Tarhim mana yang anda mahu mainkan?"
-        },
-        "speaker": {
-          "name": "Pembesar Suara",
-          "description": "Pembesar suara mana untuk dimainkan?"
-        }
-      }
-    },
-    "test_reminder": {
-      "name": "Uji Peringatan Pra-Azan (Uji Tadkir)",
-      "description": "Uji peringatan sebelum solat",
-      "fields": {
-        "reminder": {
-          "name": "Peringatan",
-          "description": "Peringatan mana yang hendak diuji?"
-        }
-      }
-    },
-    "test_notification": {
-      "name": "Uji Notifikasi",
-      "description": "Uji notifikasi waktu solat"
-    },
-    "test_suhoor": {
-      "name": "Uji Penggera Sahur",
-      "description": "Uji penggera sahur (Ramadan)"
     }
   }
 }

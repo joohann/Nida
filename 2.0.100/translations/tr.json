@@ -1,0 +1,65 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nida",
+        "description": "Nida entegrasyonunu ekleyin. Tüm ayarlar kenar çubuğundaki Nida panelinden yönetilir."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Yalnızca bir Nida yapılandırılabilir."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "fajr": {
+        "name": "İmsak"
+      },
+      "dhuhr": {
+        "name": "Öğle"
+      },
+      "asr": {
+        "name": "İkindi"
+      },
+      "maghrib": {
+        "name": "Akşam"
+      },
+      "isha": {
+        "name": "Yatsı"
+      },
+      "fajr_readable": {
+        "name": "İmsak (okunabilir)"
+      },
+      "dhuhr_readable": {
+        "name": "Öğle (okunabilir)"
+      },
+      "asr_readable": {
+        "name": "İkindi (okunabilir)"
+      },
+      "maghrib_readable": {
+        "name": "Akşam (okunabilir)"
+      },
+      "isha_readable": {
+        "name": "Yatsı (okunabilir)"
+      },
+      "hijri_date": {
+        "name": "Hicri tarih"
+      },
+      "hijri_day": {
+        "name": "Hicri gün"
+      },
+      "hijri_month": {
+        "name": "Hicri ay"
+      },
+      "hijri_year": {
+        "name": "Hicri yıl"
+      },
+      "hijri_holiday": {
+        "name": "Hicri bayram"
+      },
+      "next_prayer": {
+        "name": "Sonraki namaz"
+      }
+    }
+  }
+}

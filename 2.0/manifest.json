@@ -1,0 +1,21 @@
+{
+  "domain": "nida",
+  "name": "Nida",
+  "codeowners": [
+    "@joohann"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "network",
+    "frontend",
+    "panel_custom"
+  ],
+  "documentation": "https://github.com/joohann/Nida",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/joohann/Nida/issues",
+  "loggers": [
+    "nida"
+  ],
+  "requirements": [],
+  "version": "2.0.3"
+}

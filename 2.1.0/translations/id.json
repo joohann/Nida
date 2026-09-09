@@ -1,0 +1,65 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nida",
+        "description": "Tambahkan integrasi Nida. Semua pengaturan dikelola melalui panel Nida di bilah samping."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Hanya satu instans Nida yang dapat dikonfigurasi."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "fajr": {
+        "name": "Subuh"
+      },
+      "dhuhr": {
+        "name": "Zuhur"
+      },
+      "asr": {
+        "name": "Asar"
+      },
+      "maghrib": {
+        "name": "Magrib"
+      },
+      "isha": {
+        "name": "Isya"
+      },
+      "fajr_readable": {
+        "name": "Subuh (mudah dibaca)"
+      },
+      "dhuhr_readable": {
+        "name": "Zuhur (mudah dibaca)"
+      },
+      "asr_readable": {
+        "name": "Asar (mudah dibaca)"
+      },
+      "maghrib_readable": {
+        "name": "Magrib (mudah dibaca)"
+      },
+      "isha_readable": {
+        "name": "Isya (mudah dibaca)"
+      },
+      "hijri_date": {
+        "name": "Tanggal Hijriah"
+      },
+      "hijri_day": {
+        "name": "Hari Hijriah"
+      },
+      "hijri_month": {
+        "name": "Bulan Hijriah"
+      },
+      "hijri_year": {
+        "name": "Tahun Hijriah"
+      },
+      "hijri_holiday": {
+        "name": "Hari besar Hijriah"
+      },
+      "next_prayer": {
+        "name": "Salat berikutnya"
+      }
+    }
+  }
+}

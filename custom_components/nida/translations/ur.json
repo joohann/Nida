@@ -1,230 +1,65 @@
 {
   "config": {
     "step": {
-      "intro": {
-        "title": "نداء — اسلامی نماز کے اوقات",
-        "description": "نداء میں خوش آمدید — Home Assistant کے لیے آپ کا اسلامی نماز ساتھی۔ 🕌\n\nسیٹ اپ کے دوران آپ ترتیب دیں گے:\n\n1. 📍 مقام اور حساب کا طریقہ\n2. 🔔 اذان سے پہلے یاد دہانی (5 یا 10 منٹ پہلے)\n3. 🕋 فجر اذان اسپیکر اور آواز\n4. 📢 روزانہ اذان اسپیکر اور آواز\n5. 📱 اطلاعات (اختیاری)\n6. 🌙 رمضان کی ترتیبات — تراویح اور سحری الارم (اختیاری)\n\nشروع کرنے کے لیے جمع کریں دبائیں۔"
-      },
-      "location": {
-        "title": "مقام اور حساب کا طریقہ",
-        "description": "درست نماز کے اوقات کے لیے اپنا شہر اور ملک درج کریں۔",
-        "data": {
-          "city": "شہر",
-          "country": "ملک",
-          "method": "حساب کا طریقہ"
-        }
-      },
-      "reminders": {
-        "title": "اذان سے پہلے یاددہانی",
-        "description": "ہر نماز سے پہلے آواز اور پیغام چلائیں۔ [minutes] اور [prayer] استعمال کریں۔",
-        "data": {
-          "reminder_1_enabled": "پہلی یاددہانی",
-          "reminder_1_minutes": "اذان سے منٹ پہلے",
-          "reminder_1_sound": "آواز",
-          "reminder_1_lang": "زبان",
-          "reminder_1_tts": "پیغام",
-          "reminder_2_enabled": "دوسری یاددہانی",
-          "reminder_2_minutes": "اذان سے منٹ پہلے",
-          "reminder_2_sound": "آواز",
-          "reminder_2_lang": "زبان",
-          "reminder_2_tts": "پیغام"
-        }
-      },
-      "fajr": {
-        "title": "فجر کی اذان",
-        "description": "فجر کی اذان ترتیب دیں۔",
-        "data": {
-          "fajr_sound": "فجر کی آواز",
-          "fajr_speaker": "اسپیکر",
-          "fajr_volume": "آواز کی سطح"
-        }
-      },
-      "adhan": {
-        "title": "اذان کی ترتیبات",
-        "description": "تمام نمازوں کے لیے اذان ترتیب دیں۔",
-        "data": {
-          "day_sound": "اذان کی آواز",
-          "day_speaker": "اسپیکر",
-          "day_volume": "دن کی آواز",
-          "night_volume_enabled": "رات کو کم آواز",
-          "night_volume": "رات کی آواز",
-          "night_start_hour": "رات کا آغاز (گھنٹہ)"
-        },
-        "data_description": {
-          "open_sensor_enabled": "جب کھڑکی یا دروازہ کھلا ہو تو آواز کم کریں",
-          "open_sensor_entities": "ایک یا زیادہ کھڑکی/دروازہ سینسر منتخب کریں۔ اگر کوئی بھی کھلا ہو تو کم آواز استعمال ہوگی۔",
-          "open_sensor_volume": "کھڑکی یا دروازہ کھلا ہو تو استعمال ہونے والا آواز (%)"
-        }
-      },
-      "notifications": {
-        "title": "اطلاعات",
-        "description": "ہر نماز کے وقت اطلاع بھیجیں۔",
-        "data": {
-          "notify_on_prayer": "ہر نماز پر اطلاع",
-          "notify_target": "اطلاع سروس",
-          "notify_title": "عنوان",
-          "notify_message": "پیغام ([prayer] استعمال کریں)"
-        }
-      },
-      "ramadan": {
-        "title": "رمضان 🌙",
-        "description": "رمضان المبارک کے لیے خصوصی خصوصیات۔",
-        "data": {
-          "suhoor_alarm_enabled": "سحر الارم فعال کریں",
-          "suhoor_alarm_minutes": "فجر سے منٹ پہلے",
-          "suhoor_alarm_sound": "سحر کی آواز",
-          "suhoor_alarm_volume": "سحر کی آواز کی سطح",
-          "tarhim_enabled": "فجر سے پہلے تراویح فعال کریں",
-          "tarhim_sound": "تراویح کی آواز",
-          "tarhim_speaker": "اسپیکر",
-          "tarhim_volume": "آواز کی سطح",
-          "suhoor_scene": "سحری الارم پر منظر"
-        }
+      "user": {
+        "title": "ندا",
+        "description": "ندا انضمام شامل کریں۔ تمام ترتیبات سائیڈ بار میں موجود ندا پینل سے منظم کی جاتی ہیں۔"
       }
-    },
-    "error": {
-      "cannot_connect": "AlAdhan API سے رابطہ نہیں ہو سکا",
-      "invalid_location": "غلط شہر یا ملک"
     },
     "abort": {
-      "already_configured": "نداء پہلے سے ترتیب دی گئی ہے"
+      "single_instance_allowed": "صرف ایک ندا انسٹینس ترتیب دی جا سکتی ہے۔"
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "مقام اور حساب کا طریقہ",
-        "data": {
-          "city": "شہر",
-          "country": "ملک",
-          "method": "حساب کا طریقہ"
-        }
-      },
-      "reminders": {
-        "title": "اذان سے پہلے یاددہانی",
-        "data": {
-          "reminder_1_enabled": "پہلی یاددہانی",
-          "reminder_1_minutes": "منٹ پہلے",
-          "reminder_1_sound": "آواز",
-          "reminder_1_lang": "زبان",
-          "reminder_1_tts": "پیغام",
-          "reminder_2_enabled": "دوسری یاددہانی",
-          "reminder_2_minutes": "منٹ پہلے",
-          "reminder_2_sound": "آواز",
-          "reminder_2_lang": "زبان",
-          "reminder_2_tts": "پیغام"
-        }
-      },
+  "entity": {
+    "sensor": {
       "fajr": {
-        "title": "فجر کی اذان",
-        "data": {
-          "fajr_sound": "آواز",
-          "fajr_speaker": "اسپیکر",
-          "fajr_volume": "سطح"
-        }
+        "name": "فجر"
       },
-      "adhan": {
-        "title": "اذان کی ترتیبات",
-        "data": {
-          "day_sound": "آواز",
-          "day_speaker": "اسپیکر",
-          "day_volume": "دن",
-          "night_volume_enabled": "رات کم آواز",
-          "night_volume": "رات",
-          "night_start_hour": "آغاز"
-        }
+      "dhuhr": {
+        "name": "ظہر"
       },
-      "notifications": {
-        "title": "اطلاعات",
-        "data": {
-          "notify_on_prayer": "اطلاع",
-          "notify_target": "سروس",
-          "notify_title": "عنوان",
-          "notify_message": "پیغام"
-        }
+      "asr": {
+        "name": "عصر"
       },
-      "ramadan": {
-        "title": "رمضان 🌙",
-        "data": {
-          "suhoor_alarm_enabled": "سحر الارم",
-          "suhoor_alarm_minutes": "منٹ پہلے",
-          "suhoor_alarm_sound": "آواز",
-          "suhoor_alarm_volume": "سطح",
-          "tarhim_enabled": "تراویح",
-          "tarhim_sound": "آواز",
-          "tarhim_speaker": "اسپیکر",
-          "tarhim_volume": "سطح",
-          "suhoor_scene": "سحری الارم پر منظر"
-        }
+      "maghrib": {
+        "name": "مغرب"
+      },
+      "isha": {
+        "name": "عشاء"
+      },
+      "fajr_readable": {
+        "name": "فجر (آسان)"
+      },
+      "dhuhr_readable": {
+        "name": "ظہر (آسان)"
+      },
+      "asr_readable": {
+        "name": "عصر (آسان)"
+      },
+      "maghrib_readable": {
+        "name": "مغرب (آسان)"
+      },
+      "isha_readable": {
+        "name": "عشاء (آسان)"
+      },
+      "hijri_date": {
+        "name": "ہجری تاریخ"
+      },
+      "hijri_day": {
+        "name": "ہجری دن"
+      },
+      "hijri_month": {
+        "name": "ہجری مہینہ"
+      },
+      "hijri_year": {
+        "name": "ہجری سال"
+      },
+      "hijri_holiday": {
+        "name": "ہجری تعطیل"
+      },
+      "next_prayer": {
+        "name": "اگلی نماز"
       }
-    }
-  },
-  "services": {
-    "common": {
-      "fields": {
-        "speaker": {
-          "name": "اسپیکر",
-          "description": "کس اسپیکر پر چلائیں؟"
-        },
-        "volume": {
-          "name": "آواز",
-          "description": "آواز کی سطح (0.0 - 1.0)"
-        },
-        "prayer": {
-          "name": "نماز",
-          "description": "کون سی نماز؟"
-        }
-      }
-    },
-    "preview_adhan": {
-      "name": "اذان کا پیش نظارہ",
-      "description": "اذان کو پیش نظارہ کے طور پر چلائیں",
-      "fields": {
-        "sound": {
-          "name": "آواز",
-          "description": "کون سی اذان چلانا چاہتے ہیں؟"
-        },
-        "speaker": {
-          "name": "اسپیکر",
-          "description": "کس اسپیکر پر چلائیں؟"
-        }
-      }
-    },
-    "test_prayer": {
-      "name": "نماز اذان کا ٹیسٹ",
-      "description": "مخصوص نماز کے لیے اذان کا ٹیسٹ کریں"
-    },
-    "test_tarhim": {
-      "name": "ترحیم کا ٹیسٹ",
-      "description": "ترحیم کی تلاوت کا ٹیسٹ کریں",
-      "fields": {
-        "sound": {
-          "name": "ترحیم کی آواز",
-          "description": "کون سی ترحیم چلانا چاہتے ہیں؟"
-        },
-        "speaker": {
-          "name": "اسپیکر",
-          "description": "کس اسپیکر پر چلائیں؟"
-        }
-      }
-    },
-    "test_reminder": {
-      "name": "اذان سے پہلے یاددہانی کا ٹیسٹ (تذکیر ٹیسٹ)",
-      "description": "نماز سے پہلے یاددہانی کا ٹیسٹ کریں",
-      "fields": {
-        "reminder": {
-          "name": "یاددہانی",
-          "description": "کون سی یاددہانی کا ٹیسٹ کریں؟"
-        }
-      }
-    },
-    "test_notification": {
-      "name": "اطلاع کا ٹیسٹ",
-      "description": "نماز کی اطلاع کا ٹیسٹ کریں"
-    },
-    "test_suhoor": {
-      "name": "سحری الارم کا ٹیسٹ",
-      "description": "سحری الارم کا ٹیسٹ کریں (رمضان)"
     }
   }
 }

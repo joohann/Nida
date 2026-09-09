@@ -1,0 +1,44 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nida",
+        "description": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\n\n**Assalamu Alaikum wa Rahmatullahi wa Barakatuh** 🌙\n\nWelcome to **Nida** for Home Assistant — a complete and customizable Islamic prayer companion for your smart home.\n\nMay Allah ﷺ accept your prayers and make this integration a means of khayr (goodness) in your household.\n\n---\n\n🕌 Location-based prayer times via the AlAdhan API\n🔔 Pre-adhan reminders with sound and spoken message\n🌅 Dedicated Fajr adhan\n📢 Adhan for all prayers with day and night volume\n📱 Device notifications to mobile and speakers\n🌙 Ramadan features — Suhoor alarm and Tarhim\n📅 Hijri calendar with Islamic holidays\n\n---\n\nMay Allah reward the team at aladhan.com abundantly. Ameen. 🤲\n\n— Iftikhar Farzan Izz Al Din Muhsin"
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Only one Nida instance can be configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Nida options",
+        "description": "Open the [Masjid dashboard](/nida) to manage prayer times, sounds, language, and media players.\n\nThe toggle below controls whether Masjid is also shown in the sidebar. When turned off, the dashboard stays reachable through the link above.",
+        "data": {
+          "show_in_sidebar": "Show Masjid in the sidebar"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "fajr": { "name": "Fajr" },
+      "dhuhr": { "name": "Dhuhr" },
+      "asr": { "name": "Asr" },
+      "maghrib": { "name": "Maghrib" },
+      "isha": { "name": "Isha" },
+      "fajr_readable": { "name": "Fajr (readable)" },
+      "dhuhr_readable": { "name": "Dhuhr (readable)" },
+      "asr_readable": { "name": "Asr (readable)" },
+      "maghrib_readable": { "name": "Maghrib (readable)" },
+      "isha_readable": { "name": "Isha (readable)" },
+      "hijri_date": { "name": "Hijri date" },
+      "hijri_day": { "name": "Hijri day" },
+      "hijri_month": { "name": "Hijri month" },
+      "hijri_year": { "name": "Hijri year" },
+      "hijri_holiday": { "name": "Hijri holiday" },
+      "next_prayer": { "name": "Next prayer" }
+    }
+  }
+}

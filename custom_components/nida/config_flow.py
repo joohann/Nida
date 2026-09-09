@@ -1,327 +1,100 @@
-"""Config flow for Nida."""
+"""Nida config flow — auto-create entry + options flow.
+
+The welcome content (bismillah + feature list) lives in the panel as a
+one-shot overlay (nida-panel.js, WELCOME_CONTENT), not in this flow:
+HA's config-flow description rendering proved unreliable in Johann's
+setup, even with strings.json on the correct path and full restarts.
+Moving the welcome inside the panel itself removes that dependency
+entirely.
+
+Two flows live in this file:
+
+  ConfigFlow.async_step_user
+    Auto-creates the config entry without showing any form. Welcome
+    content lives in the panel overlay and in the post-setup
+    persistent_notification from __init__.py.
+
+  NidaOptionsFlowHandler
+    Reachable via Settings → Devices & Services → Nida → Configure.
+    Markdown link to /nida + sidebar visibility toggle.
+
+Changelog:
+  2.0.8 (2026-06-28): Submit-step verwijderd — entry wordt nu direct
+                      aangemaakt zonder formulier. Welkomsttekst leefde
+                      al in het panel (WELCOME_CONTENT) en in de
+                      persistent_notification, dus de tussen-step had
+                      geen functie meer dan een lege blokker zijn.
+  2.0.6 (2026-06-28): Welcome text removed — moved into the panel as an
+                      overlay (see nida-panel.js WELCOME_CONTENT). The
+                      config flow now just shows a one-line confirmation
+                      and a Submit button. Doesn't depend on HA's
+                      description-rendering anymore.
+  2.0.5 (2026-06-28): Welcome text injected via description_placeholders
+                      to bypass an apparent strings.json render issue —
+                      did not actually fix the rendering, hence 2.0.6.
+  2.0.2 (2026-06-28): Welcome step (bismillah + feature list) restored
+                      from Nida 1.x style. Added options flow with a
+                      show_in_sidebar toggle and a Markdown dashboard
+                      link so the panel stays reachable even when the
+                      sidebar entry is hidden.
+  2.0.0 (2026-06-27): Herbouw — flow teruggebracht tot alleen entry aanmaken.
+                      Sound-keuze en per-gebed instellingen verhuisd naar het panel.
+"""
 from __future__ import annotations
-import asyncio
-import aiohttp
+
+import logging
+
 import voluptuous as vol
+
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback
-from homeassistant.helpers import selector
-from .const import (
-    DOMAIN, CONF_CITY, CONF_COUNTRY, CONF_METHOD, CALCULATION_METHODS,
-    CONF_PLAY_METHOD, PLAY_METHODS,
-    CONF_FAJR_SPEAKER, CONF_FAJR_VOLUME, CONF_FAJR_SOUND,
-    CONF_DAY_SPEAKER, CONF_DAY_VOLUME, CONF_DAY_SOUND,
-    CONF_TARHIM_ENABLED, CONF_TARHIM_SPEAKER, CONF_TARHIM_VOLUME, CONF_TARHIM_SOUND,
-    get_fajr_sounds, get_day_sounds, get_tarhim_sounds, get_jingle_sounds, get_suhoor_sounds,
-    CONF_REMINDER_1_ENABLED, CONF_REMINDER_1_MINUTES, CONF_REMINDER_1_SOUND,
-    CONF_REMINDER_1_TTS, CONF_REMINDER_1_LANG,
-    CONF_REMINDER_2_ENABLED, CONF_REMINDER_2_MINUTES, CONF_REMINDER_2_SOUND,
-    CONF_REMINDER_2_TTS, CONF_REMINDER_2_LANG,
-    REMINDER_LANGUAGES, REMINDER_DEFAULT_TEXTS,
-)
+from homeassistant.data_entry_flow import FlowResult
 
-def _make_select(sounds):
-    return selector.selector({"select": {"options": [{"value": k, "label": v} for k, v in sounds.items()], "mode": "dropdown"}})
+from .const import DOMAIN
 
-def _get_notify_services(hass):
-    services = [""]
-    try:
-        all_services = hass.services.async_services()
-        if "notify" in all_services:
-            services += [f"notify.{s}" for s in sorted(all_services["notify"].keys()) if s != "send_message"]
-    except Exception:
-        pass
-    return services
+_LOGGER = logging.getLogger(__name__)
 
-async def _test_connection(city, country, method):
-    url = f"https://api.aladhan.com/v1/timingsByCity?city={city}&country={country}&method={method}"
-    try:
-        connector = aiohttp.TCPConnector(ssl=False)
-        async with aiohttp.ClientSession(connector=connector) as session:
-            async with asyncio.timeout(30):
-                async with session.get(url, allow_redirects=True) as response:
-                    return response.status == 200
-    except Exception:
-        return False
-
-def _speaker_sel():
-    return selector.selector({"entity": {"domain": "media_player", "multiple": True}})
-
-def _scene_sel():
-    return selector.selector({"entity": {"domain": "scene", "multiple": False}})
-
-def _volume_sel():
-    return selector.selector({"number": {"min": 0, "max": 100, "step": 5, "unit_of_measurement": "%", "mode": "slider"}})
-
-def _minutes_sel(max_val=60):
-    return selector.selector({"number": {"min": 1, "max": max_val, "step": 1, "unit_of_measurement": "min", "mode": "box"}})
-
-def _method_sel():
-    return selector.selector({"select": {"options": [{"value": str(k), "label": v} for k, v in CALCULATION_METHODS.items()], "mode": "dropdown"}})
-
-def _sound_sel(sounds):
-    return selector.selector({"select": {"options": [{"value": k, "label": v} for k, v in sounds.items()], "mode": "dropdown"}})
+OPT_SHOW_IN_SIDEBAR = "show_in_sidebar"
 
 
-class PrayerTimesConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 1
-    def __init__(self):
-        self._data = {}
+class NidaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Initial setup — auto-creates the config entry, no form shown."""
 
-    async def async_step_user(self, user_input=None):
-        return await self.async_step_intro()
-
-    async def async_step_intro(self, user_input=None):
-        if user_input is not None:
-            return await self.async_step_location()
-        return self.async_show_form(step_id="intro", data_schema=vol.Schema({}))
-
-    async def async_step_location(self, user_input=None):
-        errors = {}
-        ha_config = self.hass.config
-        default_city = getattr(ha_config, 'city', None) or "Amsterdam"
-        default_country = getattr(ha_config, 'country', None) or "Netherlands"
-        if user_input is not None:
-            valid = await _test_connection(user_input[CONF_CITY], user_input[CONF_COUNTRY], user_input[CONF_METHOD])
-            if valid:
-                self._data.update(user_input)
-                return await self.async_step_reminders()
-            errors["base"] = "cannot_connect"
-        return self.async_show_form(
-            step_id="location",
-            data_schema=vol.Schema({
-                vol.Required(CONF_CITY, default=default_city): str,
-                vol.Required(CONF_COUNTRY, default=default_country): str,
-                vol.Required(CONF_METHOD, default="3"): _method_sel(),
-            }),
-            errors=errors,
-        )
-
-    async def async_step_reminders(self, user_input=None):
-        if user_input is not None:
-            self._data.update(user_input)
-            return await self.async_step_fajr()
-        sounds = {"": "— No sound —", **get_jingle_sounds()}
-        sound_opts = [{"value": k, "label": v} for k, v in sounds.items()]
-        lang_opts = [{"value": k, "label": v} for k, v in REMINDER_LANGUAGES.items()]
-        dt = REMINDER_DEFAULT_TEXTS["ar"]
-        return self.async_show_form(
-            step_id="reminders",
-            data_schema=vol.Schema({
-                vol.Optional(CONF_REMINDER_1_ENABLED, default=True): bool,
-                vol.Optional(CONF_REMINDER_1_MINUTES, default=10): _minutes_sel(),
-                vol.Optional(CONF_REMINDER_1_SOUND, default=""): selector.selector({"select": {"options": sound_opts, "mode": "dropdown"}}),
-                vol.Optional(CONF_REMINDER_1_LANG, default="ar"): selector.selector({"select": {"options": lang_opts, "mode": "dropdown"}}),
-                vol.Optional(CONF_REMINDER_1_TTS, default=dt): str,
-                vol.Optional(CONF_REMINDER_2_ENABLED, default=True): bool,
-                vol.Optional(CONF_REMINDER_2_MINUTES, default=5): _minutes_sel(),
-                vol.Optional(CONF_REMINDER_2_SOUND, default=""): selector.selector({"select": {"options": sound_opts, "mode": "dropdown"}}),
-                vol.Optional(CONF_REMINDER_2_LANG, default="ar"): selector.selector({"select": {"options": lang_opts, "mode": "dropdown"}}),
-                vol.Optional(CONF_REMINDER_2_TTS, default=dt): str,
-            }),
-        )
-
-    async def async_step_fajr(self, user_input=None):
-        if user_input is not None:
-            self._data.update(user_input)
-            return await self.async_step_adhan()
-        return self.async_show_form(
-            step_id="fajr",
-            data_schema=vol.Schema({
-                vol.Required(CONF_FAJR_SOUND, default=next(iter(get_fajr_sounds()), "adhan_fajr_ahmed_saeed_al-omrany.mp3")): _make_select(get_fajr_sounds()),
-                vol.Required(CONF_FAJR_SPEAKER, default=["media_player.adhan_speakers"]): _speaker_sel(),
-                vol.Required(CONF_FAJR_VOLUME, default=10): _volume_sel(),
-            }),
-        )
-
-    async def async_step_adhan(self, user_input=None):
-        if user_input is not None:
-            self._data.update(user_input)
-            return await self.async_step_notifications()
-        return self.async_show_form(
-            step_id="adhan",
-            data_schema=vol.Schema({
-                vol.Required(CONF_DAY_SOUND, default=next(iter(get_day_sounds()), "adhan_day_ahmed_saeed_al-omrany.mp3")): _make_select(get_day_sounds()),
-                vol.Required(CONF_DAY_SPEAKER, default=["media_player.adhan_speakers"]): _speaker_sel(),
-                vol.Required(CONF_DAY_VOLUME, default=20): _volume_sel(),
-                vol.Optional("night_volume_enabled", default=False): bool,
-                vol.Optional("night_volume", default=10): _volume_sel(),
-                vol.Optional("night_start_hour", default=22): selector.selector({"number": {"min": 18, "max": 23, "step": 1, "unit_of_measurement": "h", "mode": "slider"}}),
-                vol.Optional("open_sensor_enabled", default=False): selector.selector({"boolean": {}}),
-                vol.Optional("open_sensor_entities", default=[]): selector.selector({
-                    "entity": {
-                        "domain": ["binary_sensor", "group"],
-                        "multiple": True,
-                    }
-                }),
-                vol.Optional("open_sensor_volume", default=5): _volume_sel(),
-            }),
-        )
-
-    async def async_step_notifications(self, user_input=None):
-        if user_input is not None:
-            self._data.update(user_input)
-            return await self.async_step_ramadan()
-        notify_services = _get_notify_services(self.hass)
-        return self.async_show_form(
-            step_id="notifications",
-            data_schema=vol.Schema({
-                vol.Optional("notify_on_prayer", default=False): bool,
-                vol.Optional("notify_target", default=[]): selector.selector({"select": {"options": notify_services, "mode": "dropdown", "multiple": True, "custom_value": True}}),
-                vol.Optional("notify_title", default="🕌 Nida"): str,
-                vol.Optional("notify_message", default="It is time for [prayer] prayer"): str,
-            }),
-        )
-
-    async def async_step_ramadan(self, user_input=None):
-        if user_input is not None:
-            self._data.update(user_input)
-            return self.async_create_entry(title=self._data.get(CONF_CITY, "Nida"), data=self._data)
-        jingles = {"": "— No sound —", **get_jingle_sounds()}
-        return self.async_show_form(
-            step_id="ramadan",
-            data_schema=vol.Schema({
-                vol.Optional("suhoor_alarm_enabled", default=True): bool,
-                vol.Optional("suhoor_alarm_minutes", default=30): _minutes_sel(120),
-                vol.Optional("suhoor_alarm_sound", default=next(iter(get_suhoor_sounds()), "")): _make_select({"": "— No sound —", **get_suhoor_sounds()}),
-                vol.Optional("suhoor_alarm_volume", default=10): _volume_sel(),
-                vol.Optional("suhoor_scene", default=""): _scene_sel(),
-                vol.Optional(CONF_TARHIM_ENABLED, default=True): bool,
-                vol.Optional(CONF_TARHIM_SOUND, default=next(iter(get_tarhim_sounds()), "nadir_jingle_annoucment.mp3")): _make_select(get_tarhim_sounds()),
-                vol.Optional(CONF_TARHIM_SPEAKER, default=["media_player.adhan_speakers"]): _speaker_sel(),
-                vol.Optional(CONF_TARHIM_VOLUME, default=10): _volume_sel(),
-            }),
-        )
+    VERSION = 2
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry):
-        return PrayerTimesOptionsFlow(config_entry)
+    def async_get_options_flow(
+        config_entry: ConfigEntry,
+    ) -> "NidaOptionsFlowHandler":
+        return NidaOptionsFlowHandler(config_entry)
+
+    async def async_step_user(
+        self, user_input: dict | None = None
+    ) -> FlowResult:
+        if self._async_current_entries():
+            return self.async_abort(reason="single_instance_allowed")
+        return self.async_create_entry(title="Nida", data={})
 
 
-class PrayerTimesOptionsFlow(config_entries.OptionsFlow):
-    def __init__(self, config_entry):
-        self._config_entry = config_entry
-        self._data = {}
+class NidaOptionsFlowHandler(config_entries.OptionsFlow):
+    """Post-install options — dashboard link + sidebar toggle."""
 
-    def _get(self, key, default):
-        return self._config_entry.options.get(key, self._config_entry.data.get(key, default))
+    def __init__(self, config_entry: ConfigEntry) -> None:
+        self.config_entry = config_entry
 
-    def _get_list(self, key, default):
-        val = self._get(key, default)
-        if isinstance(val, str): return [val]
-        return val if val else default
-
-    def _get_vol(self, key, default):
-        v = self._get(key, default)
-        return int(v * 100) if isinstance(v, float) and v <= 1 else (v if v else default)
-
-    async def async_step_init(self, user_input=None):
+    async def async_step_init(
+        self, user_input: dict | None = None
+    ) -> FlowResult:
         if user_input is not None:
-            self._data.update(user_input)
-            return await self.async_step_reminders()
-        return self.async_show_form(
-            step_id="init",
-            data_schema=vol.Schema({
-                vol.Required(CONF_CITY, default=self._get(CONF_CITY, "Amsterdam")): str,
-                vol.Required(CONF_COUNTRY, default=self._get(CONF_COUNTRY, "Netherlands")): str,
-                vol.Required(CONF_METHOD, default=str(self._get(CONF_METHOD, 3))): _method_sel(),
-            }),
-        )
+            merged = {**self.config_entry.options, **user_input}
+            return self.async_create_entry(title="", data=merged)
 
-    async def async_step_reminders(self, user_input=None):
-        if user_input is not None:
-            self._data.update(user_input)
-            return await self.async_step_fajr()
-        sounds = {"": "— No sound —", **get_jingle_sounds()}
-        sound_opts = [{"value": k, "label": v} for k, v in sounds.items()]
-        lang_opts = [{"value": k, "label": v} for k, v in REMINDER_LANGUAGES.items()]
-        dt = REMINDER_DEFAULT_TEXTS["ar"]
-        return self.async_show_form(
-            step_id="reminders",
-            data_schema=vol.Schema({
-                vol.Optional(CONF_REMINDER_1_ENABLED, default=self._get(CONF_REMINDER_1_ENABLED, True)): bool,
-                vol.Optional(CONF_REMINDER_1_MINUTES, default=self._get(CONF_REMINDER_1_MINUTES, 10)): _minutes_sel(),
-                vol.Optional(CONF_REMINDER_1_SOUND, default=self._get(CONF_REMINDER_1_SOUND, "")): selector.selector({"select": {"options": sound_opts, "mode": "dropdown"}}),
-                vol.Optional(CONF_REMINDER_1_LANG, default=self._get(CONF_REMINDER_1_LANG, "nl")): selector.selector({"select": {"options": lang_opts, "mode": "dropdown"}}),
-                vol.Optional(CONF_REMINDER_1_TTS, default=self._get(CONF_REMINDER_1_TTS, dt)): str,
-                vol.Optional(CONF_REMINDER_2_ENABLED, default=self._get(CONF_REMINDER_2_ENABLED, True)): bool,
-                vol.Optional(CONF_REMINDER_2_MINUTES, default=self._get(CONF_REMINDER_2_MINUTES, 5)): _minutes_sel(),
-                vol.Optional(CONF_REMINDER_2_SOUND, default=self._get(CONF_REMINDER_2_SOUND, "")): selector.selector({"select": {"options": sound_opts, "mode": "dropdown"}}),
-                vol.Optional(CONF_REMINDER_2_LANG, default=self._get(CONF_REMINDER_2_LANG, "nl")): selector.selector({"select": {"options": lang_opts, "mode": "dropdown"}}),
-                vol.Optional(CONF_REMINDER_2_TTS, default=self._get(CONF_REMINDER_2_TTS, dt)): str,
-            }),
+        current = self.config_entry.options.get(OPT_SHOW_IN_SIDEBAR, True)
+        schema = vol.Schema(
+            {
+                vol.Required(OPT_SHOW_IN_SIDEBAR, default=current): bool,
+            }
         )
-
-    async def async_step_fajr(self, user_input=None):
-        if user_input is not None:
-            self._data.update(user_input)
-            return await self.async_step_adhan()
-        return self.async_show_form(
-            step_id="fajr",
-            data_schema=vol.Schema({
-                vol.Required(CONF_FAJR_SOUND, default=self._get(CONF_FAJR_SOUND, next(iter(get_fajr_sounds()), "adhan_fajr_ahmed_saeed_al-omrany.mp3"))): _make_select(get_fajr_sounds()),
-                vol.Required(CONF_FAJR_SPEAKER, default=self._get_list(CONF_FAJR_SPEAKER, ["media_player.adhan_speakers"])): _speaker_sel(),
-                vol.Required(CONF_FAJR_VOLUME, default=self._get_vol(CONF_FAJR_VOLUME, 30)): _volume_sel(),
-            }),
-        )
-
-    async def async_step_adhan(self, user_input=None):
-        if user_input is not None:
-            self._data.update(user_input)
-            return await self.async_step_notifications()
-        return self.async_show_form(
-            step_id="adhan",
-            data_schema=vol.Schema({
-                vol.Required(CONF_DAY_SOUND, default=self._get(CONF_DAY_SOUND, next(iter(get_day_sounds()), "adhan_day_ahmed_saeed_al-omrany.mp3"))): _make_select(get_day_sounds()),
-                vol.Required(CONF_DAY_SPEAKER, default=self._get_list(CONF_DAY_SPEAKER, ["media_player.adhan_speakers"])): _speaker_sel(),
-                vol.Required(CONF_DAY_VOLUME, default=self._get_vol(CONF_DAY_VOLUME, 50)): _volume_sel(),
-                vol.Optional("night_volume_enabled", default=self._get("night_volume_enabled", False)): bool,
-                vol.Optional("night_volume", default=self._get_vol("night_volume", 20)): _volume_sel(),
-                vol.Optional("night_start_hour", default=self._get("night_start_hour", 22)): selector.selector({"number": {"min": 18, "max": 23, "step": 1, "unit_of_measurement": "h", "mode": "slider"}}),
-                vol.Optional("open_sensor_enabled", default=self._get("open_sensor_enabled", False)): selector.selector({"boolean": {}}),
-                vol.Optional("open_sensor_entities", default=self._get("open_sensor_entities", [])): selector.selector({
-                    "entity": {
-                        "domain": ["binary_sensor", "group"],
-                        "multiple": True,
-                    }
-                }),
-                vol.Optional("open_sensor_volume", default=self._get_vol("open_sensor_volume", 5)): _volume_sel(),
-            }),
-        )
-
-    async def async_step_notifications(self, user_input=None):
-        if user_input is not None:
-            self._data.update(user_input)
-            return await self.async_step_ramadan()
-        notify_services = _get_notify_services(self.hass)
-        current = self._get_list("notify_target", [])
-        return self.async_show_form(
-            step_id="notifications",
-            data_schema=vol.Schema({
-                vol.Optional("notify_on_prayer", default=self._get("notify_on_prayer", False)): bool,
-                vol.Optional("notify_target", default=current): selector.selector({"select": {"options": notify_services, "mode": "dropdown", "multiple": True, "custom_value": True}}),
-                vol.Optional("notify_title", default=self._get("notify_title", "🕌 Nida")): str,
-                vol.Optional("notify_message", default=self._get("notify_message", "It is time for [prayer] prayer")): str,
-            }),
-        )
-
-    async def async_step_ramadan(self, user_input=None):
-        if user_input is not None:
-            self._data.update(user_input)
-            return self.async_create_entry(title="", data=self._data)
-        jingles = {"": "— No sound —", **get_jingle_sounds()}
-        return self.async_show_form(
-            step_id="ramadan",
-            data_schema=vol.Schema({
-                vol.Optional("suhoor_alarm_enabled", default=self._get("suhoor_alarm_enabled", True)): bool,
-                vol.Optional("suhoor_alarm_minutes", default=self._get("suhoor_alarm_minutes", 30)): _minutes_sel(120),
-                vol.Optional("suhoor_alarm_sound", default=self._get("suhoor_alarm_sound", next(iter(get_suhoor_sounds()), ""))): _make_select({"": "— No sound —", **get_suhoor_sounds()}),
-                vol.Optional("suhoor_alarm_volume", default=self._get_vol("suhoor_alarm_volume", 10)): _volume_sel(),
-                vol.Optional("suhoor_scene", default=self._get("suhoor_scene", "")): _scene_sel(),
-                vol.Optional(CONF_TARHIM_ENABLED, default=self._get(CONF_TARHIM_ENABLED, True)): bool,
-                vol.Optional(CONF_TARHIM_SOUND, default=self._get(CONF_TARHIM_SOUND, next(iter(get_tarhim_sounds()), "nadir_jingle_annoucment.mp3"))): _make_select(get_tarhim_sounds()),
-                vol.Optional(CONF_TARHIM_SPEAKER, default=self._get_list(CONF_TARHIM_SPEAKER, ["media_player.adhan_speakers"])): _speaker_sel(),
-                vol.Optional(CONF_TARHIM_VOLUME, default=self._get_vol(CONF_TARHIM_VOLUME, 40)): _volume_sel(),
-            }),
-        )
+        return self.async_show_form(step_id="init", data_schema=schema)

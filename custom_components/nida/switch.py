@@ -1,31 +1,35 @@
+"""Nida switch platform — per-prayer adhan AAN/UIT als HA-entities.
+
+Until 2.0.17 the per-prayer toggle lived only in entry.options
+(via the panel). That meant automations and dashboards outside the
+panel had no way to flip them. This platform publishes one switch
+per prayer (switch.nida_fajr, switch.nida_dhuhr, ...) whose state
+mirrors options.enabled_<prayer> and writes back the same way the
+panel does.
+
+Toggling a switch updates entry.options, which fires the entry's
+update listener in __init__.py — that listener now reschedules the
+scheduler so the change takes effect immediately (instead of waiting
+for the next coordinator refresh, which could be up to 12 hours).
+
+Changelog:
+  2.0.17 (2026-06-28): New file — first switch platform. Per-prayer
+                       enabled-toggles as HA entities. icon = mdi:mosque
+                       to match the prayer-times sensors. unique_id =
+                       "<entry_id>_enabled_<prayer>" so the entities
+                       are stable across renames and the user can
+                       customise them in the entity registry.
 """
-Switch platform for the Nida HACS integration.
-
-Exposes a single switch — switch.nida_intend_to_fast — which the user
-toggles on a fasting day. The "currently fasting" binary sensor reads
-this flag and combines it with the fajr/maghrib window.
-
-State is persisted across HA restarts via RestoreEntity, and mirrored
-onto the coordinator under ATTR_USER_INTENDS_FAST so binary sensors
-don't need a state lookup.
-
-Add "switch" to the PLATFORMS list in __init__.py to enable this.
-
-@version 1.0.0
-"""
-
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import DOMAIN, ATTR_USER_INTENDS_FAST
+from .const import DOMAIN, OPT_ENABLED_PREFIX, PRAYERS, SENSOR_ENTITY_PREFIX
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,55 +39,71 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    coordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([NidaIntendToFastSwitch(coordinator, entry)])
+    """Register one enabled-switch per prayer."""
+    async_add_entities(
+        [NidaPrayerEnabledSwitch(hass, entry, prayer) for prayer in PRAYERS]
+    )
 
 
-class NidaIntendToFastSwitch(SwitchEntity, RestoreEntity):
-    """User-facing toggle: 'I intend to fast today.'
+class NidaPrayerEnabledSwitch(SwitchEntity):
+    """Switch backing options.enabled_<prayer> for one prayer."""
 
-    Auto-reset is intentionally NOT implemented in code. Let the user
-    drive it explicitly, or wire an HA automation (e.g. clear at 03:00)
-    if you want behaviour like that.
-    """
+    _attr_has_entity_name = False
+    _attr_icon = "mdi:mosque"
 
-    _attr_has_entity_name = True
-    _attr_name = "Intend to fast"
-    _attr_icon = "mdi:food-off"
-
-    def __init__(self, coordinator, entry: ConfigEntry) -> None:
-        self._coordinator = coordinator
+    def __init__(
+        self, hass: HomeAssistant, entry: ConfigEntry, prayer: str
+    ) -> None:
+        self.hass = hass
         self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_intend_to_fast"
-        self._is_on = False
-        # Mirror initial state onto coordinator so sensors can read it.
-        setattr(coordinator, ATTR_USER_INTENDS_FAST, False)
-
-    async def async_added_to_hass(self) -> None:
-        """Restore the last known on/off state."""
-        await super().async_added_to_hass()
-        last = await self.async_get_last_state()
-        if last is not None and last.state == "on":
-            self._is_on = True
-            setattr(self._coordinator, ATTR_USER_INTENDS_FAST, True)
-            # Notify binary_sensor.nida_currently_fasting immediately so it
-            # reflects the restored intent on the next state read instead of
-            # waiting for its 1-minute tick.
-            self._coordinator.async_update_listeners()
+        self._prayer = prayer
+        self._opt_key = f"{OPT_ENABLED_PREFIX}{prayer}"
+        # Hardcoded English — see SKILL.md: Islamic proper names (Fajr,
+        # Dhuhr, ...) are not translated per language.
+        self._attr_name = f"{prayer.capitalize()} adhan"
+        self._attr_unique_id = f"{entry.entry_id}_enabled_{prayer}"
+        # Match the sensor entity_id convention: sensor.nida_<prayer>
+        # → switch.nida_<prayer>_enabled. The "_enabled" suffix
+        # disambiguates from any future per-prayer switches we add
+        # (e.g. notify-per-prayer, volume-per-prayer).
+        self.entity_id = f"switch.{SENSOR_ENTITY_PREFIX}{prayer}_enabled"
 
     @property
     def is_on(self) -> bool:
-        return self._is_on
+        """True when the prayer is enabled (default ON when option missing)."""
+        val = self._entry.options.get(self._opt_key)
+        return True if val is None else bool(val)
 
-    async def async_turn_on(self, **kwargs: Any) -> None:
-        self._set(True)
+    async def async_turn_on(self, **kwargs) -> None:
+        await self._write(True)
 
-    async def async_turn_off(self, **kwargs: Any) -> None:
-        self._set(False)
+    async def async_turn_off(self, **kwargs) -> None:
+        await self._write(False)
 
-    def _set(self, value: bool) -> None:
-        self._is_on = value
-        setattr(self._coordinator, ATTR_USER_INTENDS_FAST, value)
+    async def _write(self, value: bool) -> None:
+        new_options = {**self._entry.options, self._opt_key: value}
+        self.hass.config_entries.async_update_entry(
+            self._entry, options=new_options
+        )
+        # async_update_entry triggers the entry's update listener in
+        # __init__.py, which (2.0.17+) reschedules the scheduler on any
+        # non-sidebar option change. No need to write_ha_state here —
+        # the listener path will refresh us via the next state read.
         self.async_write_ha_state()
-        # Push to the binary sensors immediately.
-        self._coordinator.async_update_listeners()
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to entry-option changes so the panel and the switch stay in sync.
+
+        Without this, toggling from the panel would update options but
+        the switch's internal state-source (entry.options) is read on
+        every is_on access, so the next state-poll picks it up — but
+        HA's state machine doesn't re-poll switches. Explicitly listen
+        for options changes and push a fresh state.
+        """
+        self.async_on_remove(
+            self._entry.add_update_listener(self._on_options_change)
+        )
+
+    async def _on_options_change(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+        # Just refresh — is_on reads straight from options.
+        self.async_write_ha_state()

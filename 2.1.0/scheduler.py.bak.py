@@ -1,0 +1,462 @@
+"""Nida scheduler — fires the adhan service at each enabled prayer time.
+
+Listens for coordinator updates (startup, 12-hour cycle, midnight refresh).
+On each update it cancels any pending point-in-time triggers and re-plans
+them from the fresh prayer timings + the user's per-prayer enabled toggles.
+
+This module is intentionally minimal: it only decides WHEN to play, then
+delegates to nida.play_adhan (see services.py) for the actual playback.
+For Release B, the scheduler also handles notification triggers and the
+Friday Jumu'ah reminder — those are not delegated to a service, the
+scheduler fires `hass.services.async_call('notify', <target>, ...)`
+directly because the routing logic is purely scheduler-internal.
+
+Changelog:
+  2.0.22 (2026-06-28): Pre-adhan reminder vuurt nu ook audio af via
+                       nieuwe nida.play_pre_adhan_jingle service (mits
+                       options.pre_adhan_audio_enabled True is —
+                       default True). Voorheen was er alleen een
+                       persistent_notification; audio was de lang
+                       openstaande 🔴 in de status-tabel.
+  2.0.18 (2026-06-28): Jumu'ah heeft eigen target-lijst nu —
+                       options.jumuah_targets, los van de algemene
+                       notify_targets. Bij leeg blijft de
+                       persistent_notification fallback bestaan (was
+                       al zo). Use case: niet alle gezinsleden hoeven
+                       de Friday reminder.
+  2.0.15 (2026-06-28): Release B — notification triggers + Jumu'ah
+                       reminder. For each scheduled adhan, when the
+                       master notify_enabled is on and the per-prayer
+                       toggle is on, an additional trigger fires at
+                       adhan-time that sends a notification to every
+                       target in notify_targets. Title and message
+                       are taken from notify_title/notify_message
+                       (panel populates language-defaults at first
+                       init). Separately, on Fridays a Jumu'ah
+                       reminder is planted N minutes before Dhuhr
+                       (N from jumuah_reminder_minutes, range 30-120,
+                       default 60). Both use the same notify_targets
+                       list; Jumu'ah has its own jumuah_message
+                       template with [minutes] placeholder. Falls
+                       back to persistent_notification if no targets
+                       are set (Jumu'ah only — adhan-time notifies
+                       just skip silently when no targets).
+  2.0.13 (2026-06-28): Optional second pre-adhan reminder added —
+                       when options.pre_adhan_two_enabled is True, the
+                       scheduler plants a second persistent_notification
+                       at options.pre_adhan_minutes_2 minutes before
+                       each adhan.
+  2.0.7 (2026-06-28): Pre-adhan reminder toegevoegd — voor elk gepland
+                      gebed plant de scheduler nu een tweede trigger N
+                      minuten ervoor (default 25, configureerbaar via
+                      options.pre_adhan_minutes) die een
+                      persistent_notification "X is in N minutes" toont.
+  2.0.1 (2026-06-28): New file — initial scheduler for automatic adhan
+                      playback. Reads enabled_<prayer> toggles, skips
+                      disabled prayers, skips prayers already passed today.
+"""
+from __future__ import annotations
+
+import asyncio
+import logging
+from datetime import datetime, timedelta
+
+from homeassistant.components import persistent_notification
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_track_point_in_time
+from homeassistant.util import dt as dt_util
+
+from .const import (
+    DEFAULT_JUMUAH_MESSAGE_FALLBACK,
+    DEFAULT_JUMUAH_MINUTES,
+    DEFAULT_NOTIFY_MESSAGE_FALLBACK,
+    DEFAULT_NOTIFY_TITLE_FALLBACK,
+    DEFAULT_PRE_ADHAN_AUDIO_ENABLED,
+    DEFAULT_PRE_ADHAN_MINUTES,
+    DEFAULT_PRE_ADHAN_MINUTES_2,
+    DOMAIN,
+    JUMUAH_MAX_MINUTES,
+    JUMUAH_MIN_MINUTES,
+    OPT_ENABLED_PREFIX,
+    OPT_JUMUAH_MESSAGE,
+    OPT_JUMUAH_REMINDER_ENABLED,
+    OPT_JUMUAH_REMINDER_MINUTES,
+    OPT_JUMUAH_TARGETS,
+    OPT_NOTIFY_ENABLED,
+    OPT_NOTIFY_ENABLED_PREFIX,
+    OPT_NOTIFY_MESSAGE,
+    OPT_NOTIFY_TARGETS,
+    OPT_NOTIFY_TITLE,
+    OPT_PRE_ADHAN_AUDIO_ENABLED,
+    OPT_PRE_ADHAN_ENABLED_PREFIX,
+    OPT_PRE_ADHAN_MINUTES,
+    OPT_PRE_ADHAN_MINUTES_2,
+    OPT_PRE_ADHAN_TWO_ENABLED,
+    OPT_TTS_PRE_ADHAN_ENABLED,
+    OPT_TTS_PRE_ADHAN_DELAY,
+    DEFAULT_TTS_PRE_ADHAN_DELAY,
+    PRAYERS,
+)
+from .coordinator import PrayerTimesCoordinator
+from .services import (
+    SERVICE_PLAY_ADHAN,
+    SERVICE_PLAY_PRE_ADHAN_JINGLE,
+    SERVICE_SPEAK_PRE_ADHAN,
+)
+
+_LOGGER = logging.getLogger(__name__)
+
+# Python's datetime.weekday(): Monday=0, ..., Friday=4, ..., Sunday=6.
+_FRIDAY = 4
+
+
+class NidaScheduler:
+    """Re-plans adhan triggers whenever the coordinator data refreshes."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        coordinator: PrayerTimesCoordinator,
+    ) -> None:
+        self.hass = hass
+        self.entry = entry
+        self.coordinator = coordinator
+        self._unsub_triggers: list = []
+        self._unsub_coordinator = None
+
+    @callback
+    def async_setup(self) -> None:
+        self._unsub_coordinator = self.coordinator.async_add_listener(
+            self._async_reschedule
+        )
+        self._async_reschedule()
+
+    @callback
+    def async_shutdown(self) -> None:
+        self._cancel_all_triggers()
+        if self._unsub_coordinator is not None:
+            self._unsub_coordinator()
+            self._unsub_coordinator = None
+
+    def _cancel_all_triggers(self) -> None:
+        for unsub in self._unsub_triggers:
+            unsub()
+        self._unsub_triggers = []
+
+    @callback
+    def _async_reschedule(self) -> None:
+        """Cancel existing triggers and plan fresh ones from the new timings."""
+        self._cancel_all_triggers()
+
+        data = self.coordinator.data or {}
+        timings = data.get("data", {}).get("timings", {})
+        if not timings:
+            _LOGGER.debug("Scheduler: no timings yet, nothing to plan")
+            return
+
+        now = dt_util.now()
+        options = self.entry.options
+
+        planned = 0
+        pre_min_1 = int(options.get(OPT_PRE_ADHAN_MINUTES, DEFAULT_PRE_ADHAN_MINUTES) or 0)
+        two_enabled = bool(options.get(OPT_PRE_ADHAN_TWO_ENABLED, False))
+        pre_min_2 = int(options.get(OPT_PRE_ADHAN_MINUTES_2, DEFAULT_PRE_ADHAN_MINUTES_2) or 0)
+        notify_enabled = bool(options.get(OPT_NOTIFY_ENABLED, False))
+
+        dhuhr_target_for_jumuah = None
+
+        for prayer in PRAYERS:
+            if not _is_enabled(options, prayer):
+                _LOGGER.debug("Scheduler: %s is disabled, skipping", prayer)
+                continue
+
+            time_str = timings.get(prayer.capitalize())
+            target = _parse_today_time(time_str, now)
+            if target is None:
+                continue
+            if prayer == "dhuhr":
+                # Capture even if it's already passed today so the
+                # Jumu'ah block below can decide on its own window.
+                dhuhr_target_for_jumuah = target
+            if target <= now:
+                continue
+
+            unsub = async_track_point_in_time(
+                self.hass,
+                self._async_make_handler(prayer),
+                target,
+            )
+            self._unsub_triggers.append(unsub)
+            planned += 1
+            _LOGGER.info("Scheduled adhan for %s at %s", prayer, target)
+
+            # 2.0.38 — per-prayer pre-adhan suppression. Default True
+            # for backward compat (key missing = enabled). Lets the
+            # user skip pre-reminders for individual prayers (e.g.
+            # Fajr) without disabling the whole feature.
+            pre_enabled = options.get(
+                f"{OPT_PRE_ADHAN_ENABLED_PREFIX}{prayer}", True
+            )
+
+            if pre_enabled and pre_min_1 > 0:
+                self._maybe_schedule_pre_reminder(
+                    prayer, target, now, pre_min_1, slot=1,
+                )
+
+            if pre_enabled and two_enabled and pre_min_2 > 0:
+                self._maybe_schedule_pre_reminder(
+                    prayer, target, now, pre_min_2, slot=2,
+                )
+
+            if notify_enabled and _notify_enabled_for_prayer(options, prayer):
+                self._maybe_schedule_notify(prayer, target, now, options)
+
+        if now.weekday() == _FRIDAY and dhuhr_target_for_jumuah is not None:
+            self._maybe_schedule_jumuah(dhuhr_target_for_jumuah, now, options)
+
+        _LOGGER.debug("Scheduler: planned %d adhan trigger(s)", planned)
+
+    def _maybe_schedule_pre_reminder(
+        self, prayer: str, adhan_target, now, minutes: int, slot: int
+    ) -> None:
+        pre_target = adhan_target - timedelta(minutes=minutes)
+        if pre_target <= now:
+            return
+        unsub = async_track_point_in_time(
+            self.hass,
+            self._async_make_pre_handler(prayer, minutes, slot),
+            pre_target,
+        )
+        self._unsub_triggers.append(unsub)
+        _LOGGER.info(
+            "Scheduled pre-adhan reminder slot %d for %s at %s (%d min before)",
+            slot, prayer, pre_target, minutes,
+        )
+
+    def _maybe_schedule_notify(
+        self, prayer: str, adhan_target, now, options
+    ) -> None:
+        targets = list(options.get(OPT_NOTIFY_TARGETS) or [])
+        if not targets:
+            _LOGGER.debug(
+                "Notify enabled but no targets configured; skipping %s notify",
+                prayer,
+            )
+            return
+        title = options.get(OPT_NOTIFY_TITLE) or DEFAULT_NOTIFY_TITLE_FALLBACK
+        message_tpl = (
+            options.get(OPT_NOTIFY_MESSAGE) or DEFAULT_NOTIFY_MESSAGE_FALLBACK
+        )
+        unsub = async_track_point_in_time(
+            self.hass,
+            self._async_make_notify_handler(prayer, targets, title, message_tpl),
+            adhan_target,
+        )
+        self._unsub_triggers.append(unsub)
+        _LOGGER.info(
+            "Scheduled notify for %s at %s to %s", prayer, adhan_target, targets,
+        )
+
+    def _maybe_schedule_jumuah(self, dhuhr_target, now, options) -> None:
+        """Plant the Friday Jumu'ah reminder N minutes before Dhuhr."""
+        if not bool(options.get(OPT_JUMUAH_REMINDER_ENABLED, True)):
+            return
+        minutes = int(
+            options.get(OPT_JUMUAH_REMINDER_MINUTES, DEFAULT_JUMUAH_MINUTES) or 0
+        )
+        minutes = max(JUMUAH_MIN_MINUTES, min(JUMUAH_MAX_MINUTES, minutes))
+        jumuah_target = dhuhr_target - timedelta(minutes=minutes)
+        if jumuah_target <= now:
+            return
+        # Separate targets list for Jumu'ah — not everyone in the
+        # household needs this Friday-only reminder. Empty list falls
+        # back to persistent_notification (see jumuah handler below).
+        targets = list(options.get(OPT_JUMUAH_TARGETS) or [])
+        title = options.get(OPT_NOTIFY_TITLE) or DEFAULT_NOTIFY_TITLE_FALLBACK
+        message_tpl = (
+            options.get(OPT_JUMUAH_MESSAGE) or DEFAULT_JUMUAH_MESSAGE_FALLBACK
+        )
+        unsub = async_track_point_in_time(
+            self.hass,
+            self._async_make_jumuah_handler(minutes, targets, title, message_tpl),
+            jumuah_target,
+        )
+        self._unsub_triggers.append(unsub)
+        _LOGGER.info(
+            "Scheduled Jumu'ah reminder at %s (%d min before Dhuhr) to %s",
+            jumuah_target, minutes, targets or "persistent_notification (no targets)",
+        )
+
+    def _async_make_handler(self, prayer: str):
+        async def _fire(_now) -> None:
+            _LOGGER.info("Firing scheduled adhan for %s", prayer)
+            try:
+                await self.hass.services.async_call(
+                    DOMAIN,
+                    SERVICE_PLAY_ADHAN,
+                    {"prayer": prayer},
+                    blocking=False,
+                )
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.error("Failed to play adhan for %s: %s", prayer, err)
+        return _fire
+
+    def _async_make_pre_handler(self, prayer: str, minutes: int, slot: int):
+        nid_suffix = "" if slot == 1 else str(slot)
+
+        async def _fire(_now) -> None:
+            _LOGGER.info(
+                "Firing pre-adhan notification slot %d for %s", slot, prayer
+            )
+            # Read the audio + TTS toggles up front so we know whether
+            # the persistent_notification is needed at all.
+            audio_enabled = bool(
+                self.entry.options.get(
+                    OPT_PRE_ADHAN_AUDIO_ENABLED, DEFAULT_PRE_ADHAN_AUDIO_ENABLED
+                )
+            )
+            tts_enabled = bool(
+                self.entry.options.get(OPT_TTS_PRE_ADHAN_ENABLED, False)
+            )
+
+            # 2.0.34 — persistent_notification is now a TRUE fallback:
+            # only fire it if neither the jingle nor the TTS will speak.
+            # Previously it fired unconditionally and cluttered the HA
+            # notification center for users who'd already configured
+            # audible reminders. Users who want both the audible cue
+            # AND an HA-internal notification can build an automation
+            # off the nida.play_pre_adhan_jingle service call.
+            if not audio_enabled and not tts_enabled:
+                persistent_notification.async_create(
+                    self.hass,
+                    f"**{prayer.capitalize()}** is in {minutes} minutes.",
+                    title="Nida",
+                    notification_id=f"nida_pre{nid_suffix}_{prayer}",
+                )
+
+            if audio_enabled:
+                try:
+                    await self.hass.services.async_call(
+                        DOMAIN,
+                        SERVICE_PLAY_PRE_ADHAN_JINGLE,
+                        {},
+                        blocking=False,
+                    )
+                except Exception as err:  # noqa: BLE001
+                    _LOGGER.warning(
+                        "play_pre_adhan_jingle failed for %s slot %d: %s",
+                        prayer, slot, err,
+                    )
+
+            # TTS announcement after the jingle (2.0.32). Gated on
+            # tts_pre_adhan_enabled; fires regardless of audio_enabled
+            # because someone might disable the jingle but still want
+            # the spoken cue. Delay defaults to 5s — enough for the
+            # typical jingle (<3s) to finish before the speaker
+            # switches to TTS playback.
+            if tts_enabled:
+                try:
+                    delay = int(self.entry.options.get(
+                        OPT_TTS_PRE_ADHAN_DELAY, DEFAULT_TTS_PRE_ADHAN_DELAY
+                    ))
+                except (TypeError, ValueError):
+                    delay = DEFAULT_TTS_PRE_ADHAN_DELAY
+                delay = max(0, min(60, delay))
+                if delay:
+                    await asyncio.sleep(delay)
+                try:
+                    await self.hass.services.async_call(
+                        DOMAIN,
+                        SERVICE_SPEAK_PRE_ADHAN,
+                        {"prayer": prayer},
+                        blocking=False,
+                    )
+                except Exception as err:  # noqa: BLE001
+                    _LOGGER.warning(
+                        "speak_pre_adhan failed for %s slot %d: %s",
+                        prayer, slot, err,
+                    )
+        return _fire
+
+    def _async_make_notify_handler(
+        self, prayer: str, targets: list[str], title: str, message_tpl: str
+    ):
+        async def _fire(_now) -> None:
+            message = message_tpl.replace("[prayer]", prayer.capitalize())
+            for target in targets:
+                try:
+                    domain, service = target.split(".", 1)
+                except ValueError:
+                    _LOGGER.warning("Invalid notify target %r; skipping", target)
+                    continue
+                try:
+                    await self.hass.services.async_call(
+                        domain,
+                        service,
+                        {"title": title, "message": message},
+                        blocking=False,
+                    )
+                    _LOGGER.info("Sent notify to %s for %s", target, prayer)
+                except Exception as err:  # noqa: BLE001
+                    _LOGGER.warning(
+                        "notify call failed for %s on %s: %s",
+                        prayer, target, err,
+                    )
+        return _fire
+
+    def _async_make_jumuah_handler(
+        self, minutes: int, targets: list[str], title: str, message_tpl: str
+    ):
+        async def _fire(_now) -> None:
+            message = message_tpl.replace("[minutes]", str(minutes))
+            if not targets:
+                _LOGGER.info("Jumu'ah reminder (no targets) → persistent_notification")
+                persistent_notification.async_create(
+                    self.hass,
+                    message,
+                    title=title,
+                    notification_id="nida_jumuah",
+                )
+                return
+            for target in targets:
+                try:
+                    domain, service = target.split(".", 1)
+                except ValueError:
+                    _LOGGER.warning("Invalid notify target %r; skipping", target)
+                    continue
+                try:
+                    await self.hass.services.async_call(
+                        domain,
+                        service,
+                        {"title": title, "message": message},
+                        blocking=False,
+                    )
+                    _LOGGER.info("Sent Jumu'ah reminder to %s", target)
+                except Exception as err:  # noqa: BLE001
+                    _LOGGER.warning(
+                        "Jumu'ah notify call failed on %s: %s", target, err
+                    )
+        return _fire
+
+
+def _is_enabled(options: dict, prayer: str) -> bool:
+    val = options.get(f"{OPT_ENABLED_PREFIX}{prayer}")
+    return True if val is None else bool(val)
+
+
+def _notify_enabled_for_prayer(options: dict, prayer: str) -> bool:
+    val = options.get(f"{OPT_NOTIFY_ENABLED_PREFIX}{prayer}")
+    return True if val is None else bool(val)
+
+
+def _parse_today_time(time_str: str | None, ref: datetime) -> datetime | None:
+    if not time_str:
+        return None
+    try:
+        hh, mm = (int(x) for x in time_str.split(" ")[0].split(":"))
+    except (ValueError, AttributeError):
+        _LOGGER.debug("Unexpected time format from Aladhan: %s", time_str)
+        return None
+    return ref.replace(hour=hh, minute=mm, second=0, microsecond=0)
