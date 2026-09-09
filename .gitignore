@@ -3,3 +3,6 @@
 __pycache__/
 *.pyc
 nida.zip
+
+# Local version scratch/staging folders — never part of a release
+/[0-9].[0-9]*/
