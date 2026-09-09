@@ -1,4 +1,24 @@
-"""Nida prayer-times coordinator — fetcht timings van Aladhan API."""
+"""Nida prayer-times coordinator — fetcht timings + hijri-datum van Aladhan API.
+
+De Aladhan /timings-response bevat data.date.hijri al standaard mee (date,
+day, weekday, month, year, holidays) — er is dus geen aparte API-call nodig
+om hijri-gegevens te krijgen. sensor.py leest dit rechtstreeks uit
+coordinator.data["data"]["date"]["hijri"].
+
+Changelog:
+  2.0.10 (2026-06-28): _build_url gebruikt nu eerst lat/lon uit
+                       entry.options als die zijn gezet (door de panel
+                       city-autocomplete via Nominatim). Pas als die er
+                       niet zijn valt het terug op hass.config (device
+                       mode). En pas helemaal achteraan op de oude
+                       country+city tekstvelden naar /timingsByCity.
+                       Dit verwijdert de manual-mode bug waar
+                       ?country=NL naar Aladhan ging (Aladhan wil
+                       "Netherlands", geen ISO-code).
+  2.0.0 (2026-06-27): Changelog-kop toegevoegd bij de 2.0.0-herbouw. Functioneel
+                      ongewijzigd t.o.v. 1.1.7 — hijri-data zat al in de response,
+                      coordinator hoefde niet aangepast om dit te ontsluiten.
+"""
 from __future__ import annotations
 
 import asyncio
@@ -61,21 +81,40 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
         await self.async_request_refresh()
 
     def _build_url(self) -> str:
-        """Bouw API-URL — gebruikt coordinaten als beschikbaar, anders city/country."""
+        """Bouw API-URL.
+
+        Volgorde van voorkeur:
+          1. lat/lon uit entry.options — door de panel city-autocomplete
+             gezet (manual mode). Coordinaten zijn ondubbelzinnig, dus
+             als die er zijn, gebruik die ongeacht location_mode.
+          2. hass.config.latitude/longitude — HA's eigen home-locatie
+             (device mode).
+          3. Tekstuele city+country naar /timingsByCity — pure fallback
+             voor entries die nog geen coords hebben en niet op HA's
+             location vertrouwen. Werkt alleen als CONF_COUNTRY een
+             land-naam is die Aladhan kent ("Netherlands"), geen ISO-code.
+        """
         method = int(
             self.entry.options.get(
                 CONF_METHOD, self.entry.data.get(CONF_METHOD, 3)
             )
         )
+        today = date.today().strftime("%d-%m-%Y")
 
-        lat = self.hass.config.latitude
-        lon = self.hass.config.longitude
-
-        if lat and lon:
-            today = date.today().strftime("%d-%m-%Y")
+        opt_lat = self.entry.options.get("latitude")
+        opt_lon = self.entry.options.get("longitude")
+        if isinstance(opt_lat, (int, float)) and isinstance(opt_lon, (int, float)):
             return (
                 f"{API_BASE}/timings/{today}"
-                f"?latitude={lat}&longitude={lon}&method={method}"
+                f"?latitude={opt_lat}&longitude={opt_lon}&method={method}"
+            )
+
+        ha_lat = self.hass.config.latitude
+        ha_lon = self.hass.config.longitude
+        if ha_lat and ha_lon:
+            return (
+                f"{API_BASE}/timings/{today}"
+                f"?latitude={ha_lat}&longitude={ha_lon}&method={method}"
             )
 
         city = self.entry.options.get(

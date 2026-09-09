@@ -2,105 +2,64 @@
   "config": {
     "step": {
       "user": {
-        "title": "مواقيت الصلاة - Adhan",
-        "description": "أدخل موقعك وطريقة الحساب",
-        "data": {
-          "city": "المدينة",
-          "country": "البلد",
-          "method": "طريقة الحساب"
-        }
-      },
-      "intro": {
-        "title": "Nida",
-        "description": "مرحباً بك في نداء — مرافقك الإسلامي للصلاة في Home Assistant. 🕌\n\nخلال الإعداد ستقوم بتكوين:\n\n1. 📍 الموقع وطريقة الحساب\n2. 🔔 تذكيرات ما قبل الأذان (5 أو 10 دقائق مسبقاً)\n3. 🕋 مكبر صوت وصوت أذان الفجر\n4. 📢 مكبر صوت وصوت الأذان اليومي\n5. 📱 الإشعارات (اختياري)\n6. 🌙 إعدادات رمضان — تهليل وتنبيه السحور (اختياري)\n\nاضغط إرسال للبدء."
+        "title": "ندا",
+        "description": "Voeg de Nida-integratie toe. Alle instellingen kunnen worden beheerd via het Nida-paneel in de zijbalk."
       }
-    },
-    "error": {
-      "cannot_connect": "لا يمكن الاتصال بـ Adhan API",
-      "invalid_location": "مدينة أو بلد غير صالح"
     },
     "abort": {
-      "already_configured": "Adhan مُهيَّأ بالفعل"
+      "single_instance_allowed": "Er kan slechts één Nida-integratie worden geconfigureerd."
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "إعدادات Adhan",
-        "data": {
-          "city": "المدينة",
-          "country": "البلد",
-          "method": "طريقة الحساب"
-        }
+  "entity": {
+    "sensor": {
+      "fajr": {
+        "name": "الفجر"
+      },
+      "dhuhr": {
+        "name": "الظهر"
+      },
+      "asr": {
+        "name": "العصر"
+      },
+      "maghrib": {
+        "name": "المغرب"
+      },
+      "isha": {
+        "name": "العشاء"
+      },
+      "fajr_readable": {
+        "name": "الفجر (مقروء)"
+      },
+      "dhuhr_readable": {
+        "name": "الظهر (مقروء)"
+      },
+      "asr_readable": {
+        "name": "العصر (مقروء)"
+      },
+      "maghrib_readable": {
+        "name": "المغرب (مقروء)"
+      },
+      "isha_readable": {
+        "name": "العشاء (مقروء)"
+      },
+      "hijri_date": {
+        "name": "التاريخ الهجري"
+      },
+      "hijri_day": {
+        "name": "اليوم الهجري"
+      },
+      "hijri_month": {
+        "name": "الشهر الهجري"
+      },
+      "hijri_year": {
+        "name": "السنة الهجرية"
+      },
+      "hijri_holiday": {
+        "name": "المناسبة الهجرية"
+      },
+      "next_prayer": {
+        "name": "الصلاة القادمة"
       }
-    }
-  },
-  "services": {
-    "common": {
-      "fields": {
-        "speaker": {
-          "name": "المكبر",
-          "description": "على أي مكبر تريد التشغيل؟"
-        },
-        "volume": {
-          "name": "الصوت",
-          "description": "مستوى الصوت (0.0 - 1.0)"
-        },
-        "prayer": {
-          "name": "الصلاة",
-          "description": "أي صلاة؟"
-        }
-      }
-    },
-    "preview_adhan": {
-      "name": "معاينة الأذان",
-      "description": "تشغيل الأذان كمعاينة",
-      "fields": {
-        "sound": {
-          "name": "الصوت",
-          "description": "أي أذان تريد تشغيله؟"
-        },
-        "speaker": {
-          "name": "المكبر",
-          "description": "على أي مكبر تريد التشغيل؟"
-        }
-      }
-    },
-    "test_prayer": {
-      "name": "اختبار أذان الصلاة",
-      "description": "اختبار الأذان لصلاة معينة"
-    },
-    "test_tarhim": {
-      "name": "اختبار الترحيم",
-      "description": "اختبار تلاوة الترحيم",
-      "fields": {
-        "sound": {
-          "name": "صوت الترحيم",
-          "description": "أي ترحيم تريد تشغيله؟"
-        },
-        "speaker": {
-          "name": "المكبر",
-          "description": "على أي مكبر تريد التشغيل؟"
-        }
-      }
-    },
-    "test_reminder": {
-      "name": "اختبار التذكير قبل الأذان",
-      "description": "اختبار التذكير قبل وقت الصلاة",
-      "fields": {
-        "reminder": {
-          "name": "التذكير",
-          "description": "أي تذكير تريد اختباره؟"
-        }
-      }
-    },
-    "test_notification": {
-      "name": "اختبار الإشعار",
-      "description": "اختبار إشعار وقت الصلاة"
-    },
-    "test_suhoor": {
-      "name": "اختبار منبه السحور",
-      "description": "اختبار منبه السحور (رمضان)"
     }
   }
 }

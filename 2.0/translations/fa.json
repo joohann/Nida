@@ -1,0 +1,65 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ندا",
+        "description": "یکپارچه‌سازی ندا را اضافه کنید. همه تنظیمات از طریق پنل ندا در نوار کناری مدیریت می‌شوند."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "فقط یک نمونه از ندا قابل پیکربندی است."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "fajr": {
+        "name": "فجر"
+      },
+      "dhuhr": {
+        "name": "ظهر"
+      },
+      "asr": {
+        "name": "عصر"
+      },
+      "maghrib": {
+        "name": "مغرب"
+      },
+      "isha": {
+        "name": "عشاء"
+      },
+      "fajr_readable": {
+        "name": "فجر (خوانا)"
+      },
+      "dhuhr_readable": {
+        "name": "ظهر (خوانا)"
+      },
+      "asr_readable": {
+        "name": "عصر (خوانا)"
+      },
+      "maghrib_readable": {
+        "name": "مغرب (خوانا)"
+      },
+      "isha_readable": {
+        "name": "عشاء (خوانا)"
+      },
+      "hijri_date": {
+        "name": "تاریخ هجری"
+      },
+      "hijri_day": {
+        "name": "روز هجری"
+      },
+      "hijri_month": {
+        "name": "ماه هجری"
+      },
+      "hijri_year": {
+        "name": "سال هجری"
+      },
+      "hijri_holiday": {
+        "name": "مناسبت هجری"
+      },
+      "next_prayer": {
+        "name": "نماز بعدی"
+      }
+    }
+  }
+}

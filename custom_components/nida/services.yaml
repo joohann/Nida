@@ -1,235 +1,59 @@
-preview_adhan:
-  description: Speel een adhan of jingle als preview op een speaker.
+play_adhan:
+  name: Play adhan
+  description: Play the configured adhan sound for a given prayer on one or more media players. Used internally by Nida's scheduler at each prayer time, but also callable manually for preview/testing.
   fields:
-    sound:
-      description: Welk geluid wil je afspelen?
-      name: Sound
+    prayer:
+      name: Prayer
+      description: Which prayer to play the adhan for. Fajr uses the fajr_adhan sound category; the other four use the standard adhan category.
       required: true
+      example: fajr
       selector:
         select:
           options:
-          - label: Ahmed Saeed Al-Omrany
-            value: Adhan [fajr] - Ahmed Saeed Al-Omrany.mp3
-          - label: Al-Fajer Saba
-            value: Adhan [fajr] - Al-Fajer Saba.mp3
-          - label: Amer Marei
-            value: Adhan [fajr] - Amer Marei.mp3
-          - label: Hafiz Fahad Shah
-            value: Adhan [fajr] - Hafiz Fahad Shah.mp3
-          - label: ION TV UK
-            value: Adhan [fajr] - ION TV UK.mp3
-          - label: Ibrahim Al-Silawi
-            value: Adhan [fajr] - Ibrahim Al-Silawi.mp3
-          - label: Mehdi Yarrahi
-            value: Adhan [fajr] - Mehdi Yarrahi.mp3
-          - label: Mishary Rashid Alafasy
-            value: Adhan [fajr] - Mishary Rashid Alafasy.mp3
-          - label: Muhammad bin Marwan Qassas
-            value: Adhan [fajr] - Muhammad bin Marwan Qassas.mp3
-          - label: NTV Islamic Show
-            value: Adhan [fajr] - NTV Islamic Show.mp3
-          - label: Qari Abdulbasit(1980)
-            value: Adhan [fajr] - Qari Abdulbasit(1980).mp3
-          - label: Sheikh Adnan bin Abdullah al-Qattan
-            value: Adhan [fajr] - Sheikh Adnan bin Abdullah al-Qattan.mp3
-          - label: Sheikh Sunbal
-            value: Adhan [fajr] - Sheikh Sunbal.mp3
-          - label: Sheikh Zayed Grand Mosque (live)
-            value: Adhan [fajr] - Sheikh Zayed Grand Mosque (live).mp3
-          - label: Sufiyum Sujathayum
-            value: Adhan [fajr] - Sufiyum Sujathayum.mp3
-          - label: Syeikh Mishary Rashid Al Afasy
-            value: Adhan [fajr] - Syeikh Mishary Rashid Al Afasy.mp3
-          - label: Ahmed Saeed Al-Omrany
-            value: Adhan [day] - Ahmed Saeed Al-Omrany.mp3
-          - label: Al-Fajer Saba
-            value: Adhan [day] - Al-Fajer Saba.mp3
-          - label: Amer Marei
-            value: Adhan [day] - Amer Marei.mp3
-          - label: Hafiz Fahad Shah
-            value: Adhan [day] - Hafiz Fahad Shah.mp3
-          - label: ION TV UK
-            value: Adhan [day] - ION TV UK.mp3
-          - label: Ibrahim Al-Silawi
-            value: Adhan [day] - Ibrahim Al-Silawi.mp3
-          - label: Mehdi Yarrahi
-            value: Adhan [day] - Mehdi Yarrahi.mp3
-          - label: Mishary Rashid Alafasy
-            value: Adhan [day] - Mishary Rashid Alafasy.mp3
-          - label: Muhammad bin Marwan Qassas
-            value: Adhan [day] - Muhammad bin Marwan Qassas.mp3
-          - label: NTV Islamic Show
-            value: Adhan [day] - NTV Islamic Show.mp3
-          - label: Qari Abdulbasit(1980)
-            value: Adhan [day] - Qari Abdulbasit(1980).mp3
-          - label: Sheikh Adnan bin Abdullah al-Qattan
-            value: Adhan [day] - Sheikh Adnan bin Abdullah al-Qattan.mp3
-          - label: Sheikh Sunbal
-            value: Adhan [day] - Sheikh Sunbal.mp3
-          - label: Sheikh Zayed Grand Mosque (live)
-            value: Adhan [day] - Sheikh Zayed Grand Mosque (live).mp3
-          - label: Sufiyum Sujathayum
-            value: Adhan [day] - Sufiyum Sujathayum.mp3
-          - label: Syeikh Mishary Rashid Al Afasy
-            value: Adhan [day] - Syeikh Mishary Rashid Al Afasy.mp3
-          - &id003
-            label: Auteur 2
-            value: Ramadan [tarhim] - Auteur 2.mp3
-          - &id004
-            label: Auteur
-            value: Ramadan [tarhim] - Auteur.mp3
-          - &id005
-            label: Auteur
-            value: Ramdan [tarhim] - Auteur.mp3
-          - &id006
-            label: Mbah Nun
-            value: Ramdan [tarhim] - Mbah Nun.mp3
-          - label: Airplane Ding Dong
-            value: Nadir [jingle] - Airplane Ding Dong.mp3
-          - label: Annoucment 1
-            value: Nadir [jingle] - Annoucment 1.mp3
-          - label: Annoucment 2
-            value: Nadir [jingle] - Annoucment 2.mp3
-          - label: Annoucment 3
-            value: Nadir [jingle] - Annoucment 3.mp3
-          - label: Annoucment 4
-            value: Nadir [jingle] - Annoucment 4.mp3
-          - label: Annoucment 5
-            value: Nadir [jingle] - Annoucment 5.mp3
-          - label: Annoucment
-            value: Nadir [jingle] - Annoucment.mp3
-          - label: Bleep Bleep
-            value: Nadir [jingle] - Bleep Bleep.mp3
-          - label: Buzzer
-            value: Nadir [jingle] - Buzzer.mp3
-          - label: Ding Dong
-            value: Nadir [jingle] - Ding Dong.mp3
-          - label: Glass
-            value: Nadir [jingle] - Glass.mp3
-          - label: Notification 1
-            value: Nadir [jingle] - Notification 1.mp3
-          - label: Notification 2
-            value: Nadir [jingle] - Notification 2.mp3
-          - label: Ting Ting Ting Ting
-            value: Nadir [jingle] - Ting Ting Ting Ting.mp3
-          - label: Warning
-            value: Nadir [jingle] - Warning.mp3
-    speaker:
-      description: Welke speaker wil je gebruiken?
-      name: Speaker
-      required: true
-      selector: &id001
+            - fajr
+            - dhuhr
+            - asr
+            - maghrib
+            - isha
+    entity_id:
+      name: Media player(s)
+      description: One or more media_player entities to play on. If omitted, falls back to the players configured in the Nida panel (options.adhan_media_players).
+      required: false
+      example: media_player.living_room
+      selector:
         entity:
           domain: media_player
-    volume: &id002
-      default: 30
-      description: Volume (0-100%). Leeg laten voor geconfigureerd volume.
-      name: Volume
-      required: false
-      selector:
-        number:
-          max: 100
-          min: 0
-          mode: slider
-          step: 5
-          unit_of_measurement: '%'
-  name: Preview Adhan
-test_notification:
-  description: Stuur een test notificatie naar geconfigureerde apparaten.
+          multiple: true
+
+play_preview:
+  name: Play preview
+  description: >-
+    Play any of Nida's configured sounds on the real speakers at its real
+    configured volume, so you can hear how loud it will actually be. Night
+    mode and open-contact adjustments are applied (a preview at 23:00 sounds
+    like 23:00); the pre-adhan dip is not, and guest mode is bypassed since
+    this is an explicit action. Duas are not listed here — use nida.play_dua,
+    which already plays each dua on its own player at its own volume.
   fields:
-    message:
-      description: Tekst van de notificatie (optioneel).
-      name: Bericht
-      required: false
-      selector:
-        text: {}
-    title:
-      description: Titel van de notificatie (optioneel).
-      name: Titel
-      required: false
-      selector:
-        text: {}
-  name: Test Notificatie
-test_prayer:
-  description: Test de adhan voor een specifiek gebed.
-  fields:
-    prayer:
-      default: dhuhr
-      description: Welk gebed wil je testen?
-      name: Prayer
+    item:
+      name: Sound
+      description: Which configured sound to play. "adhan" uses the day-adhan category and "fajr_adhan" the Fajr one; with random adhan enabled, both play the file that would actually fire today.
       required: true
+      example: adhan
       selector:
         select:
           options:
-          - label: Fajr
-            value: fajr
-          - label: Dhuhr
-            value: dhuhr
-          - label: Asr
-            value: asr
-          - label: Maghrib
-            value: maghrib
-          - label: Isha
-            value: isha
-          - label: Jumat (vrijdag)
-            value: jumat
-  name: Test Prayer
-test_reminder:
-  description: Test een pre-adhan reminder (geluid + TTS).
-  fields:
-    prayer:
-      default: Dhuhr
-      description: Naam van het gebed (voor in de TTS tekst).
-      name: Gebed
+            - adhan
+            - fajr_adhan
+            - pre_adhan_jingle
+            - test_nasheed
+            - fajr_alarm
+    entity_id:
+      name: Media player(s)
+      description: One or more media_player entities to play on. If omitted, falls back to the players configured in the Nida panel. Ignored for fajr_alarm, which always uses its own configured player.
       required: false
+      example: media_player.living_room
       selector:
-        text: {}
-    reminder:
-      default: reminder_1
-      description: Welke reminder wil je testen?
-      name: Reminder
-      required: false
-      selector:
-        select:
-          options:
-          - label: Reminder 1
-            value: reminder_1
-          - label: Reminder 2
-            value: reminder_2
-  name: Test Reminder
-test_suhoor:
-  description: Test het suhoor alarm.
-  fields:
-    sound:
-      description: Welk suhoor geluid wil je afspelen?
-      name: Sound
-      required: false
-      selector:
-        select:
-          options:
-          - label: Artiest
-            value: Ramadan [suhoor] - Artiest.mp3
-    speaker: &id007
-      description: Welke speaker wil je gebruiken?
-      name: Speaker
-      required: false
-      selector: *id001
-    volume: *id002
-  name: Test Suhoor
-test_tarhim:
-  description: Test de Tarhim recitatie voor Fajr.
-  fields:
-    sound:
-      description: Welk tarhim wil je afspelen?
-      name: Sound
-      required: false
-      selector:
-        select:
-          options:
-          - *id003
-          - *id004
-          - *id005
-          - *id006
-    speaker: *id007
-    volume: *id002
-  name: Test Tarhim
+        entity:
+          domain: media_player
+          multiple: true

@@ -1,149 +1,18 @@
 {
   "config": {
-    "step": {
-      "user": {
-        "title": "Gebedstijden",
-        "description": "Vul je locatie en berekenings methode in",
-        "data": {
-          "city": "Stad",
-          "country": "Land",
-          "method": "Berekenings Methode"
-        }
-      },
-      "adhan": {
-        "title": "Adhan Instellingen",
-        "description": "Stel de adhan in voor dagelijkse gebeden",
-        "data": {
-          "play_method": "Afspeelmethode",
-          "day_sound": "Adhan Geluid",
-          "day_speaker": "Speaker",
-          "day_volume": "Volume"
-        },
-        "data_description": {
-          "open_sensor_enabled": "Verlaag het volume als een raam of deur open staat",
-          "open_sensor_entities": "Selecteer één of meerdere raam-/deursensoren (binary_sensor). Als één van deze sensoren 'open' is, wordt het verlaagde volume gebruikt.",
-          "open_sensor_volume": "Volume (%) dat gebruikt wordt als er een raam of deur open staat"
-        }
-      },
-      "fajr": {
-        "title": "Fajr Instellingen",
-        "description": "Stel de adhan in specifiek voor Fajr",
-        "data": {
-          "fajr_sound": "Fajr Adhan Geluid",
-          "fajr_speaker": "Fajr Speaker",
-          "fajr_volume": "Fajr Volume"
-        }
-      },
-      "intro": {
-        "title": "Nida",
-        "description": "Welkom bij Nida — uw islamitische gebedsbegeleider voor Home Assistant. 🕌\n\nTijdens de installatie configureert u:\n\n1. 📍 Locatie & berekeningsmethode\n2. 🔔 Pre-adhan herinneringen (5 of 10 min van tevoren)\n3. 🕋 Fajr adhan speaker & geluid\n4. 📢 Dagelijkse adhan speaker & geluid\n5. 📱 Meldingen (optioneel)\n6. 🌙 Ramadan instellingen — tarhim & suhoor alarm (optioneel)\n\nDruk op Volgende om te beginnen."
-      }
-    },
-    "error": {
-      "cannot_connect": "Kan geen verbinding maken met AlAdhan API",
-      "invalid_location": "Ongeldige stad of land"
-    },
     "abort": {
-      "already_configured": "Gebedstijden is al geconfigureerd"
+      "single_instance_allowed": "Er kan maar één Nida-instantie geconfigureerd worden."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Gebedstijden Instellingen",
+        "title": "Nida-opties",
+        "description": "Open het [Masjid-dashboard](/nida) om gebedstijden, geluiden, taal en speakers te beheren.\n\nDe schakelaar hieronder bepaalt of Masjid ook in de zijbalk verschijnt.",
         "data": {
-          "city": "Stad",
-          "country": "Land",
-          "method": "Berekenings Methode"
-        }
-      },
-      "adhan": {
-        "title": "Adhan Instellingen",
-        "description": "Stel de adhan in voor dagelijkse gebeden",
-        "data": {
-          "play_method": "Afspeelmethode",
-          "day_sound": "Adhan Geluid",
-          "day_speaker": "Speaker",
-          "day_volume": "Volume"
-        }
-      },
-      "fajr": {
-        "title": "Fajr Instellingen",
-        "description": "Stel de adhan in specifiek voor Fajr",
-        "data": {
-          "fajr_sound": "Fajr Adhan Geluid",
-          "fajr_speaker": "Fajr Speaker",
-          "fajr_volume": "Fajr Volume"
+          "show_in_sidebar": "Masjid in zijbalk tonen"
         }
       }
-    }
-  },
-  "services": {
-    "common": {
-      "fields": {
-        "speaker": {
-          "name": "Speaker",
-          "description": "Op welke speaker afspelen?"
-        },
-        "volume": {
-          "name": "Volume",
-          "description": "Volume (0.0 - 1.0)"
-        },
-        "prayer": {
-          "name": "Gebed",
-          "description": "Welk gebed?"
-        }
-      }
-    },
-    "preview_adhan": {
-      "name": "Preview Adhan",
-      "description": "Speel een adhan af als preview",
-      "fields": {
-        "sound": {
-          "name": "Geluid",
-          "description": "Welke adhan wil je afspelen?"
-        },
-        "speaker": {
-          "name": "Speaker",
-          "description": "Op welke speaker afspelen?"
-        }
-      }
-    },
-    "test_prayer": {
-      "name": "Test Gebedsadhan",
-      "description": "Test de adhan voor een specifiek gebed"
-    },
-    "test_tarhim": {
-      "name": "Test Tarhim",
-      "description": "Test de tarhim recitatie",
-      "fields": {
-        "sound": {
-          "name": "Tarhim Geluid",
-          "description": "Welke tarhim wil je afspelen?"
-        },
-        "speaker": {
-          "name": "Speaker",
-          "description": "Op welke speaker afspelen?"
-        }
-      }
-    },
-    "test_reminder": {
-      "name": "Test Pre-Adhan Herinnering (Test Tadkir)",
-      "description": "Test de herinnering voor het gebed",
-      "fields": {
-        "reminder": {
-          "name": "Herinnering",
-          "description": "Welke herinnering testen?"
-        }
-      }
-    },
-    "test_notification": {
-      "name": "Test Notificatie",
-      "description": "Test de gebedsnotificatie"
-    },
-    "test_suhoor": {
-      "name": "Test Suhoor Alarm",
-      "description": "Test het suhoor alarm (Ramadan)"
     }
   }
 }

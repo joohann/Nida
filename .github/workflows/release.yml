@@ -1,3 +1,8 @@
+# Changelog:
+#   2.3.14 (2026-09-09): Single-source release. nida.zip now contains only
+#     custom_components/nida/ (sounds + frontend live inside it). Dropped the
+#     old www/ sound and card bundling and the extension-pack assets, per the
+#     single-source-of-truth rule.
 name: Release Nida
 on:
   release:
@@ -14,7 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create nida.zip (met standaard sounds)
+      - name: Create nida.zip
         run: |
           cd custom_components/nida
           zip -r ../../nida.zip . \
@@ -22,62 +27,15 @@ jobs:
             --exclude "__pycache__/*" \
             --exclude ".DS_Store"
           cd ../..
-
-          # Standaard sounds: 1x fajr, 1x day, 1x jingle
-          SOUNDS="www/nida/sounds"
-          DEFAULTS=(
-            "$SOUNDS/adhan_fajr_ahmed_saeed_al-omrany.mp3"
-            "$SOUNDS/adhan_day_ahmed_saeed_al-omrany.mp3"
-            "$SOUNDS/nadir_jingle_annoucment.mp3"
-          )
-          for f in "${DEFAULTS[@]}"; do
-            if [ -f "$f" ]; then
-              zip nida.zip "$f"
-              echo "✅ Toegevoegd: $f"
-            else
-              echo "⚠️  Niet gevonden: $f"
-            fi
-          done
-
-          if [ -f "www/nida/nida-card.js" ]; then
-            zip nida.zip www/nida/nida-card.js
-            echo "✅ www/nida/nida-card.js toegevoegd"
-          else
-            echo "⚠️  www/nida/nida-card.js niet gevonden"
-          fi
-
-          echo "=== nida.zip inhoud ==="
+          echo "=== nida.zip contents ==="
           unzip -l nida.zip
-          echo "=== nida.zip grootte ==="
+          echo "=== nida.zip size ==="
           du -sh nida.zip
-
-      - name: Create extension packs
-        run: |
-          SOUNDS="www/nida/sounds"
-          mapfile -t ADHAN < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "adhan_(fajr|day)_" | sort)
-          if [ ${#ADHAN[@]} -gt 0 ]; then
-            zip pack-adhan.zip "${ADHAN[@]}"
-            echo "✅ pack-adhan.zip: ${#ADHAN[@]} bestanden"
-          fi
-          mapfile -t RAMADAN < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "ramadan_(tarhim|suhoor)_" | sort)
-          if [ ${#RAMADAN[@]} -gt 0 ]; then
-            zip pack-ramadan.zip "${RAMADAN[@]}"
-            echo "✅ pack-ramadan.zip: ${#RAMADAN[@]} bestanden"
-          fi
-          mapfile -t JINGLES < <(find "$SOUNDS" -iname "*.mp3" | grep -iE "(nadir|nida)_jingle_" | sort)
-          if [ ${#JINGLES[@]} -gt 0 ]; then
-            zip pack-jingles.zip "${JINGLES[@]}"
-            echo "✅ pack-jingles.zip: ${#JINGLES[@]} bestanden"
-          fi
 
       - name: Upload to release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            nida.zip
-            pack-adhan.zip
-            pack-ramadan.zip
-            pack-jingles.zip
+          files: nida.zip
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
