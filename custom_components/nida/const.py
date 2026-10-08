@@ -348,7 +348,17 @@ DEFAULT_VOLUME_PRE_ADHAN_TEST = 30
 # server) — schema documented inline in catalog.py's _adapt_item.
 # Empty allowed: user can repoint to a self-hosted mirror via panel.
 OPT_CATALOG_URL = "catalog_url"
-DEFAULT_CATALOG_URL = "https://majikan.nl/nida/adhan/manifest.json"
+# 2.4.6 — the library moved to nida.majikan.nl and split per sound type:
+# sounds/adhan, sounds/jingles, sounds/dua. Jingles used to ride along in
+# the adhan manifest as type "jingle"; they now have their own, which is
+# why OPT_JINGLE_CATALOG_URL exists at all.
+#
+# LEGACY_CATALOG_URLS maps every URL a previous version shipped as a
+# DEFAULT to its replacement. __init__.py rewrites a stored URL only when
+# it matches one of these exactly — the same "equals a known default =
+# never customised" rule used for the notify title. A URL the user typed
+# themselves is left alone, since it may well point at their own mirror.
+DEFAULT_CATALOG_URL = "https://nida.majikan.nl/sounds/adhan/manifest.json"
 
 # TTS pre-adhan announcement (2.0.32). Fires AFTER the pre-adhan
 # jingle, on the same adhan speakers, via one or more user-selected
@@ -662,7 +672,19 @@ DEFAULT_GUEST_MODE_HOURS = 4
 # ─────────────────────────────────────────────────────────────────────────────
 OPT_DUAS = "duas"
 OPT_DUA_CATALOG_URL = "dua_catalog_url"
-DEFAULT_DUA_CATALOG_URL = "https://majikan.nl/nida/dua/manifest.json"
+DEFAULT_DUA_CATALOG_URL = "https://nida.majikan.nl/sounds/dua/manifest.json"
+
+OPT_JINGLE_CATALOG_URL = "jingle_catalog_url"
+DEFAULT_JINGLE_CATALOG_URL = "https://nida.majikan.nl/sounds/jingles/manifest.json"
+
+# Old default → new default. Both the bare and www hostnames shipped at
+# various points, so both are listed.
+LEGACY_CATALOG_URLS = {
+    "https://majikan.nl/nida/adhan/manifest.json": DEFAULT_CATALOG_URL,
+    "https://www.majikan.nl/nida/adhan/manifest.json": DEFAULT_CATALOG_URL,
+    "https://majikan.nl/nida/dua/manifest.json": DEFAULT_DUA_CATALOG_URL,
+    "https://www.majikan.nl/nida/dua/manifest.json": DEFAULT_DUA_CATALOG_URL,
+}
 SOUND_CATEGORY_DUA = "dua"
 DEFAULT_DUA_VOLUME = 40
 DUA_TRIGGER_COOLDOWN_SECONDS = 60
