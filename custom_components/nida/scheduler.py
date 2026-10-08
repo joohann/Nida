@@ -290,6 +290,7 @@ from .const import (
     DEFAULT_JUMUAH_MINUTES,
     DEFAULT_NOTIFY_ICON_COLOR,
     DEFAULT_NOTIFY_IOS_IMAGE_ENABLED,
+    DEFAULT_NOTIFY_LARGE_ICON_ENABLED,
     DEFAULT_NOTIFY_MESSAGE_FALLBACK,
     DEFAULT_NOTIFY_TITLE_FALLBACK,
     DEFAULT_PRE_ADHAN_AUDIO_ENABLED,
@@ -348,10 +349,12 @@ from .const import (
     NOTIFY_GROUP,
     NOTIFY_ICON_DEFAULT,
     NOTIFY_ICON_IMAGE_PATH,
+    NOTIFY_LARGE_ICON_PATH,
     NOTIFY_THREAD_ID,
     OPT_NOTIFY_ICON,
     OPT_NOTIFY_ICON_COLOR,
     OPT_NOTIFY_IOS_IMAGE_ENABLED,
+    OPT_NOTIFY_LARGE_ICON_ENABLED,
     OPT_NOTIFY_MESSAGE,
     OPT_NOTIFY_TARGETS,
     OPT_NOTIFY_TITLE,
@@ -1557,12 +1560,34 @@ def _apply_notify_branding(
     if color:
         data["color"] = color
 
+    # ── the brand image, per platform ──
+    # 2.3.15. Johann asked whether the bell on a live notification could
+    # become the Nida logo. What that bell IS depends on the platform,
+    # and so does whether it can be replaced at all:
+    #
+    #   ANDROID — the bell is the SMALL icon, which Android blows up to
+    #   fill the circle whenever no large icon was sent. A small icon can
+    #   only be a monochrome mdi path, so the logo cannot go there — but
+    #   icon_url sets the LARGE icon from an image, which is that same
+    #   circle, in full colour. There this genuinely replaces the bell.
+    #
+    #   iOS — the bell is the app icon, and nothing in a push payload can
+    #   change it; only a Notification Service Extension inside the Home
+    #   Assistant app itself could. The attachment below is the one lever
+    #   we have: it puts the Nida logo on the notification as a thumbnail,
+    #   BESIDE the app icon rather than instead of it. On by default,
+    #   since iOS has nothing else to offer here.
+    #
+    # Both use a relative path: the Companion app resolves it against the
+    # connection it is already authenticated on, so this works on the
+    # internal and external URL without hardcoding either.
+    if bool(options.get(
+        OPT_NOTIFY_LARGE_ICON_ENABLED, DEFAULT_NOTIFY_LARGE_ICON_ENABLED
+    )):
+        data["icon_url"] = NOTIFY_LARGE_ICON_PATH
     if bool(options.get(
         OPT_NOTIFY_IOS_IMAGE_ENABLED, DEFAULT_NOTIFY_IOS_IMAGE_ENABLED
     )):
-        # A relative path: the Companion app resolves it against the
-        # connection it is already authenticated on, so this works on
-        # both the internal and external URL without hardcoding either.
         data["attachment"] = {"url": NOTIFY_ICON_IMAGE_PATH, "content-type": "png"}
 
 

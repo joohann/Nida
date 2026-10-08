@@ -84,19 +84,26 @@ async def async_copy_brand(hass: HomeAssistant) -> None:
     Like the sounds mirror this never overwrites, so dropping your own
     icon.png in www/nida/brand/ replaces the shipped one.
     """
-    src = Path(__file__).parent / "brand" / "icon.png"
-    dst = Path(hass.config.path("www")) / "nida" / "brand" / "icon.png"
+    src_root = Path(__file__).parent / "brand"
+    dst_root = Path(hass.config.path("www")) / "nida" / "brand"
 
-    def _do_copy() -> bool:
-        if not src.is_file() or dst.exists():
-            return False
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dst)
-        return True
+    def _do_copy() -> int:
+        if not src_root.is_dir():
+            return 0
+        copied = 0
+        for src_file in sorted(src_root.glob("*.png")):
+            dst_file = dst_root / src_file.name
+            if dst_file.exists():
+                continue
+            dst_file.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src_file, dst_file)
+            copied += 1
+        return copied
 
     try:
-        if await hass.async_add_executor_job(_do_copy):
-            _LOGGER.info("Nida: copied brand icon into %s", dst)
+        copied = await hass.async_add_executor_job(_do_copy)
+        if copied:
+            _LOGGER.info("Nida: copied %d brand image(s) into %s", copied, dst_root)
     except Exception as err:  # noqa: BLE001
         # Never let a cosmetic asset break setup.
-        _LOGGER.debug("Nida: could not copy brand icon (%s)", err)
+        _LOGGER.debug("Nida: could not copy brand images (%s)", err)

@@ -74,7 +74,11 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.loader import async_get_integration
 
-from .const import DOMAIN
+from .const import (
+    DEFAULT_SIDEBAR_ADMIN_ONLY,
+    DOMAIN,
+    OPT_SIDEBAR_ADMIN_ONLY,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -136,6 +140,16 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     await async_register_static_files(hass)
     version = await _asset_version(hass)
 
+    # 2.3.18 — optional admin-only sidebar entry. Read at registration
+    # time; __init__.py already removes and re-registers the panel on
+    # every options update, so flipping the toggle takes effect on save
+    # rather than needing a restart.
+    entries = hass.config_entries.async_entries(DOMAIN)
+    options = dict(entries[0].options) if entries else {}
+    admin_only = bool(
+        options.get(OPT_SIDEBAR_ADMIN_ONLY, DEFAULT_SIDEBAR_ADMIN_ONLY)
+    )
+
     await panel_custom.async_register_panel(
         hass,
         webcomponent_name="nida-panel",
@@ -144,9 +158,12 @@ async def async_register_panel(hass: HomeAssistant) -> None:
         sidebar_title=PANEL_TITLE,
         sidebar_icon=PANEL_ICON,
         embed_iframe=False,  # False for custom elements (web components)
-        require_admin=False,
+        require_admin=admin_only,
     )
-    _LOGGER.debug("Nida panel registered at /%s (v%s)", PANEL_URL_PATH, version)
+    _LOGGER.debug(
+        "Nida panel registered at /%s (v%s, admin_only=%s)",
+        PANEL_URL_PATH, version, admin_only,
+    )
 
 
 async def async_register_card(hass: HomeAssistant) -> None:
