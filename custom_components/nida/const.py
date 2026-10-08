@@ -583,7 +583,27 @@ NOTIFY_GROUP = "nida"
 NOTIFY_CHANNEL = "Nida"
 # Mirrored out of the integration's brand/ folder by helpers.py so the
 # Companion app can actually fetch it over the HA connection.
-NOTIFY_ICON_IMAGE_PATH = "/local/nida/brand/icon.png"
+# 2.3.15 — points at the 192px copy, not the 1024px brand icon: iOS
+# renders this as a thumbnail, so the big one was ~200 kB fetched per
+# notification for no visible gain.
+NOTIFY_ICON_IMAGE_PATH = "/local/nida/brand/icon_notify.png"
+
+# 2.3.15 — the big round image on an Android notification. Johann, on a
+# screenshot of a live adhan notification: "kunnen we dat belletje nu
+# veranderen in ons eigen logo?" That bell is the SMALL icon
+# (notification_icon), which Android blows up to fill the circle whenever
+# no large icon was supplied — and a small icon can only ever be a
+# monochrome mdi path, never an image, so the logo cannot go there.
+# data.icon_url can: it sets the large icon from an image URL, which is
+# exactly the circle the bell was sitting in, and it keeps full colour.
+#
+# Points at a 192px copy rather than the 1024px brand icon: the large
+# icon renders at roughly 64dp, so the big one would be ~200 kB fetched
+# over mobile data per notification for no visible gain. Both live in
+# brand/ and helpers.py mirrors the whole folder.
+NOTIFY_LARGE_ICON_PATH = "/local/nida/brand/icon_notify.png"
+OPT_NOTIFY_LARGE_ICON_ENABLED = "notify_large_icon_enabled"
+DEFAULT_NOTIFY_LARGE_ICON_ENABLED = True
 
 OPT_SONOS_ANNOUNCE_ENABLED = "sonos_announce_enabled"
 DEFAULT_SONOS_ANNOUNCE_ENABLED = False
@@ -694,7 +714,18 @@ OPT_NOTIFY_TTS_WORKAROUND_TARGETS = "notify_tts_workaround_targets"
 # Fallbacks used by the backend when the panel hasn't seeded language-
 # specific defaults yet. EN-only on the backend; the panel localises
 # at first-init time and writes the per-language strings into options.
-DEFAULT_NOTIFY_TITLE_FALLBACK = "🕌 Nida"
+# 2.4.0 — plain "Nida", no mosque emoji. Johann dropped it once the iOS
+# Companion app icon was doing the visual identifying: the emoji was a
+# stand-in for branding we now have properly, and it ate the start of
+# every notification title.
+#
+# LEGACY_NOTIFY_TITLES holds the values earlier versions wrote into
+# options.notify_title verbatim. __init__.py treats a stored title that
+# exactly equals one of them as "never customised" and migrates it, the
+# same trick services.py's _resolve_tts_message uses. A title the user
+# actually typed is left alone.
+DEFAULT_NOTIFY_TITLE_FALLBACK = "Nida"
+LEGACY_NOTIFY_TITLES = ("🕌 Nida",)
 DEFAULT_NOTIFY_MESSAGE_FALLBACK = "It's time for [prayer] prayer"
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -933,3 +964,42 @@ OPT_FAJR_ALARM_SOUND = "fajr_alarm_sound"
 OPT_FAJR_ALARM_MEDIA_PLAYER = "fajr_alarm_media_player"
 OPT_FAJR_ALARM_VOLUME = "fajr_alarm_volume"
 DEFAULT_FAJR_ALARM_VOLUME = 40
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Settings access (2.3.16) — Johann: "kunnen we instellingen verbergen voor
+# andere gebruikers? We hebben admins maar kunnen we ook gewone maar ook
+# andere admins de instellingen verbergen."
+#
+# Empty list  → every Home Assistant ADMIN may change Nida's settings.
+# Non-empty   → ONLY the listed user ids may, admin or not. That is what
+#               shuts out other admins.
+#
+# Read the honest limit before relying on this: it is not a security
+# boundary against an admin. Any HA admin can open Nida's options flow from
+# the Integrations page, edit .storage directly, or simply remove this
+# allowlist again. What it genuinely buys you is that the panel's settings
+# are out of sight and the websocket refuses their writes — enough to keep
+# a household's other admins from changing prayer times or adhan volumes by
+# accident, not enough to stop one who sets out to.
+#
+# Against NON-admins it is a real boundary, because they have none of those
+# routes. And it closes a genuine hole: before this every logged-in user,
+# admin or not, could call nida/update_settings and change everything.
+OPT_SETTINGS_USERS = "settings_users"   # list of HA user ids
+DEFAULT_SETTINGS_USERS: list[str] = []
+
+# 2.3.18 — hide the Nida sidebar entry from non-admins entirely (Johann
+# asked for this on top of the settings allowlist). Unlike that allowlist,
+# this one is enforced by Home Assistant itself: require_admin on a
+# registered panel is a core check, not something we police.
+#
+# Default False, i.e. unchanged behaviour. A prayer-times panel is
+# genuinely useful to every member of a household, so turning it off for
+# them is a household decision rather than a sensible default to impose
+# on every install.
+#
+# Note what this canNOT do: HA has no per-user panel visibility, so an
+# admin who is NOT on the settings allowlist still sees the sidebar entry.
+# They just find the settings hidden once inside.
+OPT_SIDEBAR_ADMIN_ONLY = "sidebar_admin_only"
+DEFAULT_SIDEBAR_ADMIN_ONLY = False

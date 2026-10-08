@@ -222,6 +222,47 @@ def _get_entry(hass: HomeAssistant, entry_id: str):
     return hass.config_entries.async_get_entry(entry_id)
 
 
+def _may_edit_settings(hass: HomeAssistant, connection) -> bool:
+    """May the user behind this connection CHANGE Nida's settings? (2.3.16)
+
+    Allowlist empty  → any Home Assistant admin.
+    Allowlist filled → only the listed user ids, which is how other admins
+                       get shut out.
+
+    This is the real enforcement; the panel hiding its settings column is
+    only cosmetic and trivially bypassed by talking to the websocket
+    directly. See const.py's OPT_SETTINGS_USERS for what this does and does
+    not protect against.
+
+    A missing connection.user (shouldn't happen on an authenticated
+    websocket) is treated as not allowed rather than allowed.
+    """
+    user = getattr(connection, "user", None)
+    if user is None:
+        return False
+    # 2.3.17 — the owner is never excluded, whatever the allowlist says.
+    # Without this the allowlist is a loaded gun: save a list you are not
+    # on and the panel locks you out of your own install, recoverable only
+    # via the Integrations page or by editing .storage. The owner is also
+    # the one account HA itself treats as undeletable and always admin, so
+    # anchoring to it costs nothing — and anyone who could abuse the
+    # exception is already the owner.
+    if getattr(user, "is_owner", False):
+        return True
+    entries = hass.config_entries.async_entries(DOMAIN)
+    options = dict(entries[0].options) if entries else {}
+    allowed = [u for u in (options.get(OPT_SETTINGS_USERS) or []) if isinstance(u, str)]
+    if allowed:
+        return user.id in allowed
+    return bool(user.is_admin)
+
+
+def _deny_settings(connection, msg) -> None:
+    connection.send_error(
+        msg["id"], "unauthorized", "Not allowed to change Nida settings"
+    )
+
+
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "nida/get_settings",
@@ -248,6 +289,12 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg) -> None:
 @websocket_api.async_response
 async def ws_update_settings(hass: HomeAssistant, connection, msg) -> None:
     """Sla nieuwe instellingen op vanuit het panel."""
+    # 2.3.16 — server-side gate; the panel hiding its settings is
+    # cosmetic, this is what actually refuses the write.
+    if not _may_edit_settings(hass, connection):
+        _LOGGER.warning("Nida settings change refused for user %s", getattr(connection.user, "name", "?"))
+        _deny_settings(connection, msg)
+        return
     entry = _get_entry(hass, msg["entry_id"])
     if entry is None:
         connection.send_error(msg["id"], "not_found", "Config entry niet gevonden")
@@ -606,7 +653,14 @@ async def ws_test_notify(hass: HomeAssistant, connection, msg) -> None:
     `_get_entry`, falling back to the old first-entry behaviour only if
     entry_id is omitted (kept for any other caller of this command).
     """
+    # 2.3.16 — server-side gate; the panel hiding its settings is
+    # cosmetic, this is what actually refuses the write.
+    if not _may_edit_settings(hass, connection):
+        _LOGGER.warning("Nida test notification refused for user %s", getattr(connection.user, "name", "?"))
+        _deny_settings(connection, msg)
+        return
     from .const import (
+    OPT_SETTINGS_USERS,
         DEFAULT_NOTIFY_MESSAGE_FALLBACK,
         DEFAULT_NOTIFY_TITLE_FALLBACK,
         OPT_NOTIFY_CRITICAL_ENABLED_PREFIX,
@@ -685,6 +739,12 @@ async def ws_test_jumuah(hass: HomeAssistant, connection, msg) -> None:
     `async_entries(DOMAIN)[0]`, which silently reads a different, stale
     entry's options whenever more than one Nida entry exists.
     """
+    # 2.3.16 — server-side gate; the panel hiding its settings is
+    # cosmetic, this is what actually refuses the write.
+    if not _may_edit_settings(hass, connection):
+        _LOGGER.warning("Nida test notification refused for user %s", getattr(connection.user, "name", "?"))
+        _deny_settings(connection, msg)
+        return
     from .const import (
         DEFAULT_JUMUAH_MESSAGE_FALLBACK,
         DEFAULT_JUMUAH_MINUTES,
@@ -813,6 +873,12 @@ async def ws_get_catalog(hass: HomeAssistant, connection, msg) -> None:
 )
 @websocket_api.async_response
 async def ws_download_sound(hass: HomeAssistant, connection, msg) -> None:
+    # 2.3.16 — server-side gate; the panel hiding its settings is
+    # cosmetic, this is what actually refuses the write.
+    if not _may_edit_settings(hass, connection):
+        _LOGGER.warning("Nida sound download refused for user %s", getattr(connection.user, "name", "?"))
+        _deny_settings(connection, msg)
+        return
     result = await async_download_sound(hass, msg["url"], msg["rel_path"])
     connection.send_result(msg["id"], result)
 
@@ -825,6 +891,12 @@ async def ws_download_sound(hass: HomeAssistant, connection, msg) -> None:
 )
 @websocket_api.async_response
 async def ws_delete_sound(hass: HomeAssistant, connection, msg) -> None:
+    # 2.3.16 — server-side gate; the panel hiding its settings is
+    # cosmetic, this is what actually refuses the write.
+    if not _may_edit_settings(hass, connection):
+        _LOGGER.warning("Nida sound delete refused for user %s", getattr(connection.user, "name", "?"))
+        _deny_settings(connection, msg)
+        return
     result = await async_delete_sound(hass, msg["rel_path"])
     connection.send_result(msg["id"], result)
 

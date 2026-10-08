@@ -2142,6 +2142,11 @@ const PRAYERS = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 // HIJRI_MONTH_RAMADAN), used by the Ramadan day-counter and the various
 // ramadan-only UI gates that check _currentHijri()?.monthNum directly.
 const HIJRI_MONTH_RAMADAN = 9;
+// 2.4.5 — how early the Ramadan tab appears by itself. Long enough to set
+// suhoor/iftar reminders and the Fajr alarm up before the month starts,
+// short enough that the tab is absent for most of the year. The rest of
+// the time /nida?show_hidden_settings reveals it on demand.
+const RAMADAN_TAB_LEAD_DAYS = 14;
 
 // 2.2.2 — fixed notification message strings for the Mac-shortcut duck
 // feature (matches const.py's DUCK_MAC_SHORTCUT_DUCK_MESSAGE/_RESTORE_
@@ -2452,8 +2457,10 @@ const TRANSLATIONS = {
     notify_branding_head: "Appearance",
     notify_branding_hint: "Android shows this icon instead of the Home Assistant logo. On iOS the app icon can't be changed — Nida's notifications are grouped separately there instead.",
     notify_icon_label: "Notification icon (Android)",
-    notify_ios_image_label: "Show Nida icon on iOS",
-    notify_ios_image_sub: "Attaches Nida's icon as a thumbnail. Costs an image download per notification.",
+    notify_large_icon_label: "Nida logo on Android",
+    notify_large_icon_sub: "Replaces the big circle on the notification with Nida's logo. Android only.",
+    notify_ios_image_label: "Nida logo on iOS",
+    notify_ios_image_sub: "Adds the logo as a thumbnail. iOS can't replace the app icon itself.",
     notify_default_title: "🕌 Nida²",
     notify_default_message: "It's time for [prayer] prayer",
     test_notify_btn: "Send test notification",
@@ -2583,6 +2590,18 @@ const TRANSLATIONS = {
     cal_event_weekly_sunnah_ar: "صيام الاثنين والخميس",
     cal_event_weekly_sunnah_desc: "The Prophet ﷺ regularly fasted on Mondays and Thursdays, saying that deeds are presented to God on these days and he liked his deeds to be presented while fasting. A simple, recurring act of devotion outside Ramadan.",
     section_setup: "Setup/Backup",
+    settings_access_head: "Access",
+    sidebar_admin_only_label: "Hide panel from non-admins",
+    sidebar_admin_only_sub: "Removes the Nida sidebar entry for everyone who isn't a Home Assistant admin.",
+    settings_users_label: "Who may change settings",
+    settings_users_sub: "Empty = every Home Assistant admin",
+    settings_users_pick_title: "Who may change settings",
+    settings_users_all_admins: "All admins",
+    settings_user_admin: "Admin",
+    settings_user_owner: "Owner",
+    settings_user_owner_locked: "Owner · always",
+    settings_hidden_title: "Settings are hidden",
+    settings_hidden_sub: "Only the users chosen by the owner can change Nida's settings. Prayer times stay visible.",
     setup_section_intro: "Run the setup again at any time — for example after moving, or to start over from scratch.",
     setup_mode_manual_title: "Manual",
     setup_mode_manual_sub: "Walk through every setting yourself, step by step.",
@@ -2838,8 +2857,10 @@ const TRANSLATIONS = {
     notify_branding_head: "Weergave",
     notify_branding_hint: "Android toont dit icoon in plaats van het Home Assistant-logo. Op iOS kan het app-icoon niet worden aangepast — daar worden Nida's meldingen apart gegroepeerd.",
     notify_icon_label: "Meldingsicoon (Android)",
-    notify_ios_image_label: "Nida-icoon tonen op iOS",
-    notify_ios_image_sub: "Voegt Nida's icoon toe als miniatuur. Kost een afbeeldingsdownload per melding.",
+    notify_large_icon_label: "Nida-logo op Android",
+    notify_large_icon_sub: "Vervangt de grote cirkel op de melding door Nida's logo. Alleen Android.",
+    notify_ios_image_label: "Nida-logo op iOS",
+    notify_ios_image_sub: "Voegt het logo toe als miniatuur. iOS kan het app-icoon zelf niet vervangen.",
     notify_default_title: "🕌 Nida²",
     notify_default_message: "Het is tijd voor het [prayer]-gebed",
     test_notify_btn: "Test-notificatie versturen",
@@ -2967,6 +2988,18 @@ const TRANSLATIONS = {
     cal_event_weekly_sunnah_ar: "صيام الاثنين والخميس",
     cal_event_weekly_sunnah_desc: "De Profeet ﷺ vastte regelmatig op maandag en donderdag, en zei dat daden op deze dagen aan God worden voorgelegd — hij wilde dat zijn daden werden voorgelegd terwijl hij vastte. Een eenvoudige, terugkerende vorm van toewijding buiten Ramadan.",
     section_setup: "Setup/Backup",
+    settings_access_head: "Toegang",
+    sidebar_admin_only_label: "Paneel verbergen voor niet-admins",
+    sidebar_admin_only_sub: "Haalt de Nida-zijbalkingang weg voor iedereen die geen Home Assistant-admin is.",
+    settings_users_label: "Wie mag instellingen wijzigen",
+    settings_users_sub: "Leeg = elke Home Assistant-admin",
+    settings_users_pick_title: "Wie mag instellingen wijzigen",
+    settings_users_all_admins: "Alle admins",
+    settings_user_admin: "Admin",
+    settings_user_owner: "Eigenaar",
+    settings_user_owner_locked: "Eigenaar · altijd",
+    settings_hidden_title: "Instellingen zijn verborgen",
+    settings_hidden_sub: "Alleen de door de eigenaar gekozen gebruikers kunnen Nida's instellingen wijzigen. Gebedstijden blijven zichtbaar.",
     setup_section_intro: "Doorloop de setup op elk moment opnieuw — bijvoorbeeld na een verhuizing, of om helemaal opnieuw te beginnen.",
     setup_mode_manual_title: "Handmatig",
     setup_mode_manual_sub: "Doorloop elke instelling zelf, stap voor stap.",
@@ -3225,8 +3258,10 @@ const TRANSLATIONS = {
     notify_branding_head: "المظهر",
     notify_branding_hint: "يعرض أندرويد هذه الأيقونة بدلاً من شعار Home Assistant. على iOS لا يمكن تغيير أيقونة التطبيق — تُجمَّع إشعارات Nida هناك بشكل منفصل بدلاً من ذلك.",
     notify_icon_label: "أيقونة الإشعار (أندرويد)",
-    notify_ios_image_label: "إظهار أيقونة Nida على iOS",
-    notify_ios_image_sub: "يرفق أيقونة Nida كصورة مصغّرة. يكلّف تنزيل صورة لكل إشعار.",
+    notify_large_icon_label: "شعار Nida على أندرويد",
+    notify_large_icon_sub: "يستبدل الدائرة الكبيرة في الإشعار بشعار Nida. أندرويد فقط.",
+    notify_ios_image_label: "شعار Nida على iOS",
+    notify_ios_image_sub: "يضيف الشعار كصورة مصغّرة. لا يمكن لـ iOS استبدال أيقونة التطبيق نفسها.",
     notify_default_title: "🕌 Nida²",
     notify_default_message: "حان وقت صلاة [prayer]",
     test_notify_btn: "إرسال إشعار تجريبي",
@@ -3354,6 +3389,18 @@ const TRANSLATIONS = {
     cal_event_weekly_sunnah_ar: "صيام الاثنين والخميس",
     cal_event_weekly_sunnah_desc: "كان النبي ﷺ يصوم بانتظام يومي الاثنين والخميس، وقال إن الأعمال تُعرض على الله في هذين اليومين وأحب أن تُعرض أعماله وهو صائم. عمل تعبدي بسيط ومتكرر خارج رمضان.",
     section_setup: "الإعداد/النسخ الاحتياطي",
+    settings_access_head: "الوصول",
+    sidebar_admin_only_label: "إخفاء اللوحة عن غير المشرفين",
+    sidebar_admin_only_sub: "يزيل مدخل Nida من الشريط الجانبي لكل من ليس مشرفاً في Home Assistant.",
+    settings_users_label: "من يمكنه تغيير الإعدادات",
+    settings_users_sub: "فارغ = كل مشرف في Home Assistant",
+    settings_users_pick_title: "من يمكنه تغيير الإعدادات",
+    settings_users_all_admins: "كل المشرفين",
+    settings_user_admin: "مشرف",
+    settings_user_owner: "المالك",
+    settings_user_owner_locked: "المالك · دائماً",
+    settings_hidden_title: "الإعدادات مخفية",
+    settings_hidden_sub: "يمكن فقط للمستخدمين الذين اختارهم المالك تغيير إعدادات Nida. تبقى أوقات الصلاة ظاهرة.",
     setup_section_intro: "يمكنك تشغيل الإعداد مرة أخرى في أي وقت — على سبيل المثال بعد الانتقال، أو للبدء من جديد.",
     setup_mode_manual_title: "يدوي",
     setup_mode_manual_sub: "مرّ بكل إعداد بنفسك، خطوة بخطوة.",
@@ -3609,8 +3656,10 @@ const TRANSLATIONS = {
     notify_branding_head: "Görünüm",
     notify_branding_hint: "Android, Home Assistant logosu yerine bu simgeyi gösterir. iOS'ta uygulama simgesi değiştirilemez — orada Nida bildirimleri bunun yerine ayrı gruplanır.",
     notify_icon_label: "Bildirim simgesi (Android)",
-    notify_ios_image_label: "iOS'ta Nida simgesini göster",
-    notify_ios_image_sub: "Nida'nın simgesini küçük resim olarak ekler. Her bildirimde bir görsel indirmesi gerektirir.",
+    notify_large_icon_label: "Nida logosu Android'de",
+    notify_large_icon_sub: "Bildirimdeki büyük daireyi Nida'nın logosuyla değiştirir. Yalnızca Android.",
+    notify_ios_image_label: "Nida logosu iOS'ta",
+    notify_ios_image_sub: "Logoyu küçük resim olarak ekler. iOS uygulama simgesinin kendisini değiştiremez.",
     notify_default_title: "🕌 Nida²",
     notify_default_message: "[prayer] namazı vakti geldi",
     test_notify_btn: "Test bildirimi gönder",
@@ -3738,6 +3787,18 @@ const TRANSLATIONS = {
     cal_event_weekly_sunnah_ar: "صيام الاثنين والخميس",
     cal_event_weekly_sunnah_desc: "Hz. Peygamber ﷺ düzenli olarak Pazartesi ve Perşembe günleri oruç tutar, amellerin bu günlerde Allah'a sunulduğunu ve amellerinin oruçluyken sunulmasını sevdiğini söylerdi. Ramazan dışında basit, tekrarlanan bir ibadet.",
     section_setup: "Kurulum/Yedekleme",
+    settings_access_head: "Erişim",
+    sidebar_admin_only_label: "Paneli yöneticisi olmayanlardan gizle",
+    sidebar_admin_only_sub: "Home Assistant yöneticisi olmayan herkes için Nida kenar çubuğu girişini kaldırır.",
+    settings_users_label: "Ayarları kim değiştirebilir",
+    settings_users_sub: "Boş = her Home Assistant yöneticisi",
+    settings_users_pick_title: "Ayarları kim değiştirebilir",
+    settings_users_all_admins: "Tüm yöneticiler",
+    settings_user_admin: "Yönetici",
+    settings_user_owner: "Sahip",
+    settings_user_owner_locked: "Sahip · her zaman",
+    settings_hidden_title: "Ayarlar gizli",
+    settings_hidden_sub: "Nida'nın ayarlarını yalnızca sahibin seçtiği kullanıcılar değiştirebilir. Namaz vakitleri görünür kalır.",
     setup_section_intro: "Kurulumu istediğiniz zaman tekrar çalıştırabilirsiniz — örneğin taşındıktan sonra veya baştan başlamak için.",
     setup_mode_manual_title: "Manuel",
     setup_mode_manual_sub: "Her ayarı adım adım kendiniz gözden geçirin.",
@@ -3993,8 +4054,10 @@ const TRANSLATIONS = {
     notify_branding_head: "Darstellung",
     notify_branding_hint: "Android zeigt dieses Symbol statt des Home-Assistant-Logos. Unter iOS lässt sich das App-Symbol nicht ändern — dort werden Nidas Mitteilungen stattdessen separat gruppiert.",
     notify_icon_label: "Mitteilungssymbol (Android)",
-    notify_ios_image_label: "Nida-Symbol unter iOS zeigen",
-    notify_ios_image_sub: "Hängt Nidas Symbol als Vorschaubild an. Kostet pro Mitteilung einen Bilddownload.",
+    notify_large_icon_label: "Nida-Logo unter Android",
+    notify_large_icon_sub: "Ersetzt den großen Kreis der Mitteilung durch Nidas Logo. Nur Android.",
+    notify_ios_image_label: "Nida-Logo unter iOS",
+    notify_ios_image_sub: "Fügt das Logo als Vorschaubild hinzu. iOS kann das App-Symbol selbst nicht ersetzen.",
     notify_default_title: "🕌 Nida²",
     notify_default_message: "Es ist Zeit für das [prayer]-Gebet",
     test_notify_btn: "Testbenachrichtigung senden",
@@ -4122,6 +4185,18 @@ const TRANSLATIONS = {
     cal_event_weekly_sunnah_ar: "صيام الاثنين والخميس",
     cal_event_weekly_sunnah_desc: "Der Prophet ﷺ fastete regelmäßig montags und donnerstags und sagte, dass die Taten an diesen Tagen Gott vorgelegt werden und er es liebte, dass seine Taten während des Fastens vorgelegt werden. Eine einfache, wiederkehrende Andachtshandlung außerhalb des Ramadan.",
     section_setup: "Einrichtung/Sicherung",
+    settings_access_head: "Zugriff",
+    sidebar_admin_only_label: "Panel vor Nicht-Admins verbergen",
+    sidebar_admin_only_sub: "Entfernt den Nida-Seitenleisteneintrag für alle, die keine Home-Assistant-Admins sind.",
+    settings_users_label: "Wer Einstellungen ändern darf",
+    settings_users_sub: "Leer = jeder Home-Assistant-Admin",
+    settings_users_pick_title: "Wer Einstellungen ändern darf",
+    settings_users_all_admins: "Alle Admins",
+    settings_user_admin: "Admin",
+    settings_user_owner: "Besitzer",
+    settings_user_owner_locked: "Besitzer · immer",
+    settings_hidden_title: "Einstellungen sind ausgeblendet",
+    settings_hidden_sub: "Nur die vom Besitzer gewählten Benutzer können Nidas Einstellungen ändern. Gebetszeiten bleiben sichtbar.",
     setup_section_intro: "Führe die Einrichtung jederzeit erneut durch — zum Beispiel nach einem Umzug oder um von vorn zu beginnen.",
     setup_mode_manual_title: "Manuell",
     setup_mode_manual_sub: "Gehe jede Einstellung selbst Schritt für Schritt durch.",
@@ -4377,8 +4452,10 @@ const TRANSLATIONS = {
     notify_branding_head: "Apparence",
     notify_branding_hint: "Android affiche cette icône à la place du logo Home Assistant. Sur iOS, l'icône de l'app ne peut pas être modifiée — les notifications Nida y sont regroupées séparément à la place.",
     notify_icon_label: "Icône de notification (Android)",
-    notify_ios_image_label: "Afficher l'icône Nida sur iOS",
-    notify_ios_image_sub: "Joint l'icône de Nida en miniature. Coûte un téléchargement d'image par notification.",
+    notify_large_icon_label: "Logo Nida sur Android",
+    notify_large_icon_sub: "Remplace le grand cercle de la notification par le logo de Nida. Android uniquement.",
+    notify_ios_image_label: "Logo Nida sur iOS",
+    notify_ios_image_sub: "Ajoute le logo en miniature. iOS ne peut pas remplacer l'icône de l'app elle-même.",
     notify_default_title: "🕌 Nida²",
     notify_default_message: "C'est l'heure de la prière du [prayer]",
     test_notify_btn: "Envoyer une notification de test",
@@ -4506,6 +4583,18 @@ const TRANSLATIONS = {
     cal_event_weekly_sunnah_ar: "صيام الاثنين والخميس",
     cal_event_weekly_sunnah_desc: "Le Prophète ﷺ jeûnait régulièrement les lundis et jeudis, disant que les actes sont présentés à Dieu ces jours-là et qu'il aimait que ses actes soient présentés pendant qu'il jeûnait. Un acte de dévotion simple et récurrent en dehors du Ramadan.",
     section_setup: "Configuration/Sauvegarde",
+    settings_access_head: "Accès",
+    sidebar_admin_only_label: "Masquer le panneau aux non-administrateurs",
+    sidebar_admin_only_sub: "Retire l'entrée Nida de la barre latérale pour quiconque n'est pas administrateur Home Assistant.",
+    settings_users_label: "Qui peut modifier les réglages",
+    settings_users_sub: "Vide = tout administrateur Home Assistant",
+    settings_users_pick_title: "Qui peut modifier les réglages",
+    settings_users_all_admins: "Tous les administrateurs",
+    settings_user_admin: "Administrateur",
+    settings_user_owner: "Propriétaire",
+    settings_user_owner_locked: "Propriétaire · toujours",
+    settings_hidden_title: "Les réglages sont masqués",
+    settings_hidden_sub: "Seuls les utilisateurs choisis par le propriétaire peuvent modifier les réglages de Nida. Les heures de prière restent visibles.",
     setup_section_intro: "Relancez la configuration à tout moment — par exemple après un déménagement, ou pour recommencer à zéro.",
     setup_mode_manual_title: "Manuel",
     setup_mode_manual_sub: "Parcourez chaque réglage vous-même, étape par étape.",
@@ -4761,8 +4850,10 @@ const TRANSLATIONS = {
     notify_branding_head: "Penampilan",
     notify_branding_hint: "Android memaparkan ikon ini dan bukan logo Home Assistant. Pada iOS ikon apl tidak boleh diubah — pemberitahuan Nida dikumpulkan secara berasingan di sana.",
     notify_icon_label: "Ikon pemberitahuan (Android)",
-    notify_ios_image_label: "Tunjukkan ikon Nida pada iOS",
-    notify_ios_image_sub: "Melampirkan ikon Nida sebagai imej kecil. Memerlukan muat turun imej bagi setiap pemberitahuan.",
+    notify_large_icon_label: "Logo Nida pada Android",
+    notify_large_icon_sub: "Menggantikan bulatan besar pada pemberitahuan dengan logo Nida. Android sahaja.",
+    notify_ios_image_label: "Logo Nida pada iOS",
+    notify_ios_image_sub: "Menambah logo sebagai imej kecil. iOS tidak boleh menggantikan ikon apl itu sendiri.",
     notify_default_title: "🕌 Nida²",
     notify_default_message: "Sudah tiba waktu solat [prayer]",
     test_notify_btn: "Hantar pemberitahuan ujian",
@@ -4890,6 +4981,18 @@ const TRANSLATIONS = {
     cal_event_weekly_sunnah_ar: "صيام الاثنين والخميس",
     cal_event_weekly_sunnah_desc: "Nabi ﷺ sentiasa berpuasa pada hari Isnin dan Khamis, dengan bersabda bahawa amalan dibentangkan kepada Allah pada hari-hari ini dan baginda suka amalannya dibentangkan semasa berpuasa. Satu amalan ibadat yang mudah dan berulang di luar Ramadan.",
     section_setup: "Persediaan/Sandaran",
+    settings_access_head: "Akses",
+    sidebar_admin_only_label: "Sembunyikan panel daripada bukan pentadbir",
+    sidebar_admin_only_sub: "Membuang entri bar sisi Nida bagi sesiapa yang bukan pentadbir Home Assistant.",
+    settings_users_label: "Siapa boleh ubah tetapan",
+    settings_users_sub: "Kosong = setiap pentadbir Home Assistant",
+    settings_users_pick_title: "Siapa boleh ubah tetapan",
+    settings_users_all_admins: "Semua pentadbir",
+    settings_user_admin: "Pentadbir",
+    settings_user_owner: "Pemilik",
+    settings_user_owner_locked: "Pemilik · sentiasa",
+    settings_hidden_title: "Tetapan disembunyikan",
+    settings_hidden_sub: "Hanya pengguna yang dipilih pemilik boleh mengubah tetapan Nida. Waktu solat kekal kelihatan.",
     setup_section_intro: "Jalankan persediaan semula pada bila-bila masa — contohnya selepas berpindah, atau untuk bermula semula dari awal.",
     setup_mode_manual_title: "Manual",
     setup_mode_manual_sub: "Semak setiap tetapan sendiri, langkah demi langkah.",
@@ -5145,8 +5248,10 @@ const TRANSLATIONS = {
     notify_branding_head: "Tampilan",
     notify_branding_hint: "Android menampilkan ikon ini alih-alih logo Home Assistant. Di iOS ikon aplikasi tidak bisa diubah — notifikasi Nida dikelompokkan terpisah di sana.",
     notify_icon_label: "Ikon notifikasi (Android)",
-    notify_ios_image_label: "Tampilkan ikon Nida di iOS",
-    notify_ios_image_sub: "Melampirkan ikon Nida sebagai gambar kecil. Memerlukan unduhan gambar tiap notifikasi.",
+    notify_large_icon_label: "Logo Nida di Android",
+    notify_large_icon_sub: "Mengganti lingkaran besar pada notifikasi dengan logo Nida. Hanya Android.",
+    notify_ios_image_label: "Logo Nida di iOS",
+    notify_ios_image_sub: "Menambahkan logo sebagai gambar kecil. iOS tidak bisa mengganti ikon aplikasinya sendiri.",
     notify_default_title: "🕌 Nida²",
     notify_default_message: "Sudah waktunya salat [prayer]",
     test_notify_btn: "Kirim notifikasi uji",
@@ -5274,6 +5379,18 @@ const TRANSLATIONS = {
     cal_event_weekly_sunnah_ar: "صيام الاثنين والخميس",
     cal_event_weekly_sunnah_desc: "Nabi ﷺ secara rutin berpuasa pada hari Senin dan Kamis, dengan bersabda bahwa amal-amal diperlihatkan kepada Allah pada hari-hari tersebut, dan beliau senang amalnya diperlihatkan saat berpuasa. Sebuah amalan ibadah yang sederhana dan berulang di luar bulan Ramadan.",
     section_setup: "Pengaturan/Cadangan",
+    settings_access_head: "Akses",
+    sidebar_admin_only_label: "Sembunyikan panel dari non-admin",
+    sidebar_admin_only_sub: "Menghapus entri bilah sisi Nida bagi siapa pun yang bukan admin Home Assistant.",
+    settings_users_label: "Siapa boleh mengubah pengaturan",
+    settings_users_sub: "Kosong = setiap admin Home Assistant",
+    settings_users_pick_title: "Siapa boleh mengubah pengaturan",
+    settings_users_all_admins: "Semua admin",
+    settings_user_admin: "Admin",
+    settings_user_owner: "Pemilik",
+    settings_user_owner_locked: "Pemilik · selalu",
+    settings_hidden_title: "Pengaturan disembunyikan",
+    settings_hidden_sub: "Hanya pengguna yang dipilih pemilik yang dapat mengubah pengaturan Nida. Waktu salat tetap terlihat.",
     setup_section_intro: "Jalankan pengaturan lagi kapan saja — misalnya setelah pindah, atau untuk memulai dari awal.",
     setup_mode_manual_title: "Manual",
     setup_mode_manual_sub: "Lalui setiap pengaturan sendiri, langkah demi langkah.",
@@ -5529,8 +5646,10 @@ const TRANSLATIONS = {
     notify_branding_head: "ظاہری شکل",
     notify_branding_hint: "اینڈرائیڈ Home Assistant لوگو کے بجائے یہ آئیکن دکھاتا ہے۔ iOS پر ایپ آئیکن تبدیل نہیں ہو سکتا — وہاں Nida کی اطلاعات الگ گروپ کی جاتی ہیں۔",
     notify_icon_label: "اطلاع کا آئیکن (اینڈرائیڈ)",
-    notify_ios_image_label: "iOS پر Nida آئیکن دکھائیں",
-    notify_ios_image_sub: "Nida کا آئیکن بطور تھمب نیل منسلک کرتا ہے۔ ہر اطلاع پر ایک تصویر ڈاؤن لوڈ ہوتی ہے۔",
+    notify_large_icon_label: "اینڈرائیڈ پر Nida لوگو",
+    notify_large_icon_sub: "اطلاع کے بڑے دائرے کو Nida کے لوگو سے بدل دیتا ہے۔ صرف اینڈرائیڈ۔",
+    notify_ios_image_label: "iOS پر Nida لوگو",
+    notify_ios_image_sub: "لوگو بطور تھمب نیل شامل کرتا ہے۔ iOS خود ایپ آئیکن تبدیل نہیں کر سکتا۔",
     notify_default_title: "🕌 Nida²",
     notify_default_message: "[prayer] کی نماز کا وقت ہو گیا ہے",
     test_notify_btn: "آزمائشی اطلاع بھیجیں",
@@ -5658,6 +5777,18 @@ const TRANSLATIONS = {
     cal_event_weekly_sunnah_ar: "صيام الاثنين والخميس",
     cal_event_weekly_sunnah_desc: "نبی ﷺ باقاعدگی سے پیر اور جمعرات کو روزہ رکھتے تھے، اور فرماتے تھے کہ ان دنوں اعمال اللہ کے سامنے پیش کیے جاتے ہیں اور وہ چاہتے تھے کہ ان کے اعمال روزے کی حالت میں پیش کیے جائیں۔ رمضان کے علاوہ ایک سادہ، بار بار ہونے والا عبادت کا عمل۔",
     section_setup: "سیٹ اپ/بیک اپ",
+    settings_access_head: "رسائی",
+    sidebar_admin_only_label: "غیر ایڈمنز سے پینل چھپائیں",
+    sidebar_admin_only_sub: "ہر اُس شخص کے لیے Nida سائیڈبار اندراج ہٹا دیتا ہے جو Home Assistant ایڈمن نہیں ہے۔",
+    settings_users_label: "ترتیبات کون بدل سکتا ہے",
+    settings_users_sub: "خالی = ہر Home Assistant ایڈمن",
+    settings_users_pick_title: "ترتیبات کون بدل سکتا ہے",
+    settings_users_all_admins: "تمام ایڈمنز",
+    settings_user_admin: "ایڈمن",
+    settings_user_owner: "مالک",
+    settings_user_owner_locked: "مالک · ہمیشہ",
+    settings_hidden_title: "ترتیبات پوشیدہ ہیں",
+    settings_hidden_sub: "صرف مالک کے منتخب کردہ صارفین Nida کی ترتیبات بدل سکتے ہیں۔ نماز کے اوقات نظر آتے رہتے ہیں۔",
     setup_section_intro: "سیٹ اپ کسی بھی وقت دوبارہ چلائیں — مثلاً منتقل ہونے کے بعد، یا شروع سے دوبارہ آغاز کرنے کے لیے۔",
     setup_mode_manual_title: "دستی",
     setup_mode_manual_sub: "ہر ترتیب کو خود، مرحلہ وار طے کریں۔",
@@ -5913,8 +6044,10 @@ const TRANSLATIONS = {
     notify_branding_head: "ظاهر",
     notify_branding_hint: "اندروید این نماد را به‌جای نشان Home Assistant نمایش می‌دهد. در iOS نماد برنامه قابل تغییر نیست — در عوض اعلان‌های Nida آنجا جداگانه گروه‌بندی می‌شوند.",
     notify_icon_label: "نماد اعلان (اندروید)",
-    notify_ios_image_label: "نمایش نماد Nida در iOS",
-    notify_ios_image_sub: "نماد Nida را به‌عنوان تصویر بندانگشتی پیوست می‌کند. برای هر اعلان یک بارگیری تصویر لازم است.",
+    notify_large_icon_label: "نشان Nida در اندروید",
+    notify_large_icon_sub: "دایرهٔ بزرگ اعلان را با نشان Nida جایگزین می‌کند. فقط اندروید.",
+    notify_ios_image_label: "نشان Nida در iOS",
+    notify_ios_image_sub: "نشان را به‌عنوان تصویر بندانگشتی اضافه می‌کند. iOS نمی‌تواند خود نماد برنامه را عوض کند.",
     notify_default_title: "🕌 Nida²",
     notify_default_message: "وقت نماز [prayer] فرا رسیده است",
     test_notify_btn: "ارسال اعلان آزمایشی",
@@ -6042,6 +6175,18 @@ const TRANSLATIONS = {
     cal_event_weekly_sunnah_ar: "صيام الاثنين والخميس",
     cal_event_weekly_sunnah_desc: "پیامبر ﷺ به‌طور منظم روزهای دوشنبه و پنجشنبه روزه می‌گرفتند و می‌فرمودند که اعمال در این روزها به خداوند عرضه می‌شوند و دوست داشتند اعمالشان در حالی که روزه‌دار هستند عرضه شود. عملی ساده و تکرارشونده از عبادت خارج از رمضان.",
     section_setup: "راه‌اندازی/پشتیبان‌گیری",
+    settings_access_head: "دسترسی",
+    sidebar_admin_only_label: "پنهان‌کردن پنل از غیرمدیران",
+    sidebar_admin_only_sub: "ورودی نوار کناری Nida را برای هرکسی که مدیر Home Assistant نیست حذف می‌کند.",
+    settings_users_label: "چه کسی می‌تواند تنظیمات را تغییر دهد",
+    settings_users_sub: "خالی = هر مدیر Home Assistant",
+    settings_users_pick_title: "چه کسی می‌تواند تنظیمات را تغییر دهد",
+    settings_users_all_admins: "همهٔ مدیران",
+    settings_user_admin: "مدیر",
+    settings_user_owner: "مالک",
+    settings_user_owner_locked: "مالک · همیشه",
+    settings_hidden_title: "تنظیمات پنهان است",
+    settings_hidden_sub: "فقط کاربرانی که مالک انتخاب کرده می‌توانند تنظیمات Nida را تغییر دهند. اوقات نماز قابل مشاهده می‌ماند.",
     setup_section_intro: "هر زمان که بخواهید می‌توانید راه‌اندازی را دوباره اجرا کنید — مثلاً پس از جابه‌جایی، یا برای شروع دوباره از ابتدا.",
     setup_mode_manual_title: "دستی",
     setup_mode_manual_sub: "هر تنظیم را خودتان، مرحله به مرحله، طی کنید.",
@@ -6154,7 +6299,7 @@ const NIDA_ISSUES_URL = "https://github.com/joohann/Nida/issues";
 // Used in the footer and tagged onto backup exports (so a future restore
 // can tell how old a backup file is). Bump this alongside manifest.json
 // at release time — see the "Versiebump" changelog task.
-const NIDA_PANEL_VERSION = "2.3.13";
+const NIDA_PANEL_VERSION = "2.4.5";
 
 // 2.2.0 — watercolor mosque brand icon (from Johann's approved ornament
 // sheet), shown in the header tile in ALL themes. WebP with alpha,
@@ -8442,7 +8587,9 @@ class NidaPanel extends HTMLElement {
           </div>
           <div class="col-settings">
             <div class="content">
-              ${this._setupWizardActive && !this._setupInWelcomeDialog
+              ${!this._maySeeSettings()
+                ? this._htmlSettingsHidden()
+                : this._setupWizardActive && !this._setupInWelcomeDialog
                 ? this._htmlSetupWizardInline()
                 : `
                   ${this._htmlGroupNav()}
@@ -8787,6 +8934,84 @@ class NidaPanel extends HTMLElement {
     };
   }
 
+  // ───── Settings access (2.3.16) ───────────────────────────────────────────
+  // Mirrors websocket.py's _may_edit_settings exactly: empty allowlist =
+  // every admin, filled = only those user ids. Hiding the UI is cosmetic —
+  // the websocket is what actually refuses writes — but it is the visible
+  // half of what Johann asked for.
+  _maySeeSettings() {
+    const u = this._hass?.user;
+    if (!u) return false;
+    // 2.3.17 — owner is never excluded; mirrors websocket.py's
+    // _may_edit_settings, which is where it actually counts.
+    if (u.is_owner) return true;
+    const allowed = this._settingsUserIds();
+    return allowed.length ? allowed.includes(u.id) : !!u.is_admin;
+  }
+
+  _isOwnerId(userId) {
+    return (this._haUsers || []).some((u) => u.id === userId && u.is_owner);
+  }
+
+  // 2.3.18 — hides the whole sidebar entry from non-admins. Enforced by
+  // Home Assistant's own require_admin, not by us.
+  _sidebarAdminOnly() {
+    return !!this._settings?.sidebar_admin_only;
+  }
+
+  _onToggleSidebarAdminOnly() {
+    this._saveSettings({ sidebar_admin_only: !this._sidebarAdminOnly() });
+  }
+
+  _settingsUserIds() {
+    const v = this._settings?.settings_users;
+    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+  }
+
+  _toggleSettingsUser(userId) {
+    // The owner always has access, so removing them from the list would
+    // only make the UI lie about what the server will do. Ignore it.
+    if (!userId || this._isOwnerId(userId)) return;
+    const cur = this._settingsUserIds();
+    const next = cur.includes(userId)
+      ? cur.filter((id) => id !== userId)
+      : [...cur, userId];
+    // Guard against locking yourself out: removing the last entry falls
+    // back to "every admin" rather than leaving a list nobody is on.
+    this._saveSettings({ settings_users: next });
+  }
+
+  async _loadHaUsers() {
+    // config/auth/list is a core, admin-only websocket command, so there is
+    // no need for a Nida command of our own. A non-admin simply gets an
+    // error here and never sees the picker anyway.
+    if (this._haUsers || this._haUsersLoading) return;
+    this._haUsersLoading = true;
+    try {
+      const users = await this._hass.callWS({ type: "config/auth/list" });
+      this._haUsers = (users || []).filter((u) => !u.system_generated);
+    } catch (e) {
+      this._haUsers = [];
+      console.warn("Nida: could not load HA users", e);
+    }
+    this._haUsersLoading = false;
+    this._render();
+  }
+
+  _settingsUsersSummary() {
+    const ids = this._settingsUserIds();
+    if (!ids.length) return this.t("settings_users_all_admins");
+    const byId = new Map((this._haUsers || []).map((u) => [u.id, u.name]));
+    // The owner is always allowed, so show them in the summary even when
+    // they were never explicitly added.
+    const owner = (this._haUsers || []).find((u) => u.is_owner);
+    const withOwner = owner && !ids.includes(owner.id) ? [owner.id, ...ids] : ids;
+    const names = withOwner.map((id) => byId.get(id) || id);
+    return names.length <= 2
+      ? names.join(", ")
+      : `${names.length} ${this.t("speakers_count_suffix")}`;
+  }
+
   _activeGroupId() {
     let stored = null;
     try {
@@ -8799,6 +9024,9 @@ class NidaPanel extends HTMLElement {
     // Calendar tab with nothing expanded would otherwise be bounced all
     // the way back to the first tab on upgrade.
     if (stored === "calendar") stored = "ramadan";
+    // A hidden Ramadan tab must not stay selected, or the nav would show
+    // no active chip while its sections are still rendered below.
+    if (stored === "ramadan" && !this._ramadanTabVisible()) stored = null;
     if (stored && NIDA_GROUPS.some((g) => g.id === stored)) return stored;
     // No stored group (or one from a future/renamed layout): land on
     // whichever group owns the currently-open section, so an upgrade from
@@ -8808,7 +9036,9 @@ class NidaPanel extends HTMLElement {
     let open = this._openSectionId();
     if (open === "sound_modes") open = "volume_modes";
     const owner = NIDA_GROUPS.find((g) => g.sections.includes(open));
-    return owner ? owner.id : NIDA_GROUPS[0].id;
+    const visible = this._visibleGroups();
+    if (owner && visible.some((g) => g.id === owner.id)) return owner.id;
+    return visible[0].id;
   }
 
   _setActiveGroup(id) {
@@ -8830,11 +9060,87 @@ class NidaPanel extends HTMLElement {
     this._render();
   }
 
+  _htmlSettingsHidden() {
+    // 2.3.16 — the companion column (prayer times, Today card) stays: the
+    // ask was to hide the SETTINGS, not the panel. Without this note the
+    // column would just be blank and read as a bug.
+    return `
+      <div class="section">
+        <div class="card">
+          <div class="row">
+            <div class="row-info">
+              <span class="row-label">${this.t("settings_hidden_title")}</span>
+              <span class="row-sub">${this.t("settings_hidden_sub")}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // 2.4.0 — the Ramadan tab is hideable. Johann asked for it: outside the
+  // month that whole group (Ramadan reminders + the Fajr wake-up alarm) is
+  // dead weight in the nav, and the features behind it stay configured
+  // either way — scheduler.py only ever plants them when _is_ramadan_today
+  // says so, so hiding the tab changes what you SEE, never what fires.
+  _visibleGroups() {
+    if (this._ramadanTabVisible()) return NIDA_GROUPS;
+    return NIDA_GROUPS.filter((g) => g.id !== "ramadan");
+  }
+
+  // 2.4.5 — the Ramadan tab now appears on its own, 14 days before the
+  // month starts, and stays up through it. That replaces the manual
+  // hide/show toggle: a setting you have to remember to flip twice a year
+  // is a setting that is always wrong half the time, and the panel
+  // already knows when Ramadan is (the header countdown pill uses the
+  // same data).
+  //
+  // Nothing behind the tab depends on this. scheduler.py plants the
+  // Ramadan reminders and the Fajr alarm off the Hijri month itself, so a
+  // hidden tab changes what you SEE, never what fires.
+  _ramadanTabVisible() {
+    if (this._showHiddenSettings()) return true;
+    // During Ramadan itself.
+    if (this._currentHijri()?.monthNum === HIJRI_MONTH_RAMADAN) return true;
+    // Needs the calendar month fetched before it can answer; until then
+    // _ramadanCountdownDays() returns null and the tab simply stays
+    // hidden, which is the right default for most of the year.
+    this._ensureRamadanCountdownReady();
+    const days = this._ramadanCountdownDays();
+    return days !== null && days <= RAMADAN_TAB_LEAD_DAYS;
+  }
+
+  // Escape hatch for the other eleven months: /nida?show_hidden_settings
+  // reveals the tab without touching any stored setting. Accepts the
+  // flag bare or with a value, in the query or the hash, and — because
+  // the panel can run inside an iframe whose own URL never carries what
+  // the user typed — in the top window too. Same shape as
+  // _themeOverride(), which solved this for ?theme.
+  _showHiddenSettings() {
+    const read = (loc) => {
+      if (!loc) return false;
+      // Johann's example used "/nida&show_hidden_settings" — an & where
+      // a ? belongs. URLSearchParams won't see that, so fall back to a
+      // raw substring test on the whole URL rather than quietly ignoring
+      // the link he'll actually type.
+      const raw = `${loc.search || ""}${loc.hash || ""}${loc.pathname || ""}`;
+      if (raw.includes("show_hidden_settings")) return true;
+      return new URLSearchParams(loc.search || "").has("show_hidden_settings");
+    };
+    try {
+      if (read(window.location)) return true;
+      if (window.top !== window && read(window.top.location)) return true;
+    } catch (_e) {
+      // Cross-origin top window — ignore and fall through.
+    }
+    return false;
+  }
+
   _htmlGroupNav() {
     const active = this._activeGroupId();
     return `
       <div class="group-nav" role="tablist">
-        ${NIDA_GROUPS.map((g) => `
+        ${this._visibleGroups().map((g) => `
           <button class="group-tab ${g.id === active ? "active" : ""}"
                   role="tab" aria-selected="${g.id === active}"
                   data-action="select-group" data-group="${g.id}">
@@ -8847,7 +9153,7 @@ class NidaPanel extends HTMLElement {
   }
 
   _htmlActiveGroupSections() {
-    const group = NIDA_GROUPS.find((g) => g.id === this._activeGroupId());
+    const group = this._visibleGroups().find((g) => g.id === this._activeGroupId());
     if (!group) return "";
     const renderers = this._sectionRenderers();
     return group.sections
@@ -10236,6 +10542,15 @@ class NidaPanel extends HTMLElement {
         </div>
         <div class="row">
           <div class="row-info">
+            <span class="row-label">${this.t("notify_large_icon_label")}</span>
+            <span class="row-sub">${this.t("notify_large_icon_sub")}</span>
+          </div>
+          <div class="toggle ${this._notifyLargeIcon() ? "on" : ""}" data-action="toggle-notify-large-icon">
+            <div class="toggle-knob"></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="row-info">
             <span class="row-label">${this.t("notify_ios_image_label")}</span>
             <span class="row-sub">${this.t("notify_ios_image_sub")}</span>
           </div>
@@ -11161,6 +11476,23 @@ class NidaPanel extends HTMLElement {
   _htmlSectionSetup() {
     const cardInner = `
       <div class="row-sub setup-intro">${this.t("setup_section_intro")}</div>
+      <div class="sounds-group-head">${this.t("settings_access_head")}</div>
+      <div class="row">
+        <div class="row-info">
+          <span class="row-label">${this.t("sidebar_admin_only_label")}</span>
+          <span class="row-sub">${this.t("sidebar_admin_only_sub")}</span>
+        </div>
+        <div class="toggle ${this._sidebarAdminOnly() ? "on" : ""}" data-action="toggle-sidebar-admin-only">
+          <div class="toggle-knob"></div>
+        </div>
+      </div>
+      <div class="select-field flat" data-action="open-settings-users">
+        <div class="sound-info">
+          <div class="sound-name">${this.t("settings_users_label")}</div>
+          <div class="row-sub">${this.t("settings_users_sub")}</div>
+        </div>
+        <span class="select-value">${this._escape(this._settingsUsersSummary())} ${ICONS.chevronRight}</span>
+      </div>
       ${this._htmlSetupOptionsButtons()}
       <div class="setup-export-row">
         <button class="setup-export-link" data-action="setup-export-backup">
@@ -11591,7 +11923,19 @@ class NidaPanel extends HTMLElement {
     return typeof v === "string" && v.trim() ? v.trim() : "mdi:mosque";
   }
 
+  // 2.3.15 — Android large icon (the big circle). Defaults to ON to
+  // match const.py's DEFAULT_NOTIFY_LARGE_ICON_ENABLED.
+  _notifyLargeIcon() {
+    const v = this._settings?.notify_large_icon_enabled;
+    return v === undefined || v === null ? true : !!v;
+  }
+
+  _onToggleNotifyLargeIcon() {
+    this._saveSettings({ notify_large_icon_enabled: !this._notifyLargeIcon() });
+  }
+
   _notifyIosImage() {
+    // 2.3.18 — back to OFF by default, mirroring const.py.
     return !!this._settings?.notify_ios_image_enabled;
   }
 
@@ -12975,6 +13319,24 @@ class NidaPanel extends HTMLElement {
         "toggle-duck-media-player"
       );
     }
+    if (this._activeOverlay === "settings-users") {
+      const selected = new Set(this._settingsUserIds());
+      return this._htmlOverlayList(
+        this.t("settings_users_pick_title"),
+        (this._haUsers || []).map((u) => ({
+          key: u.id,
+          label: u.is_owner
+            // Reads as permanently on rather than merely selected, so it
+            // is obvious why tapping it does nothing.
+            ? `${u.name} · ${this.t("settings_user_owner_locked")}`
+            : u.is_admin
+              ? `${u.name} · ${this.t("settings_user_admin")}`
+              : u.name,
+          active: u.is_owner || selected.has(u.id),
+        })),
+        "toggle-settings-user"
+      );
+    }
     if (this._activeOverlay === "notify-targets") {
       const selected = new Set(this._notifyTargetIds());
       const ttsWorkaround = new Set(this._notifyTtsWorkaroundIds());
@@ -14188,6 +14550,8 @@ class NidaPanel extends HTMLElement {
       this._onOpenRamadanPreview();
     } else if (action === "toggle-sonos-announce") {
       this._onToggleSonosAnnounce();
+    } else if (action === "toggle-notify-large-icon") {
+      this._onToggleNotifyLargeIcon();
     } else if (action === "toggle-notify-ios-image") {
       this._onToggleNotifyIosImage();
     } else if (action === "toggle-fade") {
@@ -14208,6 +14572,13 @@ class NidaPanel extends HTMLElement {
       this._onToggleNotifyCriticalPrayer(target.dataset.prayer);
     } else if (action === "toggle-notify-prayer") {
       this._onToggleNotifyPrayer(target.dataset.prayer);
+        } else if (action === "toggle-sidebar-admin-only") {
+      this._onToggleSidebarAdminOnly();
+    } else if (action === "open-settings-users") {
+      this._loadHaUsers();
+      this._openOverlay("settings-users");
+    } else if (action === "toggle-settings-user") {
+      this._toggleSettingsUser(target?.dataset?.key);
     } else if (action === "open-notify-targets") {
       this._openOverlay("notify-targets");
     } else if (action === "toggle-notify-target") {
@@ -15694,7 +16065,12 @@ class NidaPanel extends HTMLElement {
          real <button> so it needs its own reset (text-align, width,
          font inheritance) plus room for a two-line label. */
       .setup-intro {
-        margin: 0 16px 12px;
+        /* .card carries no padding of its own — every child brings its
+           own spacing — so a top margin of 0 left this sitting flush
+           against the card's rounded top edge. 14px matches the 12px top
+           padding the group heads use, plus a little for the fact that
+           this is the first element under the section header. */
+        margin: 14px 16px 12px;
       }
       .setup-options {
         display: flex;

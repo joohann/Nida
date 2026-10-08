@@ -289,7 +289,14 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_state_change_event
 
 from .config_flow import OPT_SHOW_IN_SIDEBAR
-from .const import DOMAIN, DUA_TRIGGER_COOLDOWN_SECONDS, OPT_DUAS
+from .const import (
+    DEFAULT_NOTIFY_TITLE_FALLBACK,
+    DOMAIN,
+    DUA_TRIGGER_COOLDOWN_SECONDS,
+    LEGACY_NOTIFY_TITLES,
+    OPT_DUAS,
+    OPT_NOTIFY_TITLE,
+)
 from .coordinator import PrayerTimesCoordinator
 from .helpers import async_copy_brand, async_copy_sounds
 from .panel import async_register_card, async_register_panel, async_remove_panel
@@ -318,6 +325,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # 2.3.12 — brand icon under www/ so the iOS Companion app can fetch
     # it as a notification attachment.
     await async_copy_brand(hass)
+
+    # 2.4.0 — drop the mosque emoji from a notify title that was never
+    # customised. The panel writes the language default into
+    # options.notify_title at first init, so the old "🕌 Nida" is sitting
+    # in most installs as a stored value, where changing the constant
+    # alone would never reach it. An exact match against a known former
+    # default is what identifies "untouched"; anything else the user
+    # typed themselves and is left exactly as it is.
+    stored_title = entry.options.get(OPT_NOTIFY_TITLE)
+    if stored_title in LEGACY_NOTIFY_TITLES:
+        hass.config_entries.async_update_entry(
+            entry,
+            options={**entry.options, OPT_NOTIFY_TITLE: DEFAULT_NOTIFY_TITLE_FALLBACK},
+        )
+        _LOGGER.info(
+            "Nida: notify title migrated from %r to %r",
+            stored_title, DEFAULT_NOTIFY_TITLE_FALLBACK,
+        )
 
     coordinator = PrayerTimesCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
