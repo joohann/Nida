@@ -290,6 +290,11 @@ from homeassistant.helpers.event import async_track_state_change_event
 
 from .config_flow import OPT_SHOW_IN_SIDEBAR
 from .const import (
+    DEFAULT_JINGLE_CATALOG_URL,
+    LEGACY_CATALOG_URLS,
+    OPT_CATALOG_URL,
+    OPT_DUA_CATALOG_URL,
+    OPT_JINGLE_CATALOG_URL,
     DEFAULT_NOTIFY_TITLE_FALLBACK,
     DOMAIN,
     DUA_TRIGGER_COOLDOWN_SECONDS,
@@ -333,6 +338,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # alone would never reach it. An exact match against a known former
     # default is what identifies "untouched"; anything else the user
     # typed themselves and is left exactly as it is.
+    # 2.4.6 — the sound library moved to nida.majikan.nl and split per
+    # type. The old URLs are stored in every existing install, where a new
+    # DEFAULT never reaches them, so rewrite the ones that still match a
+    # former default exactly. A URL the user typed themselves is left
+    # alone — it may point at their own mirror. Same rule as the notify
+    # title below.
+    url_patch = {}
+    for opt in (OPT_CATALOG_URL, OPT_DUA_CATALOG_URL):
+        cur = entry.options.get(opt)
+        new_url = LEGACY_CATALOG_URLS.get(cur) if cur else None
+        if new_url and new_url != cur:
+            url_patch[opt] = new_url
+    # Jingles had no URL of their own before this version; they rode along
+    # in the adhan manifest. Seed it so an upgraded install picks up the
+    # new folder without the user having to find the setting.
+    if OPT_JINGLE_CATALOG_URL not in entry.options:
+        url_patch[OPT_JINGLE_CATALOG_URL] = DEFAULT_JINGLE_CATALOG_URL
+    if url_patch:
+        hass.config_entries.async_update_entry(
+            entry, options={**entry.options, **url_patch}
+        )
+        _LOGGER.info("Nida: catalog URLs migrated: %s", url_patch)
+
     stored_title = entry.options.get(OPT_NOTIFY_TITLE)
     if stored_title in LEGACY_NOTIFY_TITLES:
         hass.config_entries.async_update_entry(

@@ -73,6 +73,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
+    DEFAULT_JINGLE_CATALOG_URL,
+    OPT_JINGLE_CATALOG_URL,
     DEFAULT_CATALOG_URL,
     DEFAULT_DUA_CATALOG_URL,
     DOMAIN,
@@ -129,6 +131,23 @@ def _dua_catalog_url(hass: HomeAssistant) -> str | None:
     if not entries:
         return None
     raw = entries[0].options.get(OPT_DUA_CATALOG_URL, DEFAULT_DUA_CATALOG_URL)
+    if not raw or not raw.strip():
+        return None
+    return raw.strip()
+
+
+def _jingle_catalog_url(hass: HomeAssistant) -> str | None:
+    """Pre-adhan jingle manifest (2.4.6).
+
+    Jingles used to be entries of type "jingle" inside the adhan
+    manifest. The library now publishes them as their own folder, so they
+    need their own URL. Same shape as the other two: configurable, and an
+    empty string switches them off.
+    """
+    entries = hass.config_entries.async_entries(DOMAIN)
+    if not entries:
+        return None
+    raw = entries[0].options.get(OPT_JINGLE_CATALOG_URL, DEFAULT_JINGLE_CATALOG_URL)
     if not raw or not raw.strip():
         return None
     return raw.strip()
@@ -295,7 +314,8 @@ async def async_fetch_catalog(
     """
     url = _catalog_url(hass)
     dua_url = _dua_catalog_url(hass)
-    if not url and not dua_url:
+    jingle_url = _jingle_catalog_url(hass)
+    if not url and not dua_url and not jingle_url:
         return {
             "url": None,
             "sounds": [],
@@ -303,7 +323,7 @@ async def async_fetch_catalog(
             "dua_error": None,
         }
 
-    cache_key = f"{url or ''}|{dua_url or ''}"
+    cache_key = f"{url or ''}|{dua_url or ''}|{jingle_url or ''}"
     if not force_refresh and cache_key in _CACHE:
         return _CACHE[cache_key]
 
@@ -316,6 +336,16 @@ async def async_fetch_catalog(
     if dua_url:
         dua_sounds, dua_error = await _fetch_manifest(hass, dua_url)
         sounds.extend(dua_sounds)
+    if jingle_url:
+        # Soft like the dua manifest: a failing jingle feed must not blank
+        # out the adhan library. Logged, then skipped. Deduped by id
+        # because an install still pointed at the OLD combined adhan
+        # manifest would otherwise list every jingle twice.
+        jingle_sounds, jingle_error = await _fetch_manifest(hass, jingle_url)
+        if jingle_error:
+            _LOGGER.warning("Nida jingle manifest failed (%s)", jingle_error)
+        seen = {s_.get("id") for s_ in sounds}
+        sounds.extend(s_ for s_ in jingle_sounds if s_.get("id") not in seen)
 
     result = {"url": url, "sounds": sounds, "error": error, "dua_error": dua_error}
     _CACHE[cache_key] = result

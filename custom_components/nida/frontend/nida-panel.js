@@ -6299,7 +6299,7 @@ const NIDA_ISSUES_URL = "https://github.com/joohann/Nida/issues";
 // Used in the footer and tagged onto backup exports (so a future restore
 // can tell how old a backup file is). Bump this alongside manifest.json
 // at release time — see the "Versiebump" changelog task.
-const NIDA_PANEL_VERSION = "2.4.5";
+const NIDA_PANEL_VERSION = "2.4.6";
 
 // 2.2.0 — watercolor mosque brand icon (from Johann's approved ornament
 // sheet), shown in the header tile in ALL themes. WebP with alpha,
