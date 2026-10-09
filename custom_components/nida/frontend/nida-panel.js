@@ -2646,6 +2646,8 @@ const TRANSLATIONS = {
     close: "Close",
     loading: "Loading…",
     error_prefix: "Error",
+    error_connection_lost: "Connection to Home Assistant lost. Reconnecting…",
+    error_invalid_auth: "Session expired. Reload the page.",
     save_toast_saved: "Saved",
     location_warning_manual_no_coords_title: "No city selected",
     location_warning_manual_no_coords_body: "Pick a city from the search suggestions. Until you do, Home Assistant's home coordinates are used.",
@@ -3044,6 +3046,8 @@ const TRANSLATIONS = {
     close: "Sluiten",
     loading: "Laden…",
     error_prefix: "Fout",
+    error_connection_lost: "Verbinding met Home Assistant verbroken. Opnieuw verbinden…",
+    error_invalid_auth: "Sessie verlopen. Herlaad de pagina.",
     save_toast_saved: "Opgeslagen",
     location_warning_manual_no_coords_title: "Geen stad gekozen",
     location_warning_manual_no_coords_body: "Kies een stad uit de zoeksuggesties. Tot je dat doet worden Home Assistant's home-coördinaten gebruikt.",
@@ -3445,6 +3449,8 @@ const TRANSLATIONS = {
     close: "إغلاق",
     loading: "جارٍ التحميل…",
     error_prefix: "خطأ",
+    error_connection_lost: "انقطع الاتصال بـ Home Assistant. جارٍ إعادة الاتصال…",
+    error_invalid_auth: "انتهت الجلسة. أعِد تحميل الصفحة.",
     save_toast_saved: "تم الحفظ",
     location_warning_manual_no_coords_title: "لم يتم اختيار مدينة",
     location_warning_manual_no_coords_body: "اختر مدينة من اقتراحات البحث. حتى تفعل ذلك، سيتم استخدام إحداثيات Home Assistant الرئيسية.",
@@ -3843,6 +3849,8 @@ const TRANSLATIONS = {
     close: "Kapat",
     loading: "Yükleniyor…",
     error_prefix: "Hata",
+    error_connection_lost: "Home Assistant bağlantısı kesildi. Yeniden bağlanılıyor…",
+    error_invalid_auth: "Oturum sona erdi. Sayfayı yenileyin.",
     save_toast_saved: "Kaydedildi",
     location_warning_manual_no_coords_title: "Şehir seçilmedi",
     location_warning_manual_no_coords_body: "Arama önerilerinden bir şehir seçin. Siz seçene kadar Home Assistant'ın ev koordinatları kullanılır.",
@@ -4241,6 +4249,8 @@ const TRANSLATIONS = {
     close: "Schließen",
     loading: "Wird geladen…",
     error_prefix: "Fehler",
+    error_connection_lost: "Verbindung zu Home Assistant verloren. Verbindung wird wiederhergestellt…",
+    error_invalid_auth: "Sitzung abgelaufen. Seite neu laden.",
     save_toast_saved: "Gespeichert",
     location_warning_manual_no_coords_title: "Keine Stadt ausgewählt",
     location_warning_manual_no_coords_body: "Wähle eine Stadt aus den Suchvorschlägen. Bis dahin werden die Heimkoordinaten von Home Assistant verwendet.",
@@ -4639,6 +4649,8 @@ const TRANSLATIONS = {
     close: "Fermer",
     loading: "Chargement…",
     error_prefix: "Erreur",
+    error_connection_lost: "Connexion à Home Assistant perdue. Reconnexion…",
+    error_invalid_auth: "Session expirée. Rechargez la page.",
     save_toast_saved: "Enregistré",
     location_warning_manual_no_coords_title: "Aucune ville sélectionnée",
     location_warning_manual_no_coords_body: "Choisissez une ville parmi les suggestions de recherche. En attendant, les coordonnées du domicile de Home Assistant sont utilisées.",
@@ -5037,6 +5049,8 @@ const TRANSLATIONS = {
     close: "Tutup",
     loading: "Memuatkan…",
     error_prefix: "Ralat",
+    error_connection_lost: "Sambungan ke Home Assistant terputus. Menyambung semula…",
+    error_invalid_auth: "Sesi tamat. Muat semula halaman.",
     save_toast_saved: "Disimpan",
     location_warning_manual_no_coords_title: "Tiada bandar dipilih",
     location_warning_manual_no_coords_body: "Pilih bandar daripada cadangan carian. Sehingga anda berbuat demikian, koordinat rumah Home Assistant digunakan.",
@@ -5435,6 +5449,8 @@ const TRANSLATIONS = {
     close: "Tutup",
     loading: "Memuat…",
     error_prefix: "Kesalahan",
+    error_connection_lost: "Koneksi ke Home Assistant terputus. Menyambungkan kembali…",
+    error_invalid_auth: "Sesi berakhir. Muat ulang halaman.",
     save_toast_saved: "Tersimpan",
     location_warning_manual_no_coords_title: "Belum ada kota dipilih",
     location_warning_manual_no_coords_body: "Pilih kota dari saran pencarian. Sampai Anda melakukannya, koordinat rumah Home Assistant akan digunakan.",
@@ -5833,6 +5849,8 @@ const TRANSLATIONS = {
     close: "بند کریں",
     loading: "لوڈ ہو رہا ہے…",
     error_prefix: "خرابی",
+    error_connection_lost: "Home Assistant سے رابطہ منقطع۔ دوبارہ جوڑا جا رہا ہے…",
+    error_invalid_auth: "سیشن ختم ہو گیا۔ صفحہ دوبارہ لوڈ کریں۔",
     save_toast_saved: "محفوظ ہو گیا",
     location_warning_manual_no_coords_title: "کوئی شہر منتخب نہیں",
     location_warning_manual_no_coords_body: "تلاش کی تجاویز میں سے کوئی شہر منتخب کریں۔ جب تک آپ ایسا نہیں کرتے، Home Assistant کے گھر کے متناسقات استعمال ہوں گے۔",
@@ -6231,6 +6249,8 @@ const TRANSLATIONS = {
     close: "بستن",
     loading: "در حال بارگذاری…",
     error_prefix: "خطا",
+    error_connection_lost: "ارتباط با Home Assistant قطع شد. در حال اتصال دوباره…",
+    error_invalid_auth: "نشست منقضی شد. صفحه را دوباره بارگذاری کنید.",
     save_toast_saved: "ذخیره شد",
     location_warning_manual_no_coords_title: "شهری انتخاب نشده است",
     location_warning_manual_no_coords_body: "یک شهر از پیشنهادهای جستجو انتخاب کنید. تا زمانی که این کار را انجام ندهید، از مختصات خانه Home Assistant استفاده می‌شود.",
@@ -6299,7 +6319,7 @@ const NIDA_ISSUES_URL = "https://github.com/joohann/Nida/issues";
 // Used in the footer and tagged onto backup exports (so a future restore
 // can tell how old a backup file is). Bump this alongside manifest.json
 // at release time — see the "Versiebump" changelog task.
-const NIDA_PANEL_VERSION = "2.4.6";
+const NIDA_PANEL_VERSION = "2.4.9";
 
 // 2.2.0 — watercolor mosque brand icon (from Johann's approved ornament
 // sheet), shown in the header tile in ALL themes. WebP with alpha,
@@ -7491,6 +7511,22 @@ class NidaPanel extends HTMLElement {
     if (firstTime) {
       this._render();
       this._init().then(() => this._render());
+    } else if (this._error && !this._settings && hass?.connected !== false
+               && !this._retrying) {
+      // 2.4.7 — recover after a Home Assistant restart. _init() only ran
+      // on the FIRST hass, so a panel that failed its initial load (the
+      // usual cause being the websocket dropping mid-restart) stayed on
+      // its error screen until the user reloaded the page by hand. Home
+      // Assistant keeps pushing hass updates once it is back, so that is
+      // the signal to try again. Guarded by _retrying so a burst of
+      // updates can't start several loads at once.
+      this._retrying = true;
+      this._error = null;
+      this._errorIsConnection = false;
+      this._init().then(() => {
+        this._retrying = false;
+        this._render();
+      });
     } else if (darkModeChanged && this._settings?.theme === "auto") {
       this._render();
     } else if (this._loaded) {
@@ -7602,7 +7638,8 @@ class NidaPanel extends HTMLElement {
         }
       }
     } catch (e) {
-      this._error = `${this.t("error_prefix")}: ${e.message || e}`;
+      this._error = this._errorText(e);
+      this._errorIsConnection = this._isConnectionError(e);
     }
     this._loaded = true;
   }
@@ -7614,7 +7651,8 @@ class NidaPanel extends HTMLElement {
         entry_id: this._entryId,
       });
     } catch (e) {
-      this._error = `${this.t("error_prefix")}: ${e.message || e}`;
+      this._error = this._errorText(e);
+      this._errorIsConnection = this._isConnectionError(e);
     }
   }
 
@@ -7727,7 +7765,8 @@ class NidaPanel extends HTMLElement {
         options: next,
       });
     } catch (e) {
-      this._error = `${this.t("error_prefix")}: ${e.message || e}`;
+      this._error = this._errorText(e);
+      this._errorIsConnection = this._isConnectionError(e);
       this._render();
       return;
     }
@@ -8615,11 +8654,38 @@ class NidaPanel extends HTMLElement {
     `;
   }
 
+  // ───── Error presentation (2.4.7) ─────────────────────────────────────────
+  // home-assistant-js-websocket rejects connection-level failures with a
+  // BARE NUMBER, not an Error. The old `e.message || e` therefore printed
+  // a naked "Error: 3" — which is ERR_CONNECTION_LOST, i.e. exactly what
+  // every Home Assistant restart looks like from inside the panel.
+  _errorText(e) {
+    const code = this._errorCode(e);
+    if (code === 1 || code === 3) return this.t("error_connection_lost");
+    if (code === 2) return this.t("error_invalid_auth");
+    const msg = e?.message || e?.code;
+    return msg ? `${this.t("error_prefix")}: ${msg}` : `${this.t("error_prefix")}: ${e}`;
+  }
+
+  _errorCode(e) {
+    if (typeof e === "number") return e;
+    if (typeof e === "string" && /^\d+$/.test(e)) return Number(e);
+    return null;
+  }
+
+  // A dropped connection is not a failure to report, it is a wait. The
+  // panel recovers by itself once HA is back (see the retry in set hass),
+  // so it should read as "reconnecting", without the red error styling.
+  _isConnectionError(e) {
+    const code = this._errorCode(e);
+    return code === 1 || code === 3;
+  }
+
   _htmlError() {
     return `
       <style>${this._cssBase()}</style>
       <div class="app">
-        <div class="loading-state error">${this._error}</div>
+        <div class="loading-state ${this._errorIsConnection ? "" : "error"}">${this._error}</div>
       </div>
     `;
   }
