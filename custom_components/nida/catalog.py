@@ -381,8 +381,12 @@ _CATEGORY_FOLDER = {
 # strip up to and including the type keyword, case-insensitive. The
 # leading word is optional (2.0.51): dua labels start with the keyword
 # itself.
+# 2.4.8 — the old pattern allowed ANY leading word before the type keyword,
+# which ate real names now that the library no longer puts a type prefix on
+# labels: "Arabic Jingle 3" became "3" and "Al Fajr Saba" became "Saba".
+# Only known pack/category words may precede the keyword now.
 _LABEL_PREFIX_RE = re.compile(
-    r"^\s*(?:\w+\s+)?(?:day|fajr|jingle|tarhim|dua)\s+",
+    r"^\s*(?:(?:nadir|nida|adhan|pre)\s+)*(?:day|fajr|jingle|tarhim|dua)\s+",
     flags=re.IGNORECASE,
 )
 
