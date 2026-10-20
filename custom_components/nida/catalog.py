@@ -186,6 +186,73 @@ def local_sound_exists(hass: HomeAssistant, rel_path: str) -> bool:
 _DURATION_CACHE: dict[str, int | None] = {}
 
 
+_MP3_BITRATES = {
+    # (version, layer) -> kbit/s by bitrate index; version 1 = MPEG-1, 2 = MPEG-2/2.5
+    (1, 1): [0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448],
+    (1, 2): [0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384],
+    (1, 3): [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320],
+    (2, 1): [0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256],
+    (2, 2): [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
+    (2, 3): [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
+}
+_MP3_RATES = {3: (44100, 48000, 32000), 2: (22050, 24000, 16000), 0: (11025, 12000, 8000)}
+
+
+def _mp3_length_pure(abs_path: str) -> float | None:
+    """MP3 length without any third-party package (2.5.0).
+
+    mutagen is optional and often absent (see _read_duration_blocking), and
+    without it the pre-adhan had to assume a jingle was 15 seconds long.
+    The sound library is MP3 only, so a small reader is enough: skip the
+    ID3v2 tag, read the first frame header, and use the Xing/Info/VBRI
+    frame count when there is one (VBR), else size / bitrate (CBR).
+    Returns None for anything it does not recognise, never a guess.
+    """
+    try:
+        size = os.path.getsize(abs_path)
+        with open(abs_path, "rb") as fh:
+            head = fh.read(10)
+            start = 0
+            if head[:3] == b"ID3" and len(head) == 10:
+                start = 10 + ((head[6] & 0x7F) << 21 | (head[7] & 0x7F) << 14
+                              | (head[8] & 0x7F) << 7 | (head[9] & 0x7F))
+            fh.seek(start)
+            buf = fh.read(8192)
+        i = 0
+        while i + 4 <= len(buf):
+            if buf[i] == 0xFF and (buf[i + 1] & 0xE0) == 0xE0:
+                b1, b2 = buf[i + 1], buf[i + 2]
+                ver_bits, layer_bits = (b1 >> 3) & 3, (b1 >> 1) & 3
+                br_idx, sr_idx = (b2 >> 4) & 0xF, (b2 >> 2) & 3
+                if ver_bits != 1 and layer_bits != 0 and 0 < br_idx < 15 and sr_idx != 3:
+                    break
+            i += 1
+        else:
+            return None
+        version = 1 if ver_bits == 3 else 2
+        layer = 4 - layer_bits
+        bitrate = _MP3_BITRATES[(version, layer)][br_idx] * 1000
+        rate = _MP3_RATES[ver_bits][sr_idx]
+        samples = 384 if layer == 1 else (1152 if (layer == 2 or version == 1) else 576)
+        mono = ((buf[i + 3] >> 6) & 3) == 3
+        frames = None
+        side = (17 if mono else 32) if version == 1 else (9 if mono else 17)
+        tag = buf[i + 4 + side:i + 4 + side + 12]
+        if tag[:4] in (b"Xing", b"Info") and tag[7] & 1:
+            frames = int.from_bytes(tag[8:12], "big")
+        else:
+            vbri = buf[i + 4 + 32:i + 4 + 32 + 18]
+            if vbri[:4] == b"VBRI":
+                frames = int.from_bytes(vbri[14:18], "big")
+        if frames:
+            return frames * samples / rate
+        return (size - start - i) * 8 / bitrate
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.debug("Pure MP3 length read failed for %s (%s)", abs_path, err)
+        return None
+
+
+
 def _read_duration_blocking(abs_path: str) -> int | None:
     """Blocking mutagen read — only ever called via the executor, never
     directly on the event loop. Kept as its own function so
@@ -213,14 +280,41 @@ def _read_duration_blocking(abs_path: str) -> int | None:
         import mutagen
     except ImportError:
         _LOGGER.debug(
-            "mutagen not installed — skipping duration lookup for %s", abs_path
+            "mutagen not installed — reading %s without it", abs_path
         )
-        return None
+        length = _mp3_length_pure(abs_path)
+        return int(round(length)) if length else None
     try:
         info = mutagen.File(abs_path)
-        return int(round(info.info.length)) if info and info.info else None
+        # `info is not None`, NOT `if info`: a mutagen file object is falsy
+        # when it has no tags, which is every plain mp3 in the library.
+        if info is not None and getattr(info, "info", None) is not None:
+            return int(round(info.info.length))
+        length = _mp3_length_pure(abs_path)
+        return int(round(length)) if length else None
     except Exception as err:  # noqa: BLE001
         _LOGGER.warning("Could not read duration of %s (%s)", abs_path, err)
+        return None
+
+
+def _read_length_blocking(abs_path: str) -> float | None:
+    """Like _read_duration_blocking but keeps the fraction (2.5.0).
+
+    Whole seconds are fine for sizing a TV notification, but not for
+    timing the gap between the pre-adhan jingle and the spoken line: a 2.4s
+    jingle rounded up to 3s is a visible extra half second of silence.
+    """
+    try:
+        import mutagen
+    except ImportError:
+        return _mp3_length_pure(abs_path)
+    try:
+        info = mutagen.File(abs_path)
+        if info is not None and getattr(info, "info", None) is not None:
+            return float(info.info.length)
+        return _mp3_length_pure(abs_path)
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.warning("Could not read length of %s (%s)", abs_path, err)
         return None
 
 
@@ -255,6 +349,32 @@ async def async_sound_duration_seconds(
     seconds = await hass.async_add_executor_job(_read_duration_blocking, abs_path)
     _DURATION_CACHE[abs_path] = seconds
     return seconds
+
+
+_LENGTH_CACHE: dict[str, float | None] = {}
+
+
+async def async_sound_length_seconds(
+    hass: HomeAssistant, rel_path: str
+) -> float | None:
+    """Exact length (fractional seconds) of a sound under www/nida/sounds/.
+
+    2.5.0 — for the pre-adhan jingle -> TTS gap. Read from the file when
+    first needed and cached per path afterwards, so nothing is stored in
+    the options and nothing can go stale: replace or re-download a jingle
+    and the next lookup sees the new file (the cache is keyed on path AND
+    modification time). None when mutagen is not installed or the file is
+    unreadable; the caller then falls back to watching the player.
+    """
+    abs_path = _abs_path(hass, rel_path)
+    if not abs_path or not os.path.isfile(abs_path):
+        return None
+    key = f"{abs_path}:{os.path.getmtime(abs_path)}"
+    if key in _LENGTH_CACHE:
+        return _LENGTH_CACHE[key]
+    length = await hass.async_add_executor_job(_read_length_blocking, abs_path)
+    _LENGTH_CACHE[key] = length
+    return length
 
 
 async def _fetch_manifest(

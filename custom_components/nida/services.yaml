@@ -25,6 +25,30 @@ play_adhan:
           domain: media_player
           multiple: true
 
+test_pre_adhan:
+  name: Test pre-adhan
+  description: >-
+    Run the whole pre-adhan on the real speakers: the jingle, a short pause,
+    then the spoken announcement, exactly as it would fire before a prayer
+    (a part that is switched off is skipped). Uses the real volumes and
+    bypasses guest mode. Call again with stop: true to cancel it.
+  fields:
+    stop:
+      name: Stop
+      description: Cancel a running test instead of starting one.
+      required: false
+      default: false
+      selector:
+        boolean:
+    entity_id:
+      name: Media players
+      description: Players to test on. If omitted, the players configured in the Nida panel are used.
+      required: false
+      selector:
+        entity:
+          domain: media_player
+          multiple: true
+
 play_preview:
   name: Play preview
   description: >-

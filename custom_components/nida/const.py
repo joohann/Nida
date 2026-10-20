@@ -1,6 +1,11 @@
 """Nida constanten — domain, sound-categorieën, gebedsnamen, sensor entity_ids.
 
 Changelog:
+  2.5.0 (2026-10-10): dua trigger_state ("on"/"off") picks the state the trigger
+                       entity must change to. Live Activity for the next prayer. New OPT_LIVE_ACTIVITY_ENABLED,
+                       OPT_LIVE_ACTIVITY_MINUTES (lead time, 15-360, default
+                       120) and the fixed LIVE_ACTIVITY_* tag/colour/timing
+                       constants used by live_activity.py.
   2.2.2 (2026-07-12): Mac-shortcut duck. Johann's MacBook, exposed via HA's
                        Apple TV/AirPlay-receiver integration, turned out to
                        only control audio being AirPlayed TO it, not local
@@ -393,7 +398,9 @@ DEFAULT_TTS_MESSAGES = {
     "fa": "تقریباً وقت نماز [prayer] است",
 }
 DEFAULT_TTS_PRE_ADHAN_MESSAGE_FALLBACK = DEFAULT_TTS_MESSAGES["en"]
-DEFAULT_TTS_PRE_ADHAN_DELAY = 5
+# 2.5.0 — seconds of silence between the END of the pre-adhan jingle and the
+# spoken line (it used to be a fixed pause counted from the jingle's start).
+DEFAULT_TTS_PRE_ADHAN_DELAY = 2
 # "auto" = follow panel language, which itself falls back to HA system.
 DEFAULT_TTS_PRE_ADHAN_LANGUAGE = "auto"
 
@@ -441,33 +448,6 @@ DEFAULT_OPEN_CONTACT_VOLUME_FACTOR = 130
 OPT_DUCK_MEDIA_ENABLED = "duck_media_enabled"
 OPT_DUCK_MEDIA_PLAYERS = "duck_media_players"   # list of media_player entity_ids
 DEFAULT_DUCK_MEDIA_ENABLED = False
-
-# 2.2.2 — Mac-shortcut duck. A media_player entity exposed via HA's Apple
-# TV/AirPlay-receiver integration only controls audio being AirPlayed TO
-# the Mac, not audio it's playing locally through its own speakers —
-# Johann confirmed volume_set on his MacBook fails with "audio is
-# blocked" whenever nothing is actively AirPlaying to it, and even when
-# it works it's the wrong audio path entirely. There's no HA entity that
-# can mute/pause a Mac's own local playback directly. Instead: fire a
-# fixed, recognisable notification via a user-chosen notify.* target
-# (typically their macOS Companion app's own notify service) that a
-# macOS 27+ (Sequoia) Shortcuts automation can watch for — "when a
-# notification from Home Assistant contains <message>" — and run a
-# Shortcut the user builds themselves (e.g. a "Set Volume" action) to
-# actually mute/restore their local audio. Deliberately NOT tied to
-# OPT_DUCK_MEDIA_PLAYERS' "is anything playing" check: Nida has no
-# visibility into the Mac's own playback state, so this fires
-# unconditionally on every duck/restore cycle when enabled — it's up to
-# the user's own Shortcut to decide what "mute" means for them. The two
-# message strings are fixed (not user-configurable) so the panel can
-# show them as copy-paste instructions for the Shortcuts automation's
-# match condition.
-OPT_DUCK_MAC_SHORTCUT_ENABLED = "duck_mac_shortcut_enabled"
-DEFAULT_DUCK_MAC_SHORTCUT_ENABLED = False
-OPT_DUCK_MAC_SHORTCUT_NOTIFY = "duck_mac_shortcut_notify"   # "notify.<x>" full service path
-DEFAULT_DUCK_MAC_SHORTCUT_NOTIFY = ""
-DUCK_MAC_SHORTCUT_DUCK_MESSAGE = "nida-duck"
-DUCK_MAC_SHORTCUT_RESTORE_MESSAGE = "nida-restore"
 
 # 2.2.3 — restore what was playing ON THE ADHAN SPEAKERS themselves.
 # Distinct from duck-media above: that pauses OTHER players (a TV in
@@ -613,6 +593,38 @@ NOTIFY_ICON_IMAGE_PATH = "/local/nida/brand/icon_notify.png"
 # brand/ and helpers.py mirrors the whole folder.
 NOTIFY_LARGE_ICON_PATH = "/local/nida/brand/icon_notify.png"
 OPT_NOTIFY_LARGE_ICON_ENABLED = "notify_large_icon_enabled"
+
+# 2.5.0 — Live Activity for the next prayer (iOS Live Activity / Android
+# live update, both driven by the Companion app's `live_update: true`).
+# Delivery reuses OPT_NOTIFY_TARGETS, narrowed to mobile_app services: a
+# TV or a persistent_notification cannot show one. Off by default, since
+# it needs HA 2026.7+ and iOS 17.2+ to do anything.
+OPT_LIVE_ACTIVITY_ENABLED = "live_activity_enabled"
+OPT_LIVE_ACTIVITY_MINUTES = "live_activity_minutes"   # how long before the adhan it appears
+DEFAULT_LIVE_ACTIVITY_MINUTES = 120
+MIN_LIVE_ACTIVITY_MINUTES = 15
+# iOS ends any Live Activity after 8 hours, so the lead time is capped well under that.
+MAX_LIVE_ACTIVITY_MINUTES = 360
+# One shared tag: each prayer replaces the previous activity instead of stacking.
+LIVE_ACTIVITY_TAG = "nida_next_prayer"
+LIVE_ACTIVITY_SOON_MINUTES = 10      # "last stretch" colour switch + silent update
+LIVE_ACTIVITY_LINGER_MINUTES = 5     # how long "Now" stays up after the adhan
+LIVE_ACTIVITY_REFRESH_MINUTES = 5    # progress-bar refresh interval while active
+# Night card (Fajr, Maghrib, Isha) and day card (Dhuhr, Asr); same emerald/gold
+# tokens as the panel.
+LIVE_ACTIVITY_NIGHT = {
+    "background_color": "#0d1f1a", "text_color": "#f0ead6",
+    "notification_icon_color": "#e0bc4a", "progress_bar_color": "#c9a227",
+    "progress_bar_color_soon": "#e0bc4a",
+}
+LIVE_ACTIVITY_DAY = {
+    "background_color": "#f0ead6", "text_color": "#0d1f1a",
+    "notification_icon_color": "#8a6d10", "progress_bar_color": "#b08d1a",
+    "progress_bar_color_soon": "#8a6d10",
+}
+LIVE_ACTIVITY_DAY_PRAYERS = ("dhuhr", "asr")
+LIVE_ACTIVITY_ICON_DAY = "mdi:mosque"
+LIVE_ACTIVITY_ICON_NIGHT = "mdi:star-crescent"
 DEFAULT_NOTIFY_LARGE_ICON_ENABLED = True
 
 OPT_SONOS_ANNOUNCE_ENABLED = "sonos_announce_enabled"
