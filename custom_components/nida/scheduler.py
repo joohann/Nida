@@ -259,7 +259,6 @@ Changelog:
 """
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import datetime, timedelta
 
@@ -368,8 +367,6 @@ from .const import (
     OPT_SUHOOR_REMINDER_MINUTES,
     OPT_SUHOOR_REMINDER_MESSAGE,
     OPT_TTS_PRE_ADHAN_ENABLED,
-    OPT_TTS_PRE_ADHAN_DELAY,
-    DEFAULT_TTS_PRE_ADHAN_DELAY,
     PRAYERS,
     SUHOOR_REMINDER_MINUTES_MAX,
     SUHOOR_REMINDER_MINUTES_MIN,
@@ -381,9 +378,8 @@ from .coordinator import PrayerTimesCoordinator
 from .services import (
     SERVICE_PLAY_ADHAN,
     SERVICE_PLAY_DUA,
-    SERVICE_PLAY_PRE_ADHAN_JINGLE,
-    SERVICE_SPEAK_PRE_ADHAN,
     async_resolve_adhan_sound_rel,
+    async_run_pre_adhan_sequence,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -936,48 +932,26 @@ class NidaScheduler:
                     notification_id=f"nida_pre{nid_suffix}_{prayer}",
                 )
 
-            if audio_enabled:
-                try:
-                    await self.hass.services.async_call(
-                        DOMAIN,
-                        SERVICE_PLAY_PRE_ADHAN_JINGLE,
-                        {},
-                        blocking=False,
-                    )
-                except Exception as err:  # noqa: BLE001
-                    _LOGGER.warning(
-                        "play_pre_adhan_jingle failed for %s slot %d: %s",
-                        prayer, slot, err,
-                    )
-
-            # TTS announcement after the jingle (2.0.32). Gated on
-            # tts_pre_adhan_enabled; fires regardless of audio_enabled
-            # because someone might disable the jingle but still want
-            # the spoken cue. Delay defaults to 5s — enough for the
-            # typical jingle (<3s) to finish before the speaker
-            # switches to TTS playback.
-            if tts_enabled:
-                try:
-                    delay = int(self.entry.options.get(
-                        OPT_TTS_PRE_ADHAN_DELAY, DEFAULT_TTS_PRE_ADHAN_DELAY
-                    ))
-                except (TypeError, ValueError):
-                    delay = DEFAULT_TTS_PRE_ADHAN_DELAY
-                delay = max(0, min(60, delay))
-                if delay:
-                    await asyncio.sleep(delay)
-                try:
-                    await self.hass.services.async_call(
-                        DOMAIN,
-                        SERVICE_SPEAK_PRE_ADHAN,
-                        {"prayer": prayer},
-                        blocking=False,
-                    )
-                except Exception as err:  # noqa: BLE001
-                    _LOGGER.warning(
-                        "speak_pre_adhan failed for %s slot %d: %s",
-                        prayer, slot, err,
-                    )
+            # 2.5.0 — jingle and spoken line run as ONE sequence that
+            # waits for the jingle to finish before the TTS speaks; see
+            # async_run_pre_adhan_sequence for the "afgebroken door de
+            # TTS" bug this replaces (two unrelated non-blocking service
+            # calls with a fixed sleep between them). The TTS delay
+            # option is the pause after the jingle ends. Run as a task so
+            # this timer callback returns at once.
+            if audio_enabled or tts_enabled:
+                async def _run() -> None:
+                    try:
+                        await async_run_pre_adhan_sequence(
+                            self.hass, prayer,
+                            audio=audio_enabled, tts=tts_enabled,
+                        )
+                    except Exception as err:  # noqa: BLE001
+                        _LOGGER.warning(
+                            "pre-adhan sequence failed for %s slot %d: %s",
+                            prayer, slot, err,
+                        )
+                self.hass.async_create_task(_run())
         return _fire
 
     def _async_make_notify_handler(

@@ -2148,12 +2148,6 @@ const HIJRI_MONTH_RAMADAN = 9;
 // the time /nida?show_hidden_settings reveals it on demand.
 const RAMADAN_TAB_LEAD_DAYS = 14;
 
-// 2.2.2 — fixed notification message strings for the Mac-shortcut duck
-// feature (matches const.py's DUCK_MAC_SHORTCUT_DUCK_MESSAGE/_RESTORE_
-// MESSAGE exactly). Shown in the settings hint as the strings a
-// Shortcuts automation's "notification contains" condition should match.
-const DUCK_MAC_DUCK_MESSAGE = "nida-duck";
-const DUCK_MAC_RESTORE_MESSAGE = "nida-restore";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Hijri month canonical names (Aladhan API format). Index = month number - 1.
@@ -2314,6 +2308,9 @@ const TRANSLATIONS = {
     dua_trigger_label: "Trigger",
     dua_no_trigger: "No trigger",
     dua_trigger_sub: "Plays when the chosen entity turns on or opens (max once per minute)",
+    dua_trigger_state_label: "Fires when it turns",
+    dua_trigger_on: "On",
+    dua_trigger_off: "Off",
     random_adhan_label: "Random adhan",
     random_adhan_sub: "Play a random downloaded adhan at each prayer",
     sound_row_random_sub: "Random from downloaded adhans",
@@ -2387,12 +2384,6 @@ const TRANSLATIONS = {
     duck_media_players_label: "Players to pause",
     duck_media_players_none: "None selected",
     duck_media_pick_title: "Choose players to pause",
-    duck_mac_label: "Also mute my Mac",
-    duck_mac_sub: "Nida can't control a Mac's own audio directly — this sends a notification your Mac's Shortcuts app can react to (requires macOS 27 or newer)",
-    duck_mac_notify_label: "Notify target",
-    duck_mac_notify_none: "Choose a notify target",
-    duck_mac_notify_pick_title: "Choose notify target",
-    duck_mac_hint: "In Shortcuts, create an automation that runs when a notification from Home Assistant contains \"{duck}\" (mutes your Mac), and another for \"{restore}\" (restores it).",
     pre_adhan_test_label: "Test pre-adhan jingle",
     pre_adhan_test_sub: "Plays the jingle with the test volume below",
     volume_label: "Volume",
@@ -2447,6 +2438,11 @@ const TRANSLATIONS = {
     test_notify_prayer_tooltip: "Send a test notification for this prayer (uses its current critical setting)",
     notify_targets_label: "Notification targets",
     notify_targets_none: "None selected",
+    live_activity_head: "Live Activity",
+    live_activity_label: "Next prayer on the lock screen",
+    live_activity_sub: "Counts down on the lock screen and in the Dynamic Island. Needs the Companion app (iOS 17.2+) and a mobile app notification target.",
+    live_activity_minutes_label: "Show it before the adhan",
+    live_activity_test_btn: "Preview on my phone",
     notify_target_android_tv: "Android TV",
     notify_target_offline: "offline",
     notify_tts_workaround_label: "Spoken alert (Samsung silent-mode workaround): critical notifications to this device are read aloud instead of played as a normal notification sound — some Samsung phones block apps from overriding regular notification sound, so this is the one thing that reliably rings through silent mode / Do Not Disturb.",
@@ -2681,6 +2677,8 @@ const TRANSLATIONS = {
     tts_lang_label: "Language",
     tts_lang_auto: "Auto (follow panel)",
     pre_adhan_timing_head: "Timing",
+    pre_adhan_full_test_label: "Test full pre-adhan",
+    pre_adhan_full_test_sub: "Plays the jingle and the announcement over the selected speakers, just as before a prayer. The ▶ buttons above play on this device.",
     pre_adhan_minutes_2_label_short: "Interval",
     pre_adhan_active_for_label: "Active for prayers",
     pre_adhan_active_for_none: "No prayers selected",
@@ -2716,6 +2714,9 @@ const TRANSLATIONS = {
     dua_trigger_label: "Trigger",
     dua_no_trigger: "Geen trigger",
     dua_trigger_sub: "Speelt af zodra de gekozen entiteit aan of open gaat (max eens per minuut)",
+    dua_trigger_state_label: "Speelt af als hij gaat naar",
+    dua_trigger_on: "Aan",
+    dua_trigger_off: "Uit",
     random_adhan_label: "Willekeurige adhan",
     random_adhan_sub: "Speel bij elk gebed een willekeurige gedownloade adhan",
     sound_row_random_sub: "Willekeurig uit gedownloade adhans",
@@ -2789,12 +2790,6 @@ const TRANSLATIONS = {
     duck_media_players_label: "Spelers om te pauzeren",
     duck_media_players_none: "Geen geselecteerd",
     duck_media_pick_title: "Kies spelers om te pauzeren",
-    duck_mac_label: "Ook mijn Mac dempen",
-    duck_mac_sub: "Nida kan het geluid van een Mac niet direct bedienen — dit stuurt een melding waar een Shortcuts-automation op je Mac op kan reageren (macOS 27 of nieuwer nodig)",
-    duck_mac_notify_label: "Notify-doel",
-    duck_mac_notify_none: "Kies een notify-doel",
-    duck_mac_notify_pick_title: "Kies notify-doel",
-    duck_mac_hint: "Maak in Shortcuts een automation die start wanneer een melding van Home Assistant \"{duck}\" bevat (Mac dempen), en nog een voor \"{restore}\" (herstellen).",
     pre_adhan_test_label: "Test pre-adhan jingle",
     pre_adhan_test_sub: "Speelt de jingle met onderstaand test-volume",
     volume_label: "Volume",
@@ -2849,6 +2844,11 @@ const TRANSLATIONS = {
     test_notify_prayer_tooltip: "Stuur een testmelding voor dit gebed (met de huidige kritiek-instelling)",
     notify_targets_label: "Notificatie-doelen",
     notify_targets_none: "Geen geselecteerd",
+    live_activity_head: "Live Activity",
+    live_activity_label: "Volgend gebed op het toegangsscherm",
+    live_activity_sub: "Telt af op het toegangsscherm en in het Dynamic Island. Vereist de Companion-app (iOS 17.2+) en een mobiele app als notificatie-doel.",
+    live_activity_minutes_label: "Tonen vóór de adhan",
+    live_activity_test_btn: "Voorbeeld op mijn telefoon",
     notify_target_android_tv: "Android TV",
     notify_target_offline: "offline",
     notify_tts_workaround_label: "Gesproken melding (Samsung stille-standworkaround): kritieke meldingen naar dit toestel worden hardop voorgelezen in plaats van als gewone meldingstoon afgespeeld — sommige Samsung-telefoons blokkeren apps in het overschrijven van het gewone meldingsgeluid, dus dit is het enige dat betrouwbaar doorbreekt bij stille stand / niet storen.",
@@ -3081,6 +3081,8 @@ const TRANSLATIONS = {
     tts_lang_label: "Taal",
     tts_lang_auto: "Auto (volgt paneel)",
     pre_adhan_timing_head: "Timing",
+    pre_adhan_full_test_label: "Hele pre-adhan testen",
+    pre_adhan_full_test_sub: "Speelt jingle en aankondiging af over de gekozen speakers, zoals vlak voor een gebed. De ▶-knoppen hierboven spelen af op dit apparaat.",
     pre_adhan_minutes_2_label_short: "Interval",
     pre_adhan_active_for_label: "Actief voor gebeden",
     pre_adhan_active_for_none: "Geen gebeden geselecteerd",
@@ -3119,6 +3121,9 @@ const TRANSLATIONS = {
     dua_trigger_label: "المُشغِّل",
     dua_no_trigger: "لا يوجد مُشغِّل",
     dua_trigger_sub: "يُشغَّل عند تشغيل الكيان المختار أو فتحه (مرة واحدة كحد أقصى كل دقيقة)",
+    dua_trigger_state_label: "يُشغَّل عندما يصبح",
+    dua_trigger_on: "تشغيل",
+    dua_trigger_off: "إيقاف",
     random_adhan_label: "أذان عشوائي",
     random_adhan_sub: "تشغيل أذان عشوائي من الأذانات المُنزَّلة عند كل صلاة",
     sound_row_random_sub: "عشوائي من الأذانات المُنزَّلة",
@@ -3192,12 +3197,6 @@ const TRANSLATIONS = {
     duck_media_players_label: "المشغلات المراد إيقافها مؤقتاً",
     duck_media_players_none: "لم يتم اختيار أي شيء",
     duck_media_pick_title: "اختر المشغلات المراد إيقافها مؤقتاً",
-    duck_mac_label: "كتم صوت جهاز Mac أيضًا",
-    duck_mac_sub: "لا تستطيع Nida التحكم في صوت جهاز Mac مباشرة — يرسل هذا إشعارًا يمكن لأتمتة في تطبيق Shortcuts على جهازك التفاعل معه (يتطلب macOS 27 أو أحدث)",
-    duck_mac_notify_label: "هدف الإشعار",
-    duck_mac_notify_none: "اختر هدف إشعار",
-    duck_mac_notify_pick_title: "اختر هدف الإشعار",
-    duck_mac_hint: "أنشئ في Shortcuts أتمتة تعمل عند احتواء إشعار من Home Assistant على \"{duck}\" (كتم صوت جهاز Mac)، وأخرى لـ \"{restore}\" (استعادته).",
     pre_adhan_test_label: "اختبار جرس ما قبل الأذان",
     pre_adhan_test_sub: "يُشغِّل الجرس بمستوى صوت الاختبار أدناه",
     volume_label: "مستوى الصوت",
@@ -3252,6 +3251,11 @@ const TRANSLATIONS = {
     test_notify_prayer_tooltip: "إرسال إشعار تجريبي لهذه الصلاة (باستخدام إعداد الأهمية الحالي لها)",
     notify_targets_label: "وجهات الإشعارات",
     notify_targets_none: "لم يتم اختيار أي شيء",
+    live_activity_head: "النشاط المباشر",
+    live_activity_label: "الصلاة القادمة على شاشة القفل",
+    live_activity_sub: "يعدّ تنازليًا على شاشة القفل وفي Dynamic Island. يتطلب تطبيق Companion (iOS 17.2 أو أحدث) وهدف إشعارات من تطبيق الجوال.",
+    live_activity_minutes_label: "العرض قبل الأذان",
+    live_activity_test_btn: "معاينة على هاتفي",
     notify_target_android_tv: "Android TV",
     notify_target_offline: "غير متصل",
     notify_tts_workaround_label: "تنبيه صوتي (حل بديل لوضع الصامت في هواتف Samsung): الإشعارات الحرجة لهذا الجهاز تُقرأ بصوت عالٍ بدلاً من تشغيلها كصوت إشعار عادي — بعض هواتف Samsung تمنع التطبيقات من تجاوز صوت الإشعار العادي، لذا هذا هو الشيء الوحيد الذي يضمن الرنين عبر الوضع الصامت / عدم الإزعاج.",
@@ -3484,6 +3488,8 @@ const TRANSLATIONS = {
     tts_lang_label: "اللغة",
     tts_lang_auto: "تلقائي (يتبع اللوحة)",
     pre_adhan_timing_head: "التوقيت",
+    pre_adhan_full_test_label: "اختبار التنبيه الكامل قبل الأذان",
+    pre_adhan_full_test_sub: "يشغّل النغمة والإعلان عبر مكبرات الصوت المحددة تمامًا كما قبل الصلاة. أزرار ▶ أعلاه تشغّل على هذا الجهاز.",
     pre_adhan_minutes_2_label_short: "الفاصل الزمني",
     pre_adhan_active_for_label: "نشط للصلوات",
     pre_adhan_active_for_none: "لم يتم اختيار أي صلاة",
@@ -3519,6 +3525,9 @@ const TRANSLATIONS = {
     dua_trigger_label: "Tetikleyici",
     dua_no_trigger: "Tetikleyici yok",
     dua_trigger_sub: "Seçilen varlık açıldığında çalar (dakikada en fazla bir kez)",
+    dua_trigger_state_label: "Şu duruma geçince çalar",
+    dua_trigger_on: "Açık",
+    dua_trigger_off: "Kapalı",
     random_adhan_label: "Rastgele ezan",
     random_adhan_sub: "Her namaz vaktinde indirilen ezanlardan rastgele birini çal",
     sound_row_random_sub: "İndirilen ezanlardan rastgele",
@@ -3592,12 +3601,6 @@ const TRANSLATIONS = {
     duck_media_players_label: "Duraklatılacak oynatıcılar",
     duck_media_players_none: "Hiçbiri seçilmedi",
     duck_media_pick_title: "Duraklatılacak oynatıcıları seçin",
-    duck_mac_label: "Mac'imi de sessize al",
-    duck_mac_sub: "Nida bir Mac'in kendi sesini doğrudan kontrol edemez — bu, Mac'inizdeki bir Kısayollar otomasyonunun tepki verebileceği bir bildirim gönderir (macOS 27 veya üzeri gerekir)",
-    duck_mac_notify_label: "Bildirim hedefi",
-    duck_mac_notify_none: "Bir bildirim hedefi seçin",
-    duck_mac_notify_pick_title: "Bildirim hedefi seçin",
-    duck_mac_hint: "Kısayollar'da, Home Assistant'tan gelen bir bildirim \"{duck}\" içerdiğinde çalışan bir otomasyon oluşturun (Mac'i sessize alır) ve \"{restore}\" için bir tane daha (geri yükler).",
     pre_adhan_test_label: "Ezan öncesi jingle'ı test et",
     pre_adhan_test_sub: "Jingle'ı aşağıdaki test ses düzeyiyle çalar",
     volume_label: "Ses düzeyi",
@@ -3652,6 +3655,11 @@ const TRANSLATIONS = {
     test_notify_prayer_tooltip: "Bu namaz için test bildirimi gönder (mevcut kritik ayarını kullanır)",
     notify_targets_label: "Bildirim hedefleri",
     notify_targets_none: "Hiçbiri seçilmedi",
+    live_activity_head: "Canlı Etkinlik",
+    live_activity_label: "Sonraki namaz kilit ekranında",
+    live_activity_sub: "Kilit ekranında ve Dynamic Island'da geri sayım yapar. Companion uygulaması (iOS 17.2+) ve mobil uygulama bildirim hedefi gerekir.",
+    live_activity_minutes_label: "Ezandan önce göster",
+    live_activity_test_btn: "Telefonumda önizle",
     notify_target_android_tv: "Android TV",
     notify_target_offline: "çevrimdışı",
     notify_tts_workaround_label: "Sesli uyarı (Samsung sessiz mod çözümü): bu cihaza gönderilen kritik bildirimler normal bir bildirim sesi olarak çalınmak yerine sesli okunur — bazı Samsung telefonlar uygulamaların normal bildirim sesini geçersiz kılmasını engeller, bu yüzden sessiz mod / Rahatsız Etmeyin'i güvenilir şekilde aşan tek şey budur.",
@@ -3884,6 +3892,8 @@ const TRANSLATIONS = {
     tts_lang_label: "Dil",
     tts_lang_auto: "Otomatik (paneli takip eder)",
     pre_adhan_timing_head: "Zamanlama",
+    pre_adhan_full_test_label: "Tüm ezan öncesi bildirimi test et",
+    pre_adhan_full_test_sub: "Jingle ve duyuruyu, namazdan önce olduğu gibi seçili hoparlörlerden çalar. Yukarıdaki ▶ düğmeleri bu cihazda çalar.",
     pre_adhan_minutes_2_label_short: "Aralık",
     pre_adhan_active_for_label: "Etkin olduğu namazlar",
     pre_adhan_active_for_none: "Namaz seçilmedi",
@@ -3919,6 +3929,9 @@ const TRANSLATIONS = {
     dua_trigger_label: "Auslöser",
     dua_no_trigger: "Kein Auslöser",
     dua_trigger_sub: "Wird abgespielt, wenn die gewählte Entität sich einschaltet oder öffnet (max. einmal pro Minute)",
+    dua_trigger_state_label: "Wird ausgelöst, wenn er wechselt auf",
+    dua_trigger_on: "An",
+    dua_trigger_off: "Aus",
     random_adhan_label: "Zufälliger Adhan",
     random_adhan_sub: "Bei jedem Gebet einen zufälligen heruntergeladenen Adhan abspielen",
     sound_row_random_sub: "Zufällig aus heruntergeladenen Adhans",
@@ -3992,12 +4005,6 @@ const TRANSLATIONS = {
     duck_media_players_label: "Zu pausierende Player",
     duck_media_players_none: "Keine ausgewählt",
     duck_media_pick_title: "Zu pausierende Player auswählen",
-    duck_mac_label: "Auch meinen Mac stummschalten",
-    duck_mac_sub: "Nida kann den Ton eines Mac nicht direkt steuern — dies sendet eine Benachrichtigung, auf die eine Kurzbefehle-Automatisierung auf deinem Mac reagieren kann (erfordert macOS 27 oder neuer)",
-    duck_mac_notify_label: "Benachrichtigungsziel",
-    duck_mac_notify_none: "Benachrichtigungsziel wählen",
-    duck_mac_notify_pick_title: "Benachrichtigungsziel wählen",
-    duck_mac_hint: "Erstelle in Kurzbefehle eine Automatisierung, die ausgeführt wird, wenn eine Benachrichtigung von Home Assistant \"{duck}\" enthält (Mac stummschalten), und eine weitere für \"{restore}\" (wiederherstellen).",
     pre_adhan_test_label: "Pre-Adhan-Jingle testen",
     pre_adhan_test_sub: "Spielt das Jingle mit der unten stehenden Testlautstärke ab",
     volume_label: "Lautstärke",
@@ -4052,6 +4059,11 @@ const TRANSLATIONS = {
     test_notify_prayer_tooltip: "Testbenachrichtigung für dieses Gebet senden (mit der aktuellen Kritisch-Einstellung)",
     notify_targets_label: "Benachrichtigungsziele",
     notify_targets_none: "Keine ausgewählt",
+    live_activity_head: "Live-Aktivität",
+    live_activity_label: "Nächstes Gebet auf dem Sperrbildschirm",
+    live_activity_sub: "Zählt auf dem Sperrbildschirm und in der Dynamic Island herunter. Benötigt die Companion-App (iOS 17.2+) und ein Mobile-App-Benachrichtigungsziel.",
+    live_activity_minutes_label: "Vor dem Adhan anzeigen",
+    live_activity_test_btn: "Vorschau auf meinem Handy",
     notify_target_android_tv: "Android TV",
     notify_target_offline: "offline",
     notify_tts_workaround_label: "Gesprochener Alarm (Samsung-Stiller-Modus-Umgehung): Kritische Benachrichtigungen an dieses Gerät werden vorgelesen statt als normaler Benachrichtigungston abgespielt — manche Samsung-Telefone verhindern, dass Apps den normalen Benachrichtigungston überschreiben, daher ist dies das einzige, was zuverlässig durch den stillen Modus / Nicht stören dringt.",
@@ -4284,6 +4296,8 @@ const TRANSLATIONS = {
     tts_lang_label: "Sprache",
     tts_lang_auto: "Automatisch (folgt dem Panel)",
     pre_adhan_timing_head: "Zeitplanung",
+    pre_adhan_full_test_label: "Gesamte Vor-Adhan-Ansage testen",
+    pre_adhan_full_test_sub: "Spielt Jingle und Ansage über die ausgewählten Lautsprecher ab, genau wie vor einem Gebet. Die ▶-Tasten oben spielen auf diesem Gerät.",
     pre_adhan_minutes_2_label_short: "Intervall",
     pre_adhan_active_for_label: "Aktiv für Gebete",
     pre_adhan_active_for_none: "Kein Gebet ausgewählt",
@@ -4319,6 +4333,9 @@ const TRANSLATIONS = {
     dua_trigger_label: "Déclencheur",
     dua_no_trigger: "Aucun déclencheur",
     dua_trigger_sub: "Se joue quand l'entité choisie s'allume ou s'ouvre (une fois par minute maximum)",
+    dua_trigger_state_label: "Se déclenche en passant à",
+    dua_trigger_on: "Allumé",
+    dua_trigger_off: "Éteint",
     random_adhan_label: "Adhan aléatoire",
     random_adhan_sub: "Jouer un adhan téléchargé au hasard à chaque prière",
     sound_row_random_sub: "Aléatoire parmi les adhans téléchargés",
@@ -4392,12 +4409,6 @@ const TRANSLATIONS = {
     duck_media_players_label: "Lecteurs à mettre en pause",
     duck_media_players_none: "Aucun sélectionné",
     duck_media_pick_title: "Choisir les lecteurs à mettre en pause",
-    duck_mac_label: "Aussi mettre mon Mac en sourdine",
-    duck_mac_sub: "Nida ne peut pas contrôler directement le son d'un Mac — ceci envoie une notification à laquelle une automatisation Raccourcis sur votre Mac peut réagir (nécessite macOS 27 ou plus récent)",
-    duck_mac_notify_label: "Cible de notification",
-    duck_mac_notify_none: "Choisir une cible de notification",
-    duck_mac_notify_pick_title: "Choisir la cible de notification",
-    duck_mac_hint: "Dans Raccourcis, créez une automatisation qui s'exécute lorsqu'une notification de Home Assistant contient « {duck} » (met le Mac en sourdine), et une autre pour « {restore} » (le rétablit).",
     pre_adhan_test_label: "Tester le jingle pré-adhan",
     pre_adhan_test_sub: "Joue le jingle avec le volume de test ci-dessous",
     volume_label: "Volume",
@@ -4452,6 +4463,11 @@ const TRANSLATIONS = {
     test_notify_prayer_tooltip: "Envoyer une notification de test pour cette prière (utilise son réglage critique actuel)",
     notify_targets_label: "Cibles de notification",
     notify_targets_none: "Aucune sélectionnée",
+    live_activity_head: "Activité en direct",
+    live_activity_label: "Prochaine prière sur l'écran verrouillé",
+    live_activity_sub: "Décompte sur l'écran verrouillé et dans la Dynamic Island. Nécessite l'app Companion (iOS 17.2+) et une cible de notification d'app mobile.",
+    live_activity_minutes_label: "Afficher avant l'adhan",
+    live_activity_test_btn: "Aperçu sur mon téléphone",
     notify_target_android_tv: "Android TV",
     notify_target_offline: "hors ligne",
     notify_tts_workaround_label: "Alerte vocale (contournement du mode silencieux Samsung) : les notifications critiques vers cet appareil sont lues à voix haute au lieu d'être jouées comme un son de notification normal — certains téléphones Samsung empêchent les applications de remplacer le son de notification habituel, c'est donc le seul moyen fiable de percer le mode silencieux / Ne pas déranger.",
@@ -4684,6 +4700,8 @@ const TRANSLATIONS = {
     tts_lang_label: "Langue",
     tts_lang_auto: "Automatique (suit le panneau)",
     pre_adhan_timing_head: "Minutage",
+    pre_adhan_full_test_label: "Tester toute la pré-adhan",
+    pre_adhan_full_test_sub: "Joue le jingle et l'annonce sur les haut-parleurs sélectionnés, comme avant une prière. Les boutons ▶ ci-dessus jouent sur cet appareil.",
     pre_adhan_minutes_2_label_short: "Intervalle",
     pre_adhan_active_for_label: "Actif pour les prières",
     pre_adhan_active_for_none: "Aucune prière sélectionnée",
@@ -4719,6 +4737,9 @@ const TRANSLATIONS = {
     dua_trigger_label: "Pencetus",
     dua_no_trigger: "Tiada pencetus",
     dua_trigger_sub: "Dimainkan apabila entiti yang dipilih dihidupkan atau dibuka (maksimum sekali seminit)",
+    dua_trigger_state_label: "Dimainkan apabila bertukar kepada",
+    dua_trigger_on: "Hidup",
+    dua_trigger_off: "Mati",
     random_adhan_label: "Azan rawak",
     random_adhan_sub: "Mainkan azan yang dimuat turun secara rawak pada setiap waktu solat",
     sound_row_random_sub: "Rawak daripada azan yang dimuat turun",
@@ -4792,12 +4813,6 @@ const TRANSLATIONS = {
     duck_media_players_label: "Pemain untuk dijeda",
     duck_media_players_none: "Tiada dipilih",
     duck_media_pick_title: "Pilih pemain untuk dijeda",
-    duck_mac_label: "Senyapkan Mac saya juga",
-    duck_mac_sub: "Nida tidak dapat mengawal audio Mac secara langsung — ini menghantar pemberitahuan yang boleh dikesan oleh automasi Pintasan pada Mac anda (memerlukan macOS 27 atau lebih baharu)",
-    duck_mac_notify_label: "Sasaran pemberitahuan",
-    duck_mac_notify_none: "Pilih sasaran pemberitahuan",
-    duck_mac_notify_pick_title: "Pilih sasaran pemberitahuan",
-    duck_mac_hint: "Dalam Pintasan, cipta automasi yang berjalan apabila pemberitahuan daripada Home Assistant mengandungi \"{duck}\" (senyapkan Mac), dan satu lagi untuk \"{restore}\" (pulihkan).",
     pre_adhan_test_label: "Uji jingle pra-azan",
     pre_adhan_test_sub: "Mainkan jingle dengan kelantangan ujian di bawah",
     volume_label: "Kelantangan",
@@ -4852,6 +4867,11 @@ const TRANSLATIONS = {
     test_notify_prayer_tooltip: "Hantar pemberitahuan ujian untuk solat ini (menggunakan tetapan kritikal semasa)",
     notify_targets_label: "Sasaran pemberitahuan",
     notify_targets_none: "Tiada dipilih",
+    live_activity_head: "Live Activity",
+    live_activity_label: "Solat seterusnya pada skrin kunci",
+    live_activity_sub: "Mengira detik pada skrin kunci dan Dynamic Island. Memerlukan aplikasi Companion (iOS 17.2+) dan sasaran pemberitahuan aplikasi mudah alih.",
+    live_activity_minutes_label: "Papar sebelum azan",
+    live_activity_test_btn: "Pratonton pada telefon saya",
     notify_target_android_tv: "Android TV",
     notify_target_offline: "luar talian",
     notify_tts_workaround_label: "Amaran suara (penyelesaian mod senyap Samsung): pemberitahuan kritikal ke peranti ini dibacakan dengan kuat dan bukannya dimainkan sebagai bunyi pemberitahuan biasa — sesetengah telefon Samsung menghalang apl daripada mengatasi bunyi pemberitahuan biasa, jadi ini satu-satunya cara yang boleh dipercayai untuk menembusi mod senyap / Jangan Ganggu.",
@@ -5084,6 +5104,8 @@ const TRANSLATIONS = {
     tts_lang_label: "Bahasa",
     tts_lang_auto: "Automatik (ikut panel)",
     pre_adhan_timing_head: "Masa",
+    pre_adhan_full_test_label: "Uji seluruh pra-adzan",
+    pre_adhan_full_test_sub: "Memutar jingle dan pengumuman lewat pembesar suara yang dipilih, seperti sebelum salat. Tombol ▶ di atas memutar di perangkat ini.",
     pre_adhan_minutes_2_label_short: "Selang",
     pre_adhan_active_for_label: "Aktif untuk solat",
     pre_adhan_active_for_none: "Tiada solat dipilih",
@@ -5119,6 +5141,9 @@ const TRANSLATIONS = {
     dua_trigger_label: "Pemicu",
     dua_no_trigger: "Tidak ada pemicu",
     dua_trigger_sub: "Diputar saat entitas yang dipilih menyala atau terbuka (maksimum sekali per menit)",
+    dua_trigger_state_label: "Diputar saat berubah menjadi",
+    dua_trigger_on: "Nyala",
+    dua_trigger_off: "Mati",
     random_adhan_label: "Azan acak",
     random_adhan_sub: "Putar azan yang diunduh secara acak pada setiap waktu salat",
     sound_row_random_sub: "Acak dari azan yang diunduh",
@@ -5192,12 +5217,6 @@ const TRANSLATIONS = {
     duck_media_players_label: "Pemutar untuk dijeda",
     duck_media_players_none: "Tidak ada yang dipilih",
     duck_media_pick_title: "Pilih pemutar untuk dijeda",
-    duck_mac_label: "Bisukan Mac saya juga",
-    duck_mac_sub: "Nida tidak bisa mengontrol audio Mac secara langsung — ini mengirim notifikasi yang bisa direspons oleh otomatisasi Pintasan di Mac Anda (membutuhkan macOS 27 atau lebih baru)",
-    duck_mac_notify_label: "Target notifikasi",
-    duck_mac_notify_none: "Pilih target notifikasi",
-    duck_mac_notify_pick_title: "Pilih target notifikasi",
-    duck_mac_hint: "Di Pintasan, buat otomatisasi yang berjalan saat notifikasi dari Home Assistant berisi \"{duck}\" (membisukan Mac), dan satu lagi untuk \"{restore}\" (memulihkannya).",
     pre_adhan_test_label: "Uji jingle pra-azan",
     pre_adhan_test_sub: "Memutar jingle dengan volume uji di bawah",
     volume_label: "Volume",
@@ -5252,6 +5271,11 @@ const TRANSLATIONS = {
     test_notify_prayer_tooltip: "Kirim notifikasi uji untuk salat ini (menggunakan pengaturan kritis saat ini)",
     notify_targets_label: "Target notifikasi",
     notify_targets_none: "Tidak ada yang dipilih",
+    live_activity_head: "Live Activity",
+    live_activity_label: "Salat berikutnya di layar kunci",
+    live_activity_sub: "Menghitung mundur di layar kunci dan Dynamic Island. Membutuhkan aplikasi Companion (iOS 17.2+) dan target notifikasi aplikasi seluler.",
+    live_activity_minutes_label: "Tampilkan sebelum azan",
+    live_activity_test_btn: "Pratinjau di ponsel saya",
     notify_target_android_tv: "Android TV",
     notify_target_offline: "luring",
     notify_tts_workaround_label: "Peringatan suara (solusi mode senyap Samsung): notifikasi kritis ke perangkat ini dibacakan alih-alih diputar sebagai suara notifikasi biasa — beberapa ponsel Samsung mencegah aplikasi menimpa suara notifikasi biasa, jadi inilah satu-satunya cara yang andal untuk menembus mode senyap / Jangan Ganggu.",
@@ -5484,6 +5508,8 @@ const TRANSLATIONS = {
     tts_lang_label: "Bahasa",
     tts_lang_auto: "Otomatis (mengikuti panel)",
     pre_adhan_timing_head: "Pengaturan waktu",
+    pre_adhan_full_test_label: "Uji keseluruhan pra-azan",
+    pre_adhan_full_test_sub: "Memainkan jingle dan pengumuman melalui speaker yang dipilih, seperti sebelum solat. Butang ▶ di atas dimainkan pada peranti ini.",
     pre_adhan_minutes_2_label_short: "Interval",
     pre_adhan_active_for_label: "Aktif untuk salat",
     pre_adhan_active_for_none: "Tidak ada salat dipilih",
@@ -5519,6 +5545,9 @@ const TRANSLATIONS = {
     dua_trigger_label: "ٹرگر",
     dua_no_trigger: "کوئی ٹرگر نہیں",
     dua_trigger_sub: "منتخب کردہ اینٹٹی کے آن یا کھلنے پر چلتا ہے (زیادہ سے زیادہ ایک منٹ میں ایک بار)",
+    dua_trigger_state_label: "جب یہ اس حالت میں جائے تو چلے",
+    dua_trigger_on: "آن",
+    dua_trigger_off: "آف",
     random_adhan_label: "بے ترتیب اذان",
     random_adhan_sub: "ہر نماز کے وقت ڈاؤن لوڈ کردہ اذانوں میں سے بے ترتیب اذان چلائیں",
     sound_row_random_sub: "ڈاؤن لوڈ کردہ اذانوں میں سے بے ترتیب",
@@ -5592,12 +5621,6 @@ const TRANSLATIONS = {
     duck_media_players_label: "موقوف کیے جانے والے پلیئرز",
     duck_media_players_none: "کوئی منتخب نہیں",
     duck_media_pick_title: "موقوف کیے جانے والے پلیئرز منتخب کریں",
-    duck_mac_label: "میرا Mac بھی خاموش کریں",
-    duck_mac_sub: "Nida براہ راست Mac کی آواز کنٹرول نہیں کر سکتا — یہ ایک نوٹیفیکیشن بھیجتا ہے جس پر آپ کے Mac پر Shortcuts آٹومیشن ردعمل دے سکتی ہے (macOS 27 یا نیا درکار ہے)",
-    duck_mac_notify_label: "نوٹیفیکیشن ہدف",
-    duck_mac_notify_none: "نوٹیفیکیشن ہدف منتخب کریں",
-    duck_mac_notify_pick_title: "نوٹیفیکیشن ہدف منتخب کریں",
-    duck_mac_hint: "Shortcuts میں ایک آٹومیشن بنائیں جو اس وقت چلے جب Home Assistant کی نوٹیفیکیشن میں \"{duck}\" ہو (Mac خاموش کرے)، اور ایک اور \"{restore}\" کے لیے (بحال کرے)۔",
     pre_adhan_test_label: "اذان سے پہلے کی دھن آزمائیں",
     pre_adhan_test_sub: "نیچے دی گئی آزمائشی آواز کی سطح کے ساتھ دھن چلاتا ہے",
     volume_label: "آواز کی سطح",
@@ -5652,6 +5675,11 @@ const TRANSLATIONS = {
     test_notify_prayer_tooltip: "اس نماز کے لیے آزمائشی اطلاع بھیجیں (اس کی موجودہ اہم ترتیب استعمال کرتے ہوئے)",
     notify_targets_label: "اطلاع کے اہداف",
     notify_targets_none: "کوئی منتخب نہیں",
+    live_activity_head: "لائیو ایکٹیویٹی",
+    live_activity_label: "لاک اسکرین پر اگلی نماز",
+    live_activity_sub: "لاک اسکرین اور Dynamic Island پر الٹی گنتی دکھاتی ہے۔ Companion ایپ (iOS 17.2+) اور موبائل ایپ نوٹیفکیشن ہدف درکار ہے۔",
+    live_activity_minutes_label: "اذان سے پہلے دکھائیں",
+    live_activity_test_btn: "میرے فون پر پیش منظر",
     notify_target_android_tv: "Android TV",
     notify_target_offline: "آف لائن",
     notify_tts_workaround_label: "بولا گیا انتباہ (Samsung خاموش موڈ کا حل): اس ڈیوائس کے لیے اہم اطلاعات عام اطلاعی آواز کے طور پر چلانے کے بجائے بلند آواز سے پڑھی جاتی ہیں — کچھ Samsung فون ایپس کو عام اطلاعی آواز کو اوور رائیڈ کرنے سے روکتے ہیں، اس لیے یہ واحد چیز ہے جو خاموش موڈ / ڈسٹرب نہ کریں کے ذریعے قابل اعتماد طریقے سے گونجتی ہے۔",
@@ -5884,6 +5912,8 @@ const TRANSLATIONS = {
     tts_lang_label: "زبان",
     tts_lang_auto: "خودکار (پینل کی پیروی کرتا ہے)",
     pre_adhan_timing_head: "وقت کا تعین",
+    pre_adhan_full_test_label: "مکمل اذان سے پہلے کا اعلان آزمائیں",
+    pre_adhan_full_test_sub: "جنگل اور اعلان منتخب اسپیکرز پر چلاتا ہے، بالکل نماز سے پہلے کی طرح۔ اوپر کے ▶ بٹن اسی ڈیوائس پر چلتے ہیں۔",
     pre_adhan_minutes_2_label_short: "وقفہ",
     pre_adhan_active_for_label: "ان نمازوں کے لیے فعال",
     pre_adhan_active_for_none: "کوئی نماز منتخب نہیں",
@@ -5919,6 +5949,9 @@ const TRANSLATIONS = {
     dua_trigger_label: "محرک",
     dua_no_trigger: "بدون محرک",
     dua_trigger_sub: "هنگام روشن شدن یا باز شدن موجودیت انتخاب‌شده پخش می‌شود (حداکثر یک‌بار در دقیقه)",
+    dua_trigger_state_label: "هنگام تغییر به این وضعیت پخش شود",
+    dua_trigger_on: "روشن",
+    dua_trigger_off: "خاموش",
     random_adhan_label: "اذان تصادفی",
     random_adhan_sub: "پخش یک اذان دانلودشده تصادفی در هر وقت نماز",
     sound_row_random_sub: "تصادفی از میان اذان‌های دانلودشده",
@@ -5992,12 +6025,6 @@ const TRANSLATIONS = {
     duck_media_players_label: "پخش‌کننده‌هایی که باید متوقف شوند",
     duck_media_players_none: "هیچ‌کدام انتخاب نشده",
     duck_media_pick_title: "پخش‌کننده‌هایی برای توقف موقت انتخاب کنید",
-    duck_mac_label: "مک من هم بی‌صدا شود",
-    duck_mac_sub: "Nida نمی‌تواند صدای یک مک را مستقیماً کنترل کند — این یک اعلان ارسال می‌کند که یک اتوماسیون Shortcuts در مک شما می‌تواند به آن واکنش نشان دهد (نیازمند macOS 27 یا جدیدتر)",
-    duck_mac_notify_label: "هدف اعلان",
-    duck_mac_notify_none: "یک هدف اعلان انتخاب کنید",
-    duck_mac_notify_pick_title: "هدف اعلان را انتخاب کنید",
-    duck_mac_hint: "در Shortcuts، اتوماسیونی بسازید که هنگامی که اعلانی از Home Assistant حاوی «{duck}» باشد اجرا شود (بی‌صدا کردن مک)، و یکی دیگر برای «{restore}» (بازگرداندن آن).",
     pre_adhan_test_label: "آزمایش زنگ پیش از اذان",
     pre_adhan_test_sub: "زنگ را با میزان صدای آزمایشی زیر پخش می‌کند",
     volume_label: "میزان صدا",
@@ -6052,6 +6079,11 @@ const TRANSLATIONS = {
     test_notify_prayer_tooltip: "ارسال اعلان آزمایشی برای این نماز (با استفاده از تنظیم بحرانی فعلی آن)",
     notify_targets_label: "مقصدهای اعلان",
     notify_targets_none: "هیچ‌کدام انتخاب نشده",
+    live_activity_head: "فعالیت زنده",
+    live_activity_label: "نماز بعدی روی صفحه قفل",
+    live_activity_sub: "روی صفحه قفل و Dynamic Island شمارش معکوس نشان می‌دهد. به برنامه Companion (iOS 17.2 یا بالاتر) و یک مقصد اعلان برنامه موبایل نیاز دارد.",
+    live_activity_minutes_label: "نمایش پیش از اذان",
+    live_activity_test_btn: "پیش‌نمایش روی گوشی من",
     notify_target_android_tv: "Android TV",
     notify_target_offline: "آفلاین",
     notify_tts_workaround_label: "هشدار گفتاری (راه‌حل حالت بی‌صدای سامسونگ): اعلان‌های بحرانی برای این دستگاه به‌جای پخش به‌عنوان صدای اعلان معمولی، با صدای بلند خوانده می‌شوند — برخی گوشی‌های سامسونگ مانع از این می‌شوند که برنامه‌ها صدای اعلان معمولی را لغو کنند، بنابراین این تنها راهی است که به‌طور قابل‌اعتماد از حالت بی‌صدا / مزاحم نشوید عبور می‌کند.",
@@ -6284,6 +6316,8 @@ const TRANSLATIONS = {
     tts_lang_label: "زبان",
     tts_lang_auto: "خودکار (پیروی از پنل)",
     pre_adhan_timing_head: "زمان‌بندی",
+    pre_adhan_full_test_label: "آزمایش کامل پیش‌اذان",
+    pre_adhan_full_test_sub: "جینگل و اعلان را روی بلندگوهای انتخاب‌شده پخش می‌کند، درست مانند پیش از نماز. دکمه‌های ▶ بالا روی همین دستگاه پخش می‌کنند.",
     pre_adhan_minutes_2_label_short: "فاصله زمانی",
     pre_adhan_active_for_label: "فعال برای نمازهای",
     pre_adhan_active_for_none: "نمازی انتخاب نشده است",
@@ -6319,7 +6353,7 @@ const NIDA_ISSUES_URL = "https://github.com/joohann/Nida/issues";
 // Used in the footer and tagged onto backup exports (so a future restore
 // can tell how old a backup file is). Bump this alongside manifest.json
 // at release time — see the "Versiebump" changelog task.
-const NIDA_PANEL_VERSION = "2.4.9";
+const NIDA_PANEL_VERSION = "2.5.0";
 
 // 2.2.0 — watercolor mosque brand icon (from Johann's approved ornament
 // sheet), shown in the header tile in ALL themes. WebP with alpha,
@@ -7568,6 +7602,8 @@ class NidaPanel extends HTMLElement {
           e.target.dataset.duaId, "→", e.target.value
         );
         this._onDuaPatch(e.target.dataset.duaId, { trigger_entity: e.target.value });
+      } else if (which === "dua-trigger-state") {
+        this._onDuaPatch(e.target.dataset.duaId, { trigger_state: e.target.value });
       }
     });
     this._render();
@@ -9578,7 +9614,26 @@ class NidaPanel extends HTMLElement {
         <div class="pre-adhan-subhead">${this.t("pre_adhan_timing_head")}</div>
         ${this._htmlPreAdhanTimingBlock()}
         ${this._htmlPreAdhanActiveForRow()}
+        ${this._htmlPreAdhanFullTestRow()}
       ` : ""}
+    `;
+  }
+
+  _htmlPreAdhanFullTestRow() {
+    // 2.5.0 — Johann: "een knop voor hele pre-adhan testen inclusief de
+    // jingle". The jingle and the TTS each had their own test, but never
+    // together, which is the one thing you cannot judge from the parts
+    // (the pause between them, the dip, the music coming back). The
+    // subtitle spells out that this goes over the SPEAKERS, because the
+    // individual ▶ buttons on the rows above play on this device.
+    return `
+      <div class="sound-row">
+        <div class="sound-info">
+          <div class="sound-name">${this.t("pre_adhan_full_test_label")}</div>
+          <div class="row-sub">${this.t("pre_adhan_full_test_sub")}</div>
+        </div>
+        ${this._htmlSpeakerTestBtn("pre_adhan_full")}
+      </div>
     `;
   }
 
@@ -9804,13 +9859,6 @@ class NidaPanel extends HTMLElement {
     const dipEnabled = this._preAdhanDipEnabled();
     const dipFactor = this._preAdhanDipFactor();
 
-    const macEnabled = this._duckMacShortcutEnabled();
-    const macNotifyName = this._duckMacShortcutNotifyName();
-    const macNotifySummary = macNotifyName || this.t("duck_mac_notify_none");
-    const macHint = this._escape(this.t("duck_mac_hint"))
-      .replace("{duck}", `<code>${DUCK_MAC_DUCK_MESSAGE}</code>`)
-      .replace("{restore}", `<code>${DUCK_MAC_RESTORE_MESSAGE}</code>`);
-
     // 2.3.2 — fade applies to both halves of this section (the ducked
     // players and the adhan speakers themselves), so it sits at the top
     // rather than nested under either one.
@@ -9869,22 +9917,6 @@ class NidaPanel extends HTMLElement {
           <span>${this.t("duck_media_players_label")}</span>
           <span class="select-value">${this._escape(dSummary)} ${ICONS.chevronRight}</span>
         </div>
-        <div class="row">
-          <div class="row-info">
-            <span class="row-label">${this.t("duck_mac_label")}</span>
-            <span class="row-sub">${this.t("duck_mac_sub")}</span>
-          </div>
-          <div class="toggle ${macEnabled ? "on" : ""}" data-action="toggle-duck-mac-shortcut">
-            <div class="toggle-knob"></div>
-          </div>
-        </div>
-        ${macEnabled ? `
-          <div class="select-field flat" data-action="open-duck-mac-notify">
-            <span>${this.t("duck_mac_notify_label")}</span>
-            <span class="select-value">${this._escape(macNotifySummary)} ${ICONS.chevronRight}</span>
-          </div>
-          <div class="duck-mac-hint">${macHint}</div>
-        ` : ""}
       ` : ""}
 
       <div class="sounds-group-head">${this.t("restore_playback_label")}</div>
@@ -9984,6 +10016,14 @@ class NidaPanel extends HTMLElement {
             ${triggerOpts}
           </select>
         </div>
+        ${d.trigger_entity ? `
+        <div class="row">
+          <span class="row-label">${this.t("dua_trigger_state_label")}</span>
+          <select class="dua-player-select" data-input="dua-trigger-state" data-dua-id="${id}">
+            <option value="on" ${d.trigger_state !== "off" ? "selected" : ""}>${this.t("dua_trigger_on")}</option>
+            <option value="off" ${d.trigger_state === "off" ? "selected" : ""}>${this.t("dua_trigger_off")}</option>
+          </select>
+        </div>` : ""}
         <div class="minutes-row">
           <div class="sound-info">
             <div class="sound-name">${this.t("dua_volume_label")}</div>
@@ -10229,35 +10269,6 @@ class NidaPanel extends HTMLElement {
     if (!Number.isFinite(n)) return;
     n = Math.max(0, Math.min(100, n));
     this._saveSettings({ pre_adhan_dip_factor: n });
-  }
-
-  // 2.2.2 — Mac-shortcut duck. See const.py's OPT_DUCK_MAC_SHORTCUT_ENABLED
-  // comment for the full "why": no HA entity can mute/pause a Mac's own
-  // local audio, so instead we fire a notification a macOS Shortcuts
-  // automation reacts to. Reuses this._notifyServices (already fetched
-  // for the general Notifications section) — no new websocket call.
-  _duckMacShortcutEnabled() {
-    return !!this._settings?.duck_mac_shortcut_enabled;
-  }
-
-  _duckMacShortcutNotify() {
-    return this._settings?.duck_mac_shortcut_notify || "";
-  }
-
-  _duckMacShortcutNotifyName() {
-    const full = this._duckMacShortcutNotify();
-    if (!full) return "";
-    const svc = (this._notifyServices || []).find((s) => s.full === full);
-    return svc ? svc.service : full.replace(/^notify\./, "");
-  }
-
-  _onToggleDuckMacShortcut() {
-    this._saveSettings({ duck_mac_shortcut_enabled: !this._duckMacShortcutEnabled() });
-  }
-
-  _onPickDuckMacNotify(full) {
-    this._saveSettings({ duck_mac_shortcut_notify: full });
-    this._closeOverlay();
   }
 
   _listContactSensors() {
@@ -10654,6 +10665,37 @@ class NidaPanel extends HTMLElement {
           </div>
         `;
         }).join("")}
+        <div class="subsection-head">${this.t("live_activity_head")}</div>
+        <div class="row">
+          <div class="row-info">
+            <span class="row-label">${this.t("live_activity_label")}</span>
+            <span class="row-sub">${this.t("live_activity_sub")}</span>
+          </div>
+          <div class="toggle ${this._liveActivityEnabled() ? "on" : ""}" data-action="toggle-live-activity">
+            <div class="toggle-knob"></div>
+          </div>
+        </div>
+        ${this._liveActivityEnabled() ? `
+          <div class="minutes-row">
+            <div class="sound-info">
+              <div class="sound-name">${this.t("live_activity_minutes_label")}</div>
+              <div class="volume-row">
+                <input type="range" min="15" max="360" step="15"
+                       value="${this._liveActivityMinutes()}"
+                       data-input="live-activity-minutes"
+                       class="volume-slider"
+                       aria-label="${this.t("live_activity_minutes_label")}">
+                <span class="volume-value" data-live-activity-minutes-display>${this._liveActivityMinutes()} ${this.t("minutes_short")}</span>
+              </div>
+            </div>
+          </div>
+        ` : ""}
+        <div class="test-row">
+          <button class="test-btn" data-action="test-live-activity"
+                  ${this._notifyTargetIds().length === 0 ? "disabled" : ""}>
+            ${this.t("live_activity_test_btn")}
+          </button>
+        </div>
         <div class="test-row">
           <button class="test-btn" data-action="test-notify"
                   ${this._notifyTargetIds().length === 0 ? "disabled" : ""}>
@@ -10668,6 +10710,27 @@ class NidaPanel extends HTMLElement {
       this.t("section_notifications"),
       cardInner
     );
+  }
+
+  _liveActivityEnabled() {
+    return !!this._settings?.live_activity_enabled;
+  }
+
+  _liveActivityMinutes() {
+    const n = parseInt(this._settings?.live_activity_minutes, 10);
+    if (Number.isFinite(n) && n >= 15 && n <= 360) return n;
+    return 120;
+  }
+
+  _onToggleLiveActivity() {
+    this._saveSettings({ live_activity_enabled: !this._liveActivityEnabled() });
+  }
+
+  _onLiveActivityMinutesChange(value) {
+    let n = parseInt(value, 10);
+    if (!Number.isFinite(n)) return;
+    n = Math.max(15, Math.min(360, n));
+    this._saveSettings({ live_activity_minutes: n });
   }
 
   _htmlSectionJumuah() {
@@ -12270,9 +12333,19 @@ class NidaPanel extends HTMLElement {
     if (this._speakerPreviewTimer) clearTimeout(this._speakerPreviewTimer);
     this._speakerPreviewItem = item;
     this._speakerPreviewStartedAt = Date.now();
+    this._speakerPreviewIdleSince = null;
     this._renderSpeakerTestBtnOnly(btn, true);
     try {
-      if (item === "pre_adhan_tts") {
+      if (item === "pre_adhan_full") {
+        // The whole sequence (jingle, gap, TTS) as the scheduler runs it.
+        // Held open for its full length, so no await-then-timer problem:
+        // the button state is driven by _syncSpeakerPreviewState.
+        this._hass.callService("nida", "test_pre_adhan", {}).catch((e) => {
+          console.warn("Nida: full pre-adhan test failed:", e);
+          this._speakerPreviewItem = null;
+          this._renderSpeakerTestBtnOnly(btn, false);
+        });
+      } else if (item === "pre_adhan_tts") {
         // TTS has no file to play — go through the real announcement
         // service. A REAL prayer name (not "test") is what makes it use
         // the real jingle volume rather than the separate test volume;
@@ -12308,9 +12381,21 @@ class NidaPanel extends HTMLElement {
       clearTimeout(this._speakerPreviewTimer);
       this._speakerPreviewTimer = null;
     }
-    const players = this._speakerPreviewPlayers(this._speakerPreviewItem);
+    const stoppedItem = this._speakerPreviewItem;
+    const players = this._speakerPreviewPlayers(stoppedItem);
     this._speakerPreviewItem = null;
     this._renderSpeakerTestBtnOnly(btn, false);
+    if (stoppedItem === "pre_adhan_full") {
+      // media_stop alone would only end the jingle and let the TTS speak
+      // anyway; cancel the whole sequence instead (it hands the speakers
+      // back itself).
+      try {
+        await this._hass.callService("nida", "test_pre_adhan", { stop: true });
+      } catch (e) {
+        console.warn("Nida: stopping pre-adhan test failed:", e);
+      }
+      return;
+    }
     if (!players.length) return;
     try {
       await this._hass.callService("media_player", "media_stop", {
@@ -12344,7 +12429,19 @@ class NidaPanel extends HTMLElement {
     const anyPlaying = players.some(
       (id) => this._hass?.states?.[id]?.state === "playing"
     );
-    if (anyPlaying) return;
+    if (anyPlaying) {
+      this._speakerPreviewIdleSince = null;
+      return;
+    }
+    if (item === "pre_adhan_full") {
+      // Silent on purpose for 2s between jingle and voice, plus however
+      // long the TTS engine takes to start: only call it finished after a
+      // stretch of silence clearly longer than that.
+      const now = Date.now();
+      if (!this._speakerPreviewIdleSince) this._speakerPreviewIdleSince = now;
+      if (now - this._speakerPreviewIdleSince < 8000) return;
+    }
+    this._speakerPreviewIdleSince = null;
     this._speakerPreviewItem = null;
     this._speakerPreviewStartedAt = null;
     if (this._speakerPreviewTimer) {
@@ -13485,21 +13582,6 @@ class NidaPanel extends HTMLElement {
         "pick-iftar-dua"
       );
     }
-    if (this._activeOverlay === "duck-mac-notify-picker") {
-      // 2.2.2 — single-select over the existing notify.* services cache,
-      // same pattern as the Fajr alarm scene picker. Reused rather than
-      // building a bespoke notify picker for this one feature.
-      const current = this._duckMacShortcutNotify();
-      return this._htmlOverlayList(
-        this.t("duck_mac_notify_pick_title"),
-        this._notifyServices.map((s) => ({
-          key: s.full,
-          label: s.service,
-          active: s.full === current,
-        })),
-        "pick-duck-mac-notify"
-      );
-    }
     if (this._activeOverlay === "fajr-alarm-scene-picker") {
       // 2.1.35 — single-select over nida/list_scenes.
       const current = this._fajrAlarmSceneId();
@@ -14029,6 +14111,7 @@ class NidaPanel extends HTMLElement {
         media_player: "",
         volume: 40,
         trigger_entity: "",
+        trigger_state: "on",
       });
     }
     this._duaPickId = null;
@@ -14626,12 +14709,6 @@ class NidaPanel extends HTMLElement {
       this._onToggleRestorePlayback();
     } else if (action === "toggle-pre-adhan-dip") {
       this._onTogglePreAdhanDip();
-    } else if (action === "toggle-duck-mac-shortcut") {
-      this._onToggleDuckMacShortcut();
-    } else if (action === "open-duck-mac-notify") {
-      this._openOverlay("duck-mac-notify-picker");
-    } else if (action === "pick-duck-mac-notify") {
-      this._onPickDuckMacNotify(target.dataset.key);
     } else if (action === "toggle-notify-master") {
       this._onToggleNotifyMaster();
     } else if (action === "toggle-notify-critical-prayer") {
@@ -14674,6 +14751,10 @@ class NidaPanel extends HTMLElement {
         ramadan_edition_enabled:
           !(this._settings?.ramadan_edition_enabled ?? true),
       });
+    } else if (action === "test-live-activity") {
+      this._runTest(target, "nida/test_live_activity");
+    } else if (action === "toggle-live-activity") {
+      this._onToggleLiveActivity();
     } else if (action === "toggle-suhoor-reminder") {
       this._onToggleSuhoorReminder();
     } else if (action === "toggle-iftar-reminder") {
@@ -15050,6 +15131,12 @@ class NidaPanel extends HTMLElement {
         input.addEventListener("change", (e) => this._onCalendarLeadChange(slot, e.target.value));
       } else if (which === "calendar-fire-time") {
         input.addEventListener("change", (e) => this._onCalendarFireTimeChange(e.target.value));
+      } else if (which === "live-activity-minutes") {
+        input.addEventListener("input", (e) => {
+          const display = root.querySelector("[data-live-activity-minutes-display]");
+          if (display) display.textContent = `${e.target.value} ${this.t("minutes_short")}`;
+        });
+        input.addEventListener("change", (e) => this._onLiveActivityMinutesChange(e.target.value));
       } else if (which === "suhoor-minutes") {
         input.addEventListener("input", (e) => {
           const display = root.querySelector("[data-suhoor-minutes-display]");

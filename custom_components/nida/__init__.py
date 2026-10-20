@@ -22,6 +22,8 @@ Wel aanwezig vanaf 2.0.2:
   - scheduler.py        → plant adhan-triggers per prayer-time
 
 Changelog:
+  2.5.0 (2026-10-10): Sets up NidaLiveActivity (live_activity.py) next to the
+                       scheduler and re-plans it on every options update.
   2.1.20 (2026-07-08): async_setup_entry now also calls
                        panel.async_register_card (new) unconditionally —
                        registers the new frontend/nida-card.js as a
@@ -304,6 +306,7 @@ from .const import (
 )
 from .coordinator import PrayerTimesCoordinator
 from .helpers import async_copy_brand, async_copy_sounds
+from .live_activity import NidaLiveActivity
 from .panel import async_register_card, async_register_panel, async_remove_panel
 from .scheduler import NidaScheduler
 from .services import async_register_services, async_unregister_services
@@ -421,6 +424,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Stash the scheduler so the update-listener (and any other module
     # that needs to nudge it) can reach it without re-creating one.
     hass.data[DOMAIN][f"_scheduler_{entry.entry_id}"] = scheduler
+    # 2.5.0 — next-prayer Live Activity, planned from the same coordinator.
+    live_activity = NidaLiveActivity(hass, entry, coordinator)
+    live_activity.async_setup()
+    hass.data[DOMAIN][f"_live_activity_{entry.entry_id}"] = live_activity
+    entry.async_on_unload(live_activity.async_shutdown)
     # 2.0.54 — baseline the dua id set now, so _async_update_listener can
     # detect the very first duas change after startup (prev was None
     # before, which suppressed the reload and left the new button entity
@@ -471,6 +479,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_remove_panel(hass)
         hass.data[DOMAIN].pop(entry.entry_id, None)
         hass.data[DOMAIN].pop(f"_scheduler_{entry.entry_id}", None)
+        hass.data[DOMAIN].pop(f"_live_activity_{entry.entry_id}", None)
         hass.data[DOMAIN].pop(f"_sidebar_state_{entry.entry_id}", None)
         if not hass.config_entries.async_entries(DOMAIN):
             async_unregister_services(hass)
@@ -538,10 +547,15 @@ def _async_setup_dua_triggers(hass: HomeAssistant, entry: ConfigEntry) -> None:
     _async_teardown_dua_triggers(hass, entry)
     nida_data = hass.data.setdefault(DOMAIN, {})
 
-    mapping: dict[str, list[str]] = {}
+    # 2.5.0 — each dua also has a trigger_state ("on" default, or "off"):
+    # the state the entity must change TO for the dua to fire.
+    mapping: dict[str, list[tuple[str, str]]] = {}
     for d in entry.options.get(OPT_DUAS) or []:
         if isinstance(d, dict) and d.get("id") and d.get("trigger_entity"):
-            mapping.setdefault(str(d["trigger_entity"]), []).append(str(d["id"]))
+            target = "off" if d.get("trigger_state") == "off" else "on"
+            mapping.setdefault(str(d["trigger_entity"]), []).append(
+                (str(d["id"]), target)
+            )
     if not mapping:
         return
 
@@ -551,15 +565,17 @@ def _async_setup_dua_triggers(hass: HomeAssistant, entry: ConfigEntry) -> None:
     def _on_trigger_state(event) -> None:
         new = event.data.get("new_state")
         old = event.data.get("old_state")
-        # Only the transition INTO "on": ignore updates that stay "on"
-        # (attribute changes) and anything that is not an on-state.
-        if new is None or new.state != "on":
-            return
-        if old is not None and old.state == "on":
+        # Only the transition INTO the target state: ignore updates that
+        # stay in it (attribute changes) and any other state.
+        if new is None:
             return
         entity_id = event.data.get("entity_id")
         now = time.monotonic()
-        for dua_id in mapping.get(entity_id, []):
+        for dua_id, target in mapping.get(entity_id, []):
+            if new.state != target:
+                continue
+            if old is not None and old.state == target:
+                continue
             prev = last_fired.get(dua_id, 0.0)
             if now - prev < DUA_TRIGGER_COOLDOWN_SECONDS:
                 _LOGGER.debug(
@@ -637,3 +653,6 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
     scheduler = nida_data.get(f"_scheduler_{entry.entry_id}")
     if scheduler is not None:
         scheduler._async_reschedule()
+    live_activity = nida_data.get(f"_live_activity_{entry.entry_id}")
+    if live_activity is not None:
+        live_activity.async_reschedule()

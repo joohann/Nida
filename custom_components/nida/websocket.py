@@ -12,6 +12,8 @@ de gekozen waarde op. De daadwerkelijke download volgt zodra de
 sound-catalogus (sounds/catalog/catalog.json) er is.
 
 Changelog:
+  2.5.0 (2026-10-10): New nida/test_live_activity command — a 90-second preview
+                       of the next-prayer Live Activity for the panel's test button.
   2.1.35 (2026-07-11): nida/list_scenes added — same shape as
                        nida/list_media_players, for the new Fajr wake-up
                        alarm's scene picker (Johann wants an existing HA
@@ -187,7 +189,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import slugify
 
 from . import islamic_calendar
-from .const import DOMAIN, PRAYERS
+from .const import DOMAIN, OPT_SETTINGS_USERS, PRAYERS
 from .catalog import (
     async_delete_sound,
     async_download_sound,
@@ -660,7 +662,6 @@ async def ws_test_notify(hass: HomeAssistant, connection, msg) -> None:
         _deny_settings(connection, msg)
         return
     from .const import (
-    OPT_SETTINGS_USERS,
         DEFAULT_NOTIFY_MESSAGE_FALLBACK,
         DEFAULT_NOTIFY_TITLE_FALLBACK,
         OPT_NOTIFY_CRITICAL_ENABLED_PREFIX,
@@ -718,6 +719,39 @@ async def ws_test_notify(hass: HomeAssistant, connection, msg) -> None:
         options=options,
     )
     connection.send_result(msg["id"], {"sent": sent, "total": len(targets)})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "nida/test_live_activity",
+        vol.Optional("entry_id"): cv.string,
+    }
+)
+@websocket_api.async_response
+async def ws_test_live_activity(hass: HomeAssistant, connection, msg) -> None:
+    """Show a 90-second preview of the next-prayer Live Activity (2.5.0)."""
+    if not _may_edit_settings(hass, connection):
+        _deny_settings(connection, msg)
+        return
+    entry = _get_entry(hass, msg["entry_id"]) if msg.get("entry_id") else None
+    if entry is None:
+        entries = hass.config_entries.async_entries(DOMAIN)
+        entry = entries[0] if entries else None
+    manager = (
+        hass.data.get(DOMAIN, {}).get(f"_live_activity_{entry.entry_id}")
+        if entry
+        else None
+    )
+    if manager is None:
+        connection.send_error(msg["id"], "not_found", "No Nida entry")
+        return
+    sent = await manager.async_test()
+    if not sent:
+        connection.send_error(
+            msg["id"], "no_targets", "No mobile app notification targets configured"
+        )
+        return
+    connection.send_result(msg["id"], {"sent": sent, "total": len(sent)})
 
 
 @websocket_api.websocket_command(
@@ -964,6 +998,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_list_notify_services)
     websocket_api.async_register_command(hass, ws_test_notify)
     websocket_api.async_register_command(hass, ws_test_jumuah)
+    websocket_api.async_register_command(hass, ws_test_live_activity)
     websocket_api.async_register_command(hass, ws_get_catalog)
     websocket_api.async_register_command(hass, ws_download_sound)
     websocket_api.async_register_command(hass, ws_delete_sound)

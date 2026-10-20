@@ -398,31 +398,28 @@ from .const import (
     DEFAULT_NIGHT_START,
     DEFAULT_NIGHT_VOLUME_FACTOR,
     DEFAULT_OPEN_CONTACT_VOLUME_FACTOR,
-    DEFAULT_DUCK_MAC_SHORTCUT_ENABLED,
     DEFAULT_DUCK_MEDIA_ENABLED,
     DEFAULT_FADE_ENABLED,
     DEFAULT_FADE_SECONDS,
     DEFAULT_SONOS_ANNOUNCE_ENABLED,
     DEFAULT_FAJR_ALARM_VOLUME,
+    DEFAULT_PRE_ADHAN_AUDIO_ENABLED,
     DEFAULT_PRE_ADHAN_DIP_ENABLED,
     DEFAULT_PRE_ADHAN_DIP_FACTOR,
     DEFAULT_RESTORE_PLAYBACK_ENABLED,
     DEFAULT_SOUNDS,
     DEFAULT_TTS_MESSAGES,
+    DEFAULT_TTS_PRE_ADHAN_DELAY,
     DEFAULT_TTS_PRE_ADHAN_MESSAGE_FALLBACK,
     DEFAULT_VOLUME_PRE_ADHAN_TEST,
     DEFAULT_VOLUME_TEST,
     DEFAULT_DUA_VOLUME,
     DEFAULT_VOLUMES,
     DOMAIN,
-    DUCK_MAC_SHORTCUT_DUCK_MESSAGE,
-    DUCK_MAC_SHORTCUT_RESTORE_MESSAGE,
     FADE_SECONDS_MAX,
     FADE_SECONDS_MIN,
     OPT_ADHAN_MEDIA_PLAYERS,
     OPT_DUAS,
-    OPT_DUCK_MAC_SHORTCUT_ENABLED,
-    OPT_DUCK_MAC_SHORTCUT_NOTIFY,
     OPT_DUCK_MEDIA_ENABLED,
     OPT_DUCK_MEDIA_PLAYERS,
     OPT_FADE_ENABLED,
@@ -431,6 +428,8 @@ from .const import (
     OPT_FAJR_ALARM_SOUND,
     OPT_FAJR_ALARM_VOLUME,
     OPT_NIGHT_END,
+    OPT_PRE_ADHAN_AUDIO_ENABLED,
+    OPT_TTS_PRE_ADHAN_ENABLED,
     OPT_NIGHT_MODE_ENABLED,
     OPT_NIGHT_START,
     OPT_NIGHT_VOLUME_FACTOR,
@@ -445,6 +444,7 @@ from .const import (
     OPT_RESTORE_PLAYBACK_ENABLED,
     OPT_SONOS_ANNOUNCE_ENABLED,
     OPT_SOUND_PREFIX,
+    OPT_TTS_PRE_ADHAN_DELAY,
     OPT_TTS_PRE_ADHAN_LANGUAGE,
     OPT_TTS_PRE_ADHAN_MESSAGE,
     OPT_TTS_PRE_ADHAN_SERVICES,
@@ -467,6 +467,7 @@ SERVICE_PLAY_TEST_SOUND = "play_test_sound"
 SERVICE_SPEAK_PRE_ADHAN = "speak_pre_adhan"
 SERVICE_PLAY_DUA = "play_dua"
 SERVICE_PLAY_PREVIEW = "play_preview"
+SERVICE_TEST_PRE_ADHAN = "test_pre_adhan"
 
 # 2.3.0 — one preview service covering every sound Nida can play, so each
 # one is auditionable ON THE REAL SPEAKERS at its REAL configured volume.
@@ -493,6 +494,13 @@ PREVIEW_ITEMS = [
 PLAY_PREVIEW_SCHEMA = vol.Schema(
     {
         vol.Required("item"): vol.In(PREVIEW_ITEMS),
+        vol.Optional("entity_id"): vol.Any(cv.entity_id, [cv.entity_id]),
+    }
+)
+
+TEST_PRE_ADHAN_SCHEMA = vol.Schema(
+    {
+        vol.Optional("stop", default=False): cv.boolean,
         vol.Optional("entity_id"): vol.Any(cv.entity_id, [cv.entity_id]),
     }
 )
@@ -900,41 +908,6 @@ async def _play_announcement(
         _LOGGER.warning("Sonos announce failed for %s on %s (%s)", label, players, err)
 
 
-async def _notify_mac_shortcut(hass: HomeAssistant, options: dict, message: str) -> None:
-    """Fire a fixed, recognisable notification via the user's configured
-    notify.* target so a macOS 27+ (Sequoia) Shortcuts automation can
-    react to it and mute/restore the Mac's own local audio output.
-
-    2.2.2 — see const.py's OPT_DUCK_MAC_SHORTCUT_ENABLED comment for the
-    full "why": Nida has no HA entity that can control a Mac's own local
-    playback, only audio being AirPlayed TO it (a different, and for
-    Johann's use case irrelevant, audio path). This is deliberately NOT
-    gated on "is anything playing" the way the media_player duck path
-    is — Nida can't see the Mac's local playback state at all, so it
-    fires unconditionally whenever duck-media runs and this sub-feature
-    is enabled. `message` is one of the two fixed constants
-    (DUCK_MAC_SHORTCUT_DUCK_MESSAGE / _RESTORE_MESSAGE) the panel shows
-    as copy-paste instructions for the user's own Shortcuts automation.
-    """
-    if not bool(options.get(OPT_DUCK_MAC_SHORTCUT_ENABLED, DEFAULT_DUCK_MAC_SHORTCUT_ENABLED)):
-        return
-    target = options.get(OPT_DUCK_MAC_SHORTCUT_NOTIFY) or ""
-    if not target.startswith("notify."):
-        return
-    service = target.split(".", 1)[1]
-    if not service:
-        return
-    try:
-        await hass.services.async_call(
-            "notify", service,
-            {"message": message},
-            blocking=True,
-        )
-        _LOGGER.debug("Sent Mac-shortcut notify %r to %s", message, target)
-    except Exception as err:  # noqa: BLE001
-        _LOGGER.warning("Failed to send Mac-shortcut notify to %s (%s)", target, err)
-
-
 async def _duck_media_players(
     hass: HomeAssistant, options: dict, exclude: list[str] | None = None
 ) -> list[dict]:
@@ -991,8 +964,6 @@ async def _duck_media_players(
     """
     if not bool(options.get(OPT_DUCK_MEDIA_ENABLED, DEFAULT_DUCK_MEDIA_ENABLED)):
         return []
-
-    await _notify_mac_shortcut(hass, options, DUCK_MAC_SHORTCUT_DUCK_MESSAGE)
 
     targets = [e for e in (options.get(OPT_DUCK_MEDIA_PLAYERS) or []) if isinstance(e, str)]
     # 2.3.5 — never duck a speaker we are about to play ON. Johann's
@@ -1112,7 +1083,12 @@ async def _duck_media_players(
 
 
 async def _wait_until_idle(
-    hass: HomeAssistant, players: list[str], timeout: float = 600.0
+    hass: HomeAssistant,
+    players: list[str],
+    timeout: float = 600.0,
+    *,
+    grace: float = 2.0,
+    poll: float = 1.0,
 ) -> None:
     """Block until every entity in `players` has left the "playing" state,
     or `timeout` seconds pass — whichever comes first.
@@ -1127,14 +1103,14 @@ async def _wait_until_idle(
     """
     if not players:
         return
-    await asyncio.sleep(2)  # grace period for play_media to actually start
-    elapsed = 2.0
+    await asyncio.sleep(grace)  # grace period for play_media to actually start
+    elapsed = grace
     while elapsed < timeout:
         states = [hass.states.get(p) for p in players]
         if all(s is None or s.state != "playing" for s in states):
             return
-        await asyncio.sleep(1)
-        elapsed += 1.0
+        await asyncio.sleep(poll)
+        elapsed += poll
     _LOGGER.warning(
         "Duck media: timed out waiting for %s to finish; restoring ducked players anyway",
         players,
@@ -1168,7 +1144,6 @@ async def _restore_duck_media_players(
     restore notify still fires even on a run where zero media_player
     entities got ducked.
     """
-    await _notify_mac_shortcut(hass, options, DUCK_MAC_SHORTCUT_RESTORE_MESSAGE)
     if not snapshot:
         return
     for item in snapshot:
@@ -1453,30 +1428,75 @@ async def _apply_pre_adhan_volume(
         await _set_volume_safe(hass, undipped, configured, label)
 
 
-async def _restore_adhan_players(hass: HomeAssistant, snapshot: dict | None) -> None:
+async def _wait_until_playing(
+    hass: HomeAssistant, players: list[str], timeout: float = 10.0
+) -> None:
+    """Wait until every player reports "playing", or `timeout` passes.
+
+    The timeout is a safety net: a player that never starts must not hold
+    up the rest of the sequence for long, and the caller ramps up anyway.
+    """
+    waited = 0.0
+    while waited < timeout:
+        states = [hass.states.get(p) for p in players]
+        if all(s is not None and s.state == "playing" for s in states):
+            return
+        await asyncio.sleep(0.2)
+        waited += 0.2
+
+
+async def _restore_adhan_players(
+    hass: HomeAssistant, snapshot: dict | None, options: dict | None = None
+) -> None:
     """Resume whatever _snapshot_adhan_players captured (2.2.3).
 
     Volume before media_play for the generic path, same ordering rule as
     the duck restore: otherwise a speaker can audibly resume for a moment
     at adhan volume before volume_set lands.
+
+    2.5.0 — the music now fades back IN over the configured fade length
+    instead of arriving at full level in one step (Johann: "de muziek komt
+    in een keer hard terug"). Generic players: volume 0, play, ramp. Sonos:
+    sonos.restore decides its own volume and exposes no fade, so it is
+    awaited, the level is pulled straight back to 0 and ramped up — the
+    stream needs a moment to buffer, which hides the instant. Off when the
+    fade setting is off, and the old restore path is untouched then.
     """
     if not snapshot:
         return
 
+    fade = _fade_seconds(options or {})
+    targets: dict[str, float] = {
+        e: float(v)
+        for e, v in (snapshot.get("volumes") or {}).items()
+        if v is not None
+    }
+    ramp: dict[str, tuple[float, float]] = {}
+
     if snapshot.get("sonos"):
+        fade_sonos = {e: targets[e] for e in snapshot["sonos"] if e in targets}
         try:
             await hass.services.async_call(
                 "sonos", "restore",
                 {"entity_id": snapshot["sonos"], "with_group": True},
-                blocking=False,
+                blocking=bool(fade and fade_sonos),
             )
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("sonos.restore failed for %s (%s)", snapshot["sonos"], err)
+            fade_sonos = {}
+        if fade and fade_sonos:
+            await asyncio.gather(*[
+                _set_volume_safe(hass, [e], 0.0, f"fade-in {e}") for e in fade_sonos
+            ])
+            ramp.update({e: (0.0, v) for e, v in fade_sonos.items()})
 
     for entity_id, info in (snapshot.get("generic") or {}).items():
         try:
             volume = info.get("volume_level")
-            if volume is not None:
+            if fade and volume is not None:
+                await _set_volume_safe(hass, [entity_id], 0.0, f"fade-in {entity_id}")
+                ramp[entity_id] = (0.0, float(volume))
+            elif volume is not None:
                 await _set_volume_safe(hass, [entity_id], volume, f"restore {entity_id}")
             await hass.services.async_call(
                 "media_player", "media_play",
@@ -1485,6 +1505,15 @@ async def _restore_adhan_players(hass: HomeAssistant, snapshot: dict | None) -> 
             )
         except Exception as err:  # noqa: BLE001
             _LOGGER.warning("Failed to restore playback on %s (%s)", entity_id, err)
+
+    if ramp:
+        # Start the ramp when the music is really audible, not when the
+        # restore call returned: sonos.restore comes back long before the
+        # stream has buffered (measured: the player entered "playing" 3.5s
+        # after the call, i.e. after a 2s ramp had already finished, so the
+        # music still arrived at full level). Held at 0 until then.
+        await _wait_until_playing(hass, list(ramp))
+        await _fade_players(hass, ramp, fade, "fade-in")
     _LOGGER.debug("Restored adhan players")
 
 
@@ -1630,18 +1659,75 @@ async def _play_sound_on_speakers(
     touches the music's own level to begin with, so there is nothing to
     dip.
     """
-    media_url = f"/local/nida/sounds/{sound_rel}"
     announce_players, manual_players = _split_announce_targets(hass, options, players)
 
     duck_snapshot = await _duck_media_players(hass, options, exclude=players)
+    play_snapshot = None
+    try:
+        play_snapshot = await _take_over_speakers(hass, options, manual_players)
+        await _play_and_wait(
+            hass, options, announce_players, manual_players, sound_rel, volume,
+            label, dip=dip, play_snapshot=play_snapshot,
+        )
+    finally:
+        await _restore_duck_media_players(hass, duck_snapshot, options)
+        await _restore_adhan_players(hass, play_snapshot, options)
+
+
+async def _take_over_speakers(
+    hass: HomeAssistant, options: dict, players: list[str]
+) -> dict | None:
+    """Save what's on `players` and ease it off them (2.5.0).
+
+    Split out of _play_sound_on_speakers so the pre-adhan sequence can
+    take the speakers ONCE for the jingle and the spoken announcement
+    together, instead of each handing them back in between.
+    """
+    if not players:
+        return None
+    snapshot = await _snapshot_adhan_players(hass, options, players)
+    await _fade_out_before_playback(hass, options, players)
+    return snapshot
+
+
+async def _play_and_wait(
+    hass: HomeAssistant,
+    options: dict,
+    announce_players: list[str],
+    manual_players: list[str],
+    sound_rel: str,
+    volume: float | None,
+    label: str,
+    *,
+    dip: bool = False,
+    play_snapshot: dict | None = None,
+    tight: bool = False,
+) -> None:
+    """Play one sound on speakers already taken over, and don't return
+    until it has actually finished (2.5.0).
+
+    The wait now ALWAYS happens on the announce route, not just when
+    other players happened to be ducked. Johann: "de pre announcement
+    wordt afgebroken door de TTS" — with Sonos announcements on and
+    nothing in the house to duck, this returned the moment the clip was
+    handed to the speaker, so the caller went straight on to the TTS and
+    cut the jingle off mid-note.
+
+    Both routes are waited on together (gather), so a mixed Sonos +
+    non-Sonos target list is held for whichever finishes last.
+
+    `tight` trims the safety margins so this returns within a fraction of a
+    second of the sound really ending: players are polled four times a
+    second instead of once, and an announcement is held for its exact
+    length instead of length + 2s. Used before the pre-adhan TTS, where
+    every spare second is a second of dead air between jingle and voice.
+    """
+    media_url = f"/local/nida/sounds/{sound_rel}"
 
     if announce_players:
         await _play_announcement(hass, announce_players, media_url, volume, label)
 
-    play_snapshot = None
     if manual_players:
-        play_snapshot = await _snapshot_adhan_players(hass, options, manual_players)
-        await _fade_out_before_playback(hass, options, manual_players)
         if dip:
             await _apply_pre_adhan_volume(
                 hass, options, manual_players, play_snapshot, volume, label
@@ -1654,22 +1740,30 @@ async def _play_sound_on_speakers(
             _LOGGER.info("Playing %s on %s: %s", label, manual_players, media_url)
             await _play_media_safe(hass, manual_players, media_url, label)
     finally:
+        waits = []
         if manual_players:
-            await _wait_until_idle(hass, manual_players)
-        elif duck_snapshot:
-            # Announce-only run with other players ducked. _wait_until_idle
-            # is useless here: an announcement plays as a Sonos audio clip
-            # over the existing stream, so the entity never enters (or
-            # leaves) a "playing" state we could poll on. Fall back to the
-            # file's real length, which mutagen can read off disk, plus a
-            # small margin. Without this the ducked TV would come back
-            # immediately, talking over the sound we just started.
-            await asyncio.sleep(await _announce_wait_seconds(hass, sound_rel))
-        await _restore_duck_media_players(hass, duck_snapshot, options)
-        await _restore_adhan_players(hass, play_snapshot)
+            if tight:
+                waits.append(
+                    _wait_until_idle(hass, manual_players, grace=1.0, poll=0.25)
+                )
+            else:
+                waits.append(_wait_until_idle(hass, manual_players))
+        if announce_players:
+            # _wait_until_idle cannot see an announcement: it plays as a
+            # Sonos audio clip over the existing stream, so the entity
+            # never enters (or leaves) a "playing" state we could poll
+            # on. Fall back to the file's real length, which mutagen can
+            # read off disk, plus a small margin.
+            waits.append(
+                asyncio.sleep(await _announce_wait_seconds(hass, sound_rel, tight=tight))
+            )
+        if waits:
+            await asyncio.gather(*waits)
 
 
-async def _announce_wait_seconds(hass: HomeAssistant, sound_rel: str) -> float:
+async def _announce_wait_seconds(
+    hass: HomeAssistant, sound_rel: str, *, tight: bool = False
+) -> float:
     """How long to hold ducked players while an announcement plays.
 
     Local import of the catalog helper, matching _random_adhan_rel's
@@ -1677,7 +1771,18 @@ async def _announce_wait_seconds(hass: HomeAssistant, sound_rel: str) -> float:
     the length can't be read, and caps at 10 minutes so a bad read can
     never strand a paused TV.
     """
-    from .catalog import async_sound_duration_seconds
+    from .catalog import async_sound_duration_seconds, async_sound_length_seconds
+
+    if tight:
+        # Exact length, 0.3s margin: nothing else is waiting on this
+        # except the gap before the TTS. Unknown length falls through to
+        # the conservative path below.
+        try:
+            exact = await async_sound_length_seconds(hass, sound_rel)
+        except Exception:  # noqa: BLE001
+            exact = None
+        if exact:
+            return min(600.0, exact + 0.3)
 
     try:
         duration = await async_sound_duration_seconds(hass, sound_rel)
@@ -1943,20 +2048,42 @@ async def _async_handle_speak_pre_adhan(
     # alleen de jingle en niet de tts" — someone with only TTS enabled
     # (no jingle) got no ducking at all, and someone with both got the
     # ducked player resumed again before the TTS spoke over it. The
-    # restore happens in a finally around the whole function body below
-    # (see the try at the bottom) so it still runs if tts.speak errors.
+    # restore happens in a finally so it still runs if tts.speak errors.
     duck_snapshot = await _duck_media_players(hass, options, exclude=players)
-    play_snapshot = await _snapshot_adhan_players(hass, options, players)
-    # 2.3.2 — ease the music off these speakers before taking them
-    # over; no-op when nothing is playing on them.
-    await _fade_out_before_playback(hass, options, players)
+    play_snapshot = None
+    try:
+        play_snapshot = await _take_over_speakers(hass, options, players)
+        await _speak_pre_adhan_on(
+            hass, options, players, dict(call.data), play_snapshot
+        )
+    finally:
+        await _restore_duck_media_players(hass, duck_snapshot, options)
+        await _restore_adhan_players(hass, play_snapshot, options)
 
+
+async def _speak_pre_adhan_on(
+    hass: HomeAssistant,
+    options: dict,
+    players: list[str],
+    call_data: dict,
+    play_snapshot: dict | None,
+) -> None:
+    """Speak the announcement on speakers already taken over (2.5.0).
+
+    The TTS half of the pre-adhan, split out of
+    _async_handle_speak_pre_adhan so async_run_pre_adhan_sequence can
+    run it straight after the jingle without handing the speakers back
+    and taking them again. Everything about ducking, snapshotting and
+    restoring is the caller's job; this sets the level, says the line,
+    and waits for it to be finished being said.
+    """
+    tts_entities = list(options.get(OPT_TTS_PRE_ADHAN_SERVICES) or [])
     try:
         # 2.0.70 — set the speaker volume before speaking. Scheduled calls
         # use the jingle volume (same speakers, same moment); the panel's
         # Test button uses the dedicated test volume so it does not
         # accidentally blast at full power.
-        is_test = call.data.get("prayer") == "test"
+        is_test = call_data.get("prayer") == "test"
         if is_test:
             volume = (
                 int(options.get(f"{OPT_VOLUME_PREFIX}pre_adhan_test",
@@ -1973,7 +2100,7 @@ async def _async_handle_speak_pre_adhan(
         # Language priority: explicit call override > TTS-specific option
         # > panel language > HA system language. Each "auto" falls through.
         # 2.0.56 — resolved BEFORE the message, which now depends on it.
-        lang = call.data.get("language")
+        lang = call_data.get("language")
         if not lang:
             tts_lang = options.get(OPT_TTS_PRE_ADHAN_LANGUAGE) or "auto"
             if tts_lang and tts_lang != "auto":
@@ -1988,7 +2115,7 @@ async def _async_handle_speak_pre_adhan(
         # follows the resolved TTS language. Substitute [prayer] if a prayer
         # was passed in the call.
         template = _resolve_tts_message(options, lang)
-        prayer = call.data.get("prayer")
+        prayer = call_data.get("prayer")
         message = template.replace("[prayer]", prayer.capitalize()) if prayer else template
 
         # Language handling (2.0.44). There is NO single form every engine
@@ -2069,10 +2196,167 @@ async def _async_handle_speak_pre_adhan(
         # 2.1.30 — tts.speak's blocking=True only waits for the service
         # call itself, not for the spoken audio to finish playing on
         # `players` — so we still need to wait for real playback to end
-        # before restoring, same as the jingle/adhan handlers.
+        # before returning, same as the jingle/adhan handlers.
         await _wait_until_idle(hass, players)
+
+
+def _pre_adhan_gap_seconds(options: dict) -> float:
+    """Silence between the end of the jingle and the spoken line (2.5.0).
+
+    Measured from when the jingle ENDS, so every jingle gets the same
+    breathing space. Before, the option was a floor counted from the
+    jingle's start and the wait for the jingle came on top of it, which
+    left a short jingle with a visibly longer gap than a long one.
+    """
+    try:
+        delay = float(options.get(OPT_TTS_PRE_ADHAN_DELAY, DEFAULT_TTS_PRE_ADHAN_DELAY))
+    except (TypeError, ValueError):
+        delay = float(DEFAULT_TTS_PRE_ADHAN_DELAY)
+    return max(0.0, min(60.0, delay))
+
+
+async def async_run_pre_adhan_sequence(
+    hass: HomeAssistant,
+    prayer: str,
+    *,
+    audio: bool,
+    tts: bool,
+    preview: bool = False,
+    call_data: dict | None = None,
+) -> None:
+    """The scheduled pre-adhan heads-up: jingle, then the spoken line, as
+    ONE take-over of the speakers (2.5.0).
+
+    Johann: "de pre announcement wordt afgebroken door de TTS". The
+    scheduler used to fire nida.play_pre_adhan_jingle and
+    nida.speak_pre_adhan as two independent non-blocking service calls
+    with a fixed delay (5s) in between, and two things went wrong with
+    that:
+
+      * Nothing waited for the jingle. Anything longer than the delay —
+        or any jingle at all on a Sonos-announce setup, where the old
+        code returned the instant the clip was handed over — was cut off
+        the moment tts.speak grabbed the same speaker.
+      * Each call ducked and un-ducked the rest of the house on its own,
+        so the music came back for a moment in between and then got
+        pulled away again.
+
+    Now the speakers are taken once, the jingle is genuinely waited for
+    (_play_and_wait), and only then does the TTS speak. Either half can
+    be off: with no jingle this is just the spoken line, with no TTS it
+    is just the jingle, and the gap is skipped unless both run. The gap is
+    a fixed 2s (OPT_TTS_PRE_ADHAN_DELAY) after the jingle really ends,
+    however long or short the jingle is.
+
+    The individual nida.play_pre_adhan_jingle / nida.speak_pre_adhan
+    services are untouched — they are the panel's test buttons and any
+    user automation built on them.
+    """
+    entries = hass.config_entries.async_entries(DOMAIN)
+    options = dict(entries[0].options) if entries else {}
+
+    # A preview is an explicit button press, so guest mode does not mute
+    # it (same rule as every other test path here).
+    if _guest_mode_active(options) and not preview:
+        _LOGGER.info("Guest mode active — skipping pre-adhan for %s", prayer)
+        return
+    if not (audio or tts):
+        return
+
+    players = _resolve_media_players(hass, dict(call_data or {}), options)
+    if not players:
+        _LOGGER.warning(
+            "Pre-adhan %s: no media players resolved; nothing played", prayer
+        )
+        return
+
+    announce_players, manual_players = _split_announce_targets(hass, options, players)
+    duck_snapshot = await _duck_media_players(hass, options, exclude=players)
+    play_snapshot = None
+    try:
+        # With a spoken line to follow, EVERY speaker is taken over, Sonos
+        # included: the jingle is a self-restoring announcement, but the
+        # TTS afterwards is an ordinary tts.speak that replaces whatever
+        # was playing, so without a snapshot a Sonos queue would never
+        # come back. Jingle only: the announce route needs none.
+        play_snapshot = await _take_over_speakers(
+            hass, options, players if tts else manual_players
+        )
+
+        if audio:
+            volume = _apply_volume_modifiers(
+                _volume_for_category(options, SOUND_CATEGORY_PRE_ADHAN_JINGLE),
+                hass,
+                options,
+            )
+            # dip=True — 2.2.4's "lower the music rather than jump up to
+            # the jingle level" treatment, pre-adhan only.
+            await _play_and_wait(
+                hass, options, announce_players, manual_players,
+                _pre_adhan_jingle_path(options), volume, "pre-adhan jingle",
+                dip=True, play_snapshot=play_snapshot,
+                tight=tts,
+            )
+            if tts:
+                gap = _pre_adhan_gap_seconds(options)
+                if gap:
+                    await asyncio.sleep(gap)
+
+        if tts:
+            await _speak_pre_adhan_on(
+                hass, options, players, {"prayer": prayer}, play_snapshot
+            )
+    finally:
         await _restore_duck_media_players(hass, duck_snapshot, options)
-        await _restore_adhan_players(hass, play_snapshot)
+        await _restore_adhan_players(hass, play_snapshot, options)
+
+
+async def _async_handle_test_pre_adhan(hass: HomeAssistant, call: ServiceCall) -> None:
+    """Run the WHOLE pre-adhan (jingle, gap, spoken line) on the real
+    speakers, the way the scheduler would (2.5.0).
+
+    Johann: a button to test "hele pre-adhan inclusief de jingle". Until
+    now the jingle and the TTS could only be tried one at a time, which
+    never showed the thing that matters: how they sound back to back.
+    Follows the configured toggles (a switched-off half is skipped, as it
+    would be for real), uses the real volumes, and bypasses guest mode.
+
+    Runs as a task kept in hass.data so `stop: true` can cancel it; the
+    sequence's finally blocks then hand the speakers back as usual.
+    """
+    store = hass.data.setdefault(DOMAIN, {})
+    running = store.pop("_pre_adhan_test_task", None)
+    if running is not None and not running.done():
+        running.cancel()
+        try:
+            await running
+        except asyncio.CancelledError:
+            pass
+        except Exception:  # noqa: BLE001
+            pass
+    if call.data.get("stop"):
+        return
+
+    entries = hass.config_entries.async_entries(DOMAIN)
+    options = dict(entries[0].options) if entries else {}
+    audio = bool(options.get(OPT_PRE_ADHAN_AUDIO_ENABLED, DEFAULT_PRE_ADHAN_AUDIO_ENABLED))
+    tts = bool(options.get(OPT_TTS_PRE_ADHAN_ENABLED, False))
+
+    task = hass.async_create_task(
+        async_run_pre_adhan_sequence(
+            hass, "fajr", audio=audio, tts=tts, preview=True,
+            call_data=dict(call.data),
+        )
+    )
+    store["_pre_adhan_test_task"] = task
+    try:
+        await task
+    except asyncio.CancelledError:
+        if not task.cancelled():
+            raise  # the service call itself was cancelled
+    finally:
+        if store.get("_pre_adhan_test_task") is task:
+            store.pop("_pre_adhan_test_task", None)
 
 
 def async_register_services(hass: HomeAssistant) -> None:
@@ -2124,6 +2408,14 @@ def async_register_services(hass: HomeAssistant) -> None:
             schema=PLAY_PREVIEW_SCHEMA,
         )
 
+    if not hass.services.has_service(DOMAIN, SERVICE_TEST_PRE_ADHAN):
+        async def _wrapper_test_pre(call: ServiceCall) -> None:
+            await _async_handle_test_pre_adhan(hass, call)
+        hass.services.async_register(
+            DOMAIN, SERVICE_TEST_PRE_ADHAN, _wrapper_test_pre,
+            schema=TEST_PRE_ADHAN_SCHEMA,
+        )
+
     if not hass.services.has_service(DOMAIN, SERVICE_PLAY_DUA):
         async def _wrapper_dua(call: ServiceCall) -> None:
             await _async_handle_play_dua(hass, call)
@@ -2137,6 +2429,7 @@ def async_unregister_services(hass: HomeAssistant) -> None:
     for svc in (
         SERVICE_PLAY_DUA,
         SERVICE_PLAY_PREVIEW,
+        SERVICE_TEST_PRE_ADHAN,
         SERVICE_PLAY_ADHAN,
         SERVICE_PLAY_PRE_ADHAN_JINGLE,
         SERVICE_PLAY_PRE_ADHAN_TEST,
