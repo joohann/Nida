@@ -4,7 +4,7 @@ All notable changes to Nida are documented here. The `version` in
 `custom_components/nida/manifest.json` is the source of truth for the current
 release; newest entry on top.
 
-## 2.5.1 — unreleased
+## 2.5.1 — 2026-10-21
 
 - **Old sound files can be cleaned up.** Local files the library no longer
   lists (renamed or dropped from a manifest, e.g. the old `_3aa52989` names)
