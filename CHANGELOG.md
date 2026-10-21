@@ -4,6 +4,17 @@ All notable changes to Nida are documented here. The `version` in
 `custom_components/nida/manifest.json` is the source of truth for the current
 release; newest entry on top.
 
+## 2.5.1 — unreleased
+
+- **Old sound files can be cleaned up.** Local files the library no longer
+  lists (renamed or dropped from a manifest, e.g. the old `_3aa52989` names)
+  had no delete button. The sound library now shows a notice with a Clean up
+  button; the files are moved to `<config>/nida_trash/`, not deleted. Files in
+  use by a setting, the sounds shipped with Nida and anything in a folder the
+  library did not answer for are never touched.
+- **Refresh button animates.** The catalog refresh icon spins while loading, for
+  at least one turn, so a press is always visible.
+
 ## 2.5.0 — 2026-10-13
 
 - **Fix: the pre-adhan jingle was cut off by the spoken announcement.** The
