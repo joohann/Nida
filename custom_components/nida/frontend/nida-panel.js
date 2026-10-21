@@ -2649,6 +2649,9 @@ const TRANSLATIONS = {
     location_warning_manual_no_coords_body: "Pick a city from the search suggestions. Until you do, Home Assistant's home coordinates are used.",
     sl_title: "Sound Library",
     sl_refresh: "Refresh catalog",
+    sl_orphans_text: "{n} old sound file(s) on this device are no longer in the library.",
+    sl_orphans_hint: "They are moved to the nida_trash folder, not deleted.",
+    sl_orphans_btn: "Clean up",
     sl_preview: "Preview",
     sl_download: "Download",
     sl_delete: "Delete",
@@ -3053,6 +3056,9 @@ const TRANSLATIONS = {
     location_warning_manual_no_coords_body: "Kies een stad uit de zoeksuggesties. Tot je dat doet worden Home Assistant's home-coördinaten gebruikt.",
     sl_title: "Geluidsbibliotheek",
     sl_refresh: "Catalogus verversen",
+    sl_orphans_text: "{n} oud(e) geluidsbestand(en) op dit apparaat staan niet meer in de bibliotheek.",
+    sl_orphans_hint: "Ze worden naar de map nida_trash verplaatst, niet verwijderd.",
+    sl_orphans_btn: "Opruimen",
     sl_preview: "Voorbeeld",
     sl_download: "Downloaden",
     sl_delete: "Verwijderen",
@@ -3460,6 +3466,9 @@ const TRANSLATIONS = {
     location_warning_manual_no_coords_body: "اختر مدينة من اقتراحات البحث. حتى تفعل ذلك، سيتم استخدام إحداثيات Home Assistant الرئيسية.",
     sl_title: "مكتبة الأصوات",
     sl_refresh: "تحديث الفهرس",
+    sl_orphans_text: "{n} من ملفات الصوت القديمة على هذا الجهاز لم تعد في المكتبة.",
+    sl_orphans_hint: "تُنقل إلى مجلد nida_trash ولا تُحذف.",
+    sl_orphans_btn: "تنظيف",
     sl_preview: "معاينة",
     sl_download: "تنزيل",
     sl_delete: "حذف",
@@ -3864,6 +3873,9 @@ const TRANSLATIONS = {
     location_warning_manual_no_coords_body: "Arama önerilerinden bir şehir seçin. Siz seçene kadar Home Assistant'ın ev koordinatları kullanılır.",
     sl_title: "Ses Kitaplığı",
     sl_refresh: "Kataloğu yenile",
+    sl_orphans_text: "Bu cihazdaki {n} eski ses dosyası artık kütüphanede yok.",
+    sl_orphans_hint: "nida_trash klasörüne taşınırlar, silinmezler.",
+    sl_orphans_btn: "Temizle",
     sl_preview: "Önizle",
     sl_download: "İndir",
     sl_delete: "Sil",
@@ -4268,6 +4280,9 @@ const TRANSLATIONS = {
     location_warning_manual_no_coords_body: "Wähle eine Stadt aus den Suchvorschlägen. Bis dahin werden die Heimkoordinaten von Home Assistant verwendet.",
     sl_title: "Klangbibliothek",
     sl_refresh: "Katalog aktualisieren",
+    sl_orphans_text: "{n} alte Sounddatei(en) auf diesem Gerät sind nicht mehr in der Bibliothek.",
+    sl_orphans_hint: "Sie werden in den Ordner nida_trash verschoben, nicht gelöscht.",
+    sl_orphans_btn: "Aufräumen",
     sl_preview: "Vorschau",
     sl_download: "Herunterladen",
     sl_delete: "Löschen",
@@ -4672,6 +4687,9 @@ const TRANSLATIONS = {
     location_warning_manual_no_coords_body: "Choisissez une ville parmi les suggestions de recherche. En attendant, les coordonnées du domicile de Home Assistant sont utilisées.",
     sl_title: "Bibliothèque de sons",
     sl_refresh: "Actualiser le catalogue",
+    sl_orphans_text: "{n} ancien(s) fichier(s) son sur cet appareil ne sont plus dans la bibliothèque.",
+    sl_orphans_hint: "Ils sont déplacés dans le dossier nida_trash, pas supprimés.",
+    sl_orphans_btn: "Nettoyer",
     sl_preview: "Aperçu",
     sl_download: "Télécharger",
     sl_delete: "Supprimer",
@@ -5076,6 +5094,9 @@ const TRANSLATIONS = {
     location_warning_manual_no_coords_body: "Pilih bandar daripada cadangan carian. Sehingga anda berbuat demikian, koordinat rumah Home Assistant digunakan.",
     sl_title: "Perpustakaan Bunyi",
     sl_refresh: "Segarkan katalog",
+    sl_orphans_text: "{n} berkas suara lama di perangkat ini tidak ada lagi di pustaka.",
+    sl_orphans_hint: "Dipindahkan ke folder nida_trash, tidak dihapus.",
+    sl_orphans_btn: "Bersihkan",
     sl_preview: "Pratonton",
     sl_download: "Muat turun",
     sl_delete: "Padam",
@@ -5480,6 +5501,9 @@ const TRANSLATIONS = {
     location_warning_manual_no_coords_body: "Pilih kota dari saran pencarian. Sampai Anda melakukannya, koordinat rumah Home Assistant akan digunakan.",
     sl_title: "Pustaka Suara",
     sl_refresh: "Segarkan katalog",
+    sl_orphans_text: "{n} fail bunyi lama pada peranti ini tidak lagi ada dalam pustaka.",
+    sl_orphans_hint: "Dipindahkan ke folder nida_trash, tidak dipadam.",
+    sl_orphans_btn: "Bersihkan",
     sl_preview: "Pratinjau",
     sl_download: "Unduh",
     sl_delete: "Hapus",
@@ -5884,6 +5908,9 @@ const TRANSLATIONS = {
     location_warning_manual_no_coords_body: "تلاش کی تجاویز میں سے کوئی شہر منتخب کریں۔ جب تک آپ ایسا نہیں کرتے، Home Assistant کے گھر کے متناسقات استعمال ہوں گے۔",
     sl_title: "صوتی لائبریری",
     sl_refresh: "کیٹلاگ تازہ کریں",
+    sl_orphans_text: "اس ڈیوائس پر {n} پرانی آواز فائلیں اب لائبریری میں نہیں ہیں۔",
+    sl_orphans_hint: "انہیں nida_trash فولڈر میں منتقل کیا جاتا ہے، حذف نہیں۔",
+    sl_orphans_btn: "صاف کریں",
     sl_preview: "پیش نظارہ",
     sl_download: "ڈاؤن لوڈ کریں",
     sl_delete: "حذف کریں",
@@ -6288,6 +6315,9 @@ const TRANSLATIONS = {
     location_warning_manual_no_coords_body: "یک شهر از پیشنهادهای جستجو انتخاب کنید. تا زمانی که این کار را انجام ندهید، از مختصات خانه Home Assistant استفاده می‌شود.",
     sl_title: "کتابخانه صدا",
     sl_refresh: "به‌روزرسانی کاتالوگ",
+    sl_orphans_text: "{n} فایل صوتی قدیمی روی این دستگاه دیگر در کتابخانه نیست.",
+    sl_orphans_hint: "به پوشه nida_trash منتقل می‌شوند، حذف نمی‌شوند.",
+    sl_orphans_btn: "پاکسازی",
     sl_preview: "پیش‌نمایش",
     sl_download: "دانلود",
     sl_delete: "حذف",
@@ -6864,6 +6894,16 @@ nida-welcome-content {
 .nida-overlay-portal .sl-refresh-btn svg { width: 14px; height: 14px; }
 .nida-overlay-portal .sl-refresh-btn:hover { background: var(--nida-surface-raised); }
 .nida-overlay-portal .sl-refresh-btn:disabled { opacity: 0.5; cursor: wait; }
+/* Feedback while the catalog is being fetched: the icon spins and the
+   button stays fully visible (disabled alone just dimmed it, which read
+   as "nothing happened"). */
+.nida-overlay-portal .sl-refresh-btn.spinning { opacity: 1; color: var(--nida-gold-bright, var(--nida-text)); }
+.nida-overlay-portal .sl-refresh-btn.spinning svg { animation: nida-spin 0.8s linear infinite; }
+@keyframes nida-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .nida-overlay-portal .sl-refresh-btn.spinning svg { animation: nida-pulse 1.2s ease-in-out infinite; }
+  @keyframes nida-pulse { 50% { opacity: 0.3; } }
+}
 
 .nida-overlay-portal .sound-library-body {
   flex: 1;
@@ -6983,6 +7023,18 @@ nida-welcome-content {
   font-size: 14px;
 }
 .nida-overlay-portal .sl-error { color: #c25a4f; }
+.nida-overlay-portal .sl-orphans {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 0 0 12px; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--nida-border); background: var(--nida-surface-raised);
+  font-size: 13px; color: var(--nida-text);
+}
+.nida-overlay-portal .sl-orphans small { display: block; color: var(--nida-text-dim); margin-top: 2px; }
+.nida-overlay-portal .sl-orphans button {
+  flex: none; cursor: pointer; border-radius: 8px; padding: 6px 12px; font: inherit;
+  border: 1px solid var(--nida-border); background: transparent; color: var(--nida-text);
+}
+.nida-overlay-portal .sl-orphans button:disabled { opacity: 0.5; cursor: wait; }
 .nida-overlay-portal .sl-error .test-btn { margin-top: 12px; }
 
 /* 2.0.40 — friendlier connection-error card (replaces the raw code dump).
@@ -13702,6 +13754,7 @@ class NidaPanel extends HTMLElement {
   async _loadCatalog(forceRefresh) {
     this._catalogLoading = true;
     this._renderPortal();
+    const startedAt = Date.now();
     try {
       const res = await this._hass.callWS({
         type: "nida/get_catalog",
@@ -13711,8 +13764,52 @@ class NidaPanel extends HTMLElement {
     } catch (e) {
       this._catalog = { sounds: [], error: "ws_failed" };
     }
+    // A manual refresh that answers in 100ms looks like a dead button.
+    // Keep the spinner up for at least one full turn so the press is seen.
+    if (forceRefresh) {
+      const left = 800 - (Date.now() - startedAt);
+      if (left > 0) await new Promise((r) => setTimeout(r, left));
+    }
+    if (this._catalog && !this._catalog.error) await this._refreshOrphans();
+    else this._orphans = [];
     this._catalogLoading = false;
     this._renderPortal();
+  }
+
+  // 2.5.1 — old local files the library no longer lists (renamed or dropped
+  // from a manifest) have no delete button of their own. The backend finds
+  // them (nida/find_orphan_sounds) and moves them to <config>/nida_trash/.
+  _htmlOrphanBanner() {
+    const n = (this._orphans || []).length;
+    if (!n || this._catalog?.error) return "";
+    const busy = !!this._orphansBusy;
+    return `
+      <div class="sl-orphans">
+        <span>${this.t("sl_orphans_text").replace("{n}", String(n))}
+          <small>${this.t("sl_orphans_hint")}</small></span>
+        <button data-action="sl-cleanup" ${busy ? "disabled" : ""}>${this.t("sl_orphans_btn")}</button>
+      </div>`;
+  }
+
+  async _refreshOrphans() {
+    try {
+      const res = await this._hass.callWS({ type: "nida/find_orphan_sounds" });
+      this._orphans = res?.orphans || [];
+    } catch (e) {
+      this._orphans = [];
+    }
+  }
+
+  async _cleanupOrphans() {
+    this._orphansBusy = true;
+    this._renderPortal();
+    try {
+      await this._hass.callWS({ type: "nida/cleanup_sounds" });
+    } catch (e) {
+      console.warn("Nida: sound cleanup failed:", e);
+    }
+    this._orphansBusy = false;
+    await this._loadCatalog(true);
   }
 
   _htmlOverlaySoundLibrary() {
@@ -13757,8 +13854,9 @@ class NidaPanel extends HTMLElement {
               ${title}
             </div>
             <div class="overlay-header-actions">
-              <button class="sl-refresh-btn" data-action="sl-refresh"
+              <button class="sl-refresh-btn ${loading ? "spinning" : ""}" data-action="sl-refresh"
                       title="${this.t("sl_refresh")}"
+                      aria-busy="${loading ? "true" : "false"}"
                       ${loading ? "disabled" : ""}>
                 ${ICONS.refresh || "↻"}
               </button>
@@ -13767,6 +13865,7 @@ class NidaPanel extends HTMLElement {
             </div>
           </div>
           <div class="sound-library-body">
+            ${this._htmlOrphanBanner()}
             ${body}
           </div>
         </div>
@@ -13892,6 +13991,8 @@ class NidaPanel extends HTMLElement {
     const sound = id ? this._findSoundById(id) : null;
     if (action === "sl-refresh") {
       this._loadCatalog(true);
+    } else if (action === "sl-cleanup") {
+      this._cleanupOrphans();
     } else if (action === "sl-retry") {
       this._loadCatalog(false);
     } else if (action === "sl-save-url") {

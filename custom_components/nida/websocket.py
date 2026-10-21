@@ -192,8 +192,10 @@ from . import islamic_calendar
 from .const import DOMAIN, OPT_SETTINGS_USERS, PRAYERS
 from .catalog import (
     async_delete_sound,
+    async_cleanup_orphan_sounds,
     async_download_sound,
     async_fetch_catalog,
+    async_find_orphan_sounds,
     local_sound_exists,
 )
 
@@ -917,6 +919,23 @@ async def ws_download_sound(hass: HomeAssistant, connection, msg) -> None:
     connection.send_result(msg["id"], result)
 
 
+@websocket_api.websocket_command({vol.Required("type"): "nida/find_orphan_sounds"})
+@websocket_api.async_response
+async def ws_find_orphan_sounds(hass: HomeAssistant, connection, msg) -> None:
+    """Old local sound files that no longer belong to the library (2.5.1)."""
+    connection.send_result(msg["id"], await async_find_orphan_sounds(hass))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "nida/cleanup_sounds"})
+@websocket_api.async_response
+async def ws_cleanup_sounds(hass: HomeAssistant, connection, msg) -> None:
+    """Move old local sound files to <config>/nida_trash/ (2.5.1)."""
+    if not _may_edit_settings(hass, connection):
+        _deny_settings(connection, msg)
+        return
+    connection.send_result(msg["id"], await async_cleanup_orphan_sounds(hass))
+
+
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "nida/delete_sound",
@@ -1002,4 +1021,6 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_get_catalog)
     websocket_api.async_register_command(hass, ws_download_sound)
     websocket_api.async_register_command(hass, ws_delete_sound)
+    websocket_api.async_register_command(hass, ws_find_orphan_sounds)
+    websocket_api.async_register_command(hass, ws_cleanup_sounds)
     websocket_api.async_register_command(hass, ws_list_tts_services)

@@ -648,6 +648,123 @@ async def async_delete_sound(
     return {"ok": True, "error": None, "removed": removed}
 
 
+# ── Old-file cleanup (2.5.1) ────────────────────────────────────────────────
+# Sound files that sit in www/nida/sounds but no longer belong to anything:
+# renamed in the library (the old `_3aa52989` names), dropped from a
+# manifest, or replaced. The library only ever shows what a manifest lists,
+# so these had no delete button and piled up. A file is an orphan only when
+# ALL of these hold, and the sweep refuses to run on doubtful data:
+#   - it is not listed in the current library (by relative path),
+#   - nothing in the settings points at it (selected sounds, duas, alarm),
+#   - it is not one of the sounds shipped inside the integration,
+#   - its folder is one the library actually answered for just now, so a
+#     failed or empty manifest can never turn "everything" into an orphan.
+# Removal MOVES the file to <config>/nida_trash/ (outside www, so it is no
+# longer served) instead of deleting it.
+_ORPHAN_FOLDERS = ("adhan", "pre_adhan_jingle", "dua")
+
+
+def _collect_strings(obj: Any, out: set[str]) -> None:
+    if isinstance(obj, str):
+        out.add(obj)
+    elif isinstance(obj, dict):
+        for v in obj.values():
+            _collect_strings(v, out)
+    elif isinstance(obj, (list, tuple)):
+        for v in obj:
+            _collect_strings(v, out)
+
+
+def _bundled_rel_paths() -> set[str]:
+    root = os.path.join(os.path.dirname(__file__), "sounds")
+    found: set[str] = set()
+    for folder, _dirs, files in os.walk(root):
+        for name in files:
+            rel = os.path.relpath(os.path.join(folder, name), root)
+            found.add(rel.replace(os.sep, "/"))
+    return found
+
+
+def _find_orphans_blocking(
+    www_root: str, catalog_paths: set[str], referenced: set[str], bundled: set[str]
+) -> list[str]:
+    safe_folders = {p.split("/", 1)[0] for p in catalog_paths if "/" in p}
+    orphans: list[str] = []
+    for folder in _ORPHAN_FOLDERS:
+        if folder not in safe_folders:
+            continue
+        path = os.path.join(www_root, folder)
+        if not os.path.isdir(path):
+            continue
+        for name in sorted(os.listdir(path)):
+            rel = f"{folder}/{name}"
+            if not os.path.isfile(os.path.join(path, name)):
+                continue
+            if not name.lower().endswith((".mp3", ".wav", ".m4a", ".ogg", ".flac")):
+                continue
+            if rel in catalog_paths or rel in referenced or rel in bundled:
+                continue
+            orphans.append(rel)
+    return orphans
+
+
+async def async_find_orphan_sounds(hass: HomeAssistant) -> dict[str, Any]:
+    """List old local sound files the library no longer knows about.
+
+    Uses the cached catalog; never fetches. Returns {orphans: [...]} or
+    {orphans: [], skipped: <reason>} when the data is not trustworthy.
+    """
+    catalog = await async_fetch_catalog(hass)
+    sounds = catalog.get("sounds") or []
+    if catalog.get("error") or not sounds:
+        return {"orphans": [], "skipped": "catalog_unavailable"}
+    entries = hass.config_entries.async_entries(DOMAIN)
+    options = dict(entries[0].options) if entries else {}
+    referenced: set[str] = set()
+    _collect_strings(options, referenced)
+    catalog_paths = {s_.get("rel_path") for s_ in sounds if s_.get("rel_path")}
+    orphans = await hass.async_add_executor_job(
+        _find_orphans_blocking,
+        _www_root(hass),
+        catalog_paths,
+        referenced,
+        _bundled_rel_paths(),
+    )
+    return {"orphans": orphans}
+
+
+async def async_cleanup_orphan_sounds(hass: HomeAssistant) -> dict[str, Any]:
+    """Move every orphan (re-derived here, never taken from the caller) to
+    <config>/nida_trash/. Refreshes the catalog first so the decision is
+    made on current data."""
+    await async_fetch_catalog(hass, force_refresh=True)
+    found = await async_find_orphan_sounds(hass)
+    if found.get("skipped"):
+        return {"ok": False, "error": found["skipped"], "moved": []}
+    trash = hass.config.path("nida_trash")
+    www_root = _www_root(hass)
+
+    def _move() -> list[str]:
+        import shutil
+        moved: list[str] = []
+        for rel in found["orphans"]:
+            if not _validate_rel_path(rel):
+                continue
+            src = os.path.join(www_root, rel)
+            dst = os.path.join(trash, rel)
+            try:
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.move(src, dst)
+                moved.append(rel)
+            except OSError as err:
+                _LOGGER.warning("Could not move old sound %s (%s)", rel, err)
+        return moved
+
+    moved = await hass.async_add_executor_job(_move)
+    _LOGGER.info("Moved %d old sound file(s) to %s: %s", len(moved), trash, moved)
+    return {"ok": True, "error": None, "moved": moved}
+
+
 def invalidate_catalog_cache() -> None:
     """Drop the in-memory catalog cache. Called after options changes
     that affect catalog_url so the next fetch re-reads from the new URL."""
