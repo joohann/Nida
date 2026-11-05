@@ -348,6 +348,11 @@ DEFAULT_VOLUME_TEST = 30
 OPT_VOLUME_PRE_ADHAN_TEST = "volume_pre_adhan_test"
 DEFAULT_VOLUME_PRE_ADHAN_TEST = 30
 
+# Fajr-specific pre-adhan TTS volume (0-100). Optional: when unset the
+# TTS uses the pre-adhan jingle volume like every other prayer. Fajr
+# fires at dawn, where the spoken line is often too loud for the house.
+OPT_VOLUME_TTS_FAJR = "volume_tts_fajr"
+
 # Sound catalog. URL of a JSON document listing available sounds.
 # Default points at majikan.nl/nida/adhan/manifest.json (Johann's own
 # server) — schema documented inline in catalog.py's _adapt_item.

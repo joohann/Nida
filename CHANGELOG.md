@@ -4,6 +4,27 @@ All notable changes to Nida are documented here. The `version` in
 `custom_components/nida/manifest.json` is the source of truth for the current
 release; newest entry on top.
 
+## 2.5.2 — 2026-11-05
+
+- **New README.** Rewritten for the 2.x panel, with Marketplace install instructions.
+- **Separate volume for the Fajr announcement.** The spoken (TTS) announcement
+  before Fajr can now have its own volume, set with a slider under the TTS row
+  in the panel (option `volume_tts_fajr`). Until you move it, Fajr uses the
+  pre-adhan jingle volume like every other prayer, so nothing changes by default.
+  The Fajr jingle uses the same level, so jingle and spoken line always match.
+- **The spoken pre-adhan line follows night mode.** Night mode and the
+  open-contact volume now scale the TTS announcement like they already scaled
+  the jingle, so at night the two stay at the same level.
+- **The Today card can be collapsed.** Tap the header (title and date) to fold the
+  list down to just the next prayer, so it is as compact as the Next Prayer card
+  beside it; tap again to open it. Your choice is remembered in that browser.
+  The new `collapsed: true` option in the card config sets the starting state,
+  and there is a switch for it in the card editor.
+- **Today and Next Prayer cards fill the height they are given.** In a Sections
+  view, set `grid_options: rows: N` on the card and it stretches to that height
+  (the list stays at the top), so the right-hand column can end level with the
+  tiles on the left. Without `rows` nothing changes.
+
 ## 2.5.1 — 2026-10-21
 
 - **Old sound files can be cleaned up.** Local files the library no longer

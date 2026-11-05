@@ -450,6 +450,7 @@ from .const import (
     OPT_TTS_PRE_ADHAN_SERVICES,
     OPT_VOLUME_PRE_ADHAN_TEST,
     OPT_VOLUME_PREFIX,
+    OPT_VOLUME_TTS_FAJR,
     OPT_VOLUME_TEST,
     PRAYER_SOUND_CATEGORY,
     PRAYERS,
@@ -802,6 +803,24 @@ def _effective_volume_factor(hass: HomeAssistant, options: dict) -> int:
     if not factors:
         return 100
     return max(0, min(150, min(factors)))
+
+
+def _pre_adhan_base_volume(options: dict, prayer: str | None) -> float:
+    """Pre-adhan volume (0.0-1.0) for jingle AND spoken line.
+
+    Fajr uses options.volume_tts_fajr when set, so the jingle and the TTS
+    of that prayer always share one level; every other prayer (and Fajr
+    with the option unset) uses the pre-adhan jingle volume.
+    """
+    volume = _volume_for_category(options, SOUND_CATEGORY_PRE_ADHAN_JINGLE)
+    if str(prayer or "").lower() == "fajr":
+        fajr_vol = options.get(OPT_VOLUME_TTS_FAJR)
+        if fajr_vol is not None:
+            try:
+                volume = max(0, min(100, int(fajr_vol))) / 100.0
+            except (TypeError, ValueError):
+                pass
+    return volume
 
 
 def _apply_volume_modifiers(
@@ -2090,8 +2109,12 @@ async def _speak_pre_adhan_on(
                                 DEFAULT_VOLUME_PRE_ADHAN_TEST)) / 100.0
             )
         else:
-            volume = _volume_for_category(
-                options, SOUND_CATEGORY_PRE_ADHAN_JINGLE
+            # Night mode / open-contact scale the spoken line exactly like
+            # the jingle, so the two stay at the same level.
+            volume = _apply_volume_modifiers(
+                _pre_adhan_base_volume(options, call_data.get("prayer")),
+                hass,
+                options,
             )
         await _apply_pre_adhan_volume(
             hass, options, players, play_snapshot, volume, "pre-adhan TTS"
@@ -2285,7 +2308,7 @@ async def async_run_pre_adhan_sequence(
 
         if audio:
             volume = _apply_volume_modifiers(
-                _volume_for_category(options, SOUND_CATEGORY_PRE_ADHAN_JINGLE),
+                _pre_adhan_base_volume(options, prayer),
                 hass,
                 options,
             )

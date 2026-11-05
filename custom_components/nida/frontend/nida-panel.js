@@ -2673,6 +2673,8 @@ const TRANSLATIONS = {
     tts_pick_agents: "TTS engines",
     tts_no_services: "No TTS engines configured in Home Assistant.",
     tts_message_label: "Announcement message",
+    tts_fajr_volume_label: "Fajr announcement volume",
+    tts_fajr_volume_sub: "Volume of the spoken line before Fajr only",
     tts_reset_default: "Reset to default",
     tts_msg_hint_full: "Use [prayer] for the prayer name · the default sentence follows the selected language until you customise it",
     tts_message_hint: "It's almost time for [prayer] prayer",
@@ -3080,6 +3082,8 @@ const TRANSLATIONS = {
     tts_pick_agents: "TTS-engines",
     tts_no_services: "Geen TTS-engines in Home Assistant gevonden.",
     tts_message_label: "Aankondiging",
+    tts_fajr_volume_label: "Volume aankondiging Fajr",
+    tts_fajr_volume_sub: "Volume van de gesproken aankondiging alleen vóór Fajr",
     tts_reset_default: "Herstel standaard",
     tts_msg_hint_full: "Gebruik [prayer] voor de gebedsnaam · de standaardzin volgt de gekozen taal totdat je hem aanpast",
     tts_message_hint: "Het is bijna tijd voor [prayer]",
@@ -9789,6 +9793,33 @@ class NidaPanel extends HTMLElement {
         </div>
         ${enabled ? this._htmlSpeakerTestBtn("pre_adhan_tts") : ""}
         <div class="chevron-btn" data-action="open-tts-settings">${ICONS.chevronRight}</div>
+      </div>
+      ${enabled ? this._htmlTtsFajrVolumeRow() : ""}
+    `;
+  }
+
+  _htmlTtsFajrVolumeRow() {
+    // Fajr-only TTS volume (options.volume_tts_fajr). Until the user moves
+    // the slider it shows the pre-adhan jingle volume, which is what the
+    // backend uses when the option is unset.
+    const raw = parseInt(this._settings?.volume_tts_fajr, 10);
+    const v = Number.isFinite(raw) && raw >= 0 && raw <= 100
+      ? raw
+      : this._volumeFor("pre_adhan_jingle");
+    return `
+      <div class="minutes-row">
+        <div class="sound-info">
+          <div class="sound-name">${this.t("tts_fajr_volume_label")}</div>
+          <div class="row-sub">${this.t("tts_fajr_volume_sub")}</div>
+          <div class="volume-row">
+            <input type="range" min="0" max="100" step="5"
+                   value="${v}"
+                   data-input="volume-tts_fajr"
+                   class="volume-slider"
+                   aria-label="${this.t("tts_fajr_volume_label")}">
+            <span class="volume-value" data-volume-display="tts_fajr">${v}%</span>
+          </div>
+        </div>
       </div>
     `;
   }

@@ -246,7 +246,7 @@
  *                        the dashboard UI, not just YAML.
  */
 
-const NIDA_CARD_VERSION = "2.5.1";
+const NIDA_CARD_VERSION = "2.5.2";
 
 const PRAYERS = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 /* ── Kids-card artwork (2.4.0) ───────────────────────────────────────────
@@ -629,6 +629,7 @@ const STRINGS = {
     prayer_maghrib: "Maghrib",
     prayer_isha: "Isha",
     editor_card_type: "Card",
+    editor_collapsed: "Today card: start collapsed",
     editor_card_type_now: "Next Prayer (day/night)",
     editor_card_type_today: "Today (day/night)",
     editor_card_type_kids: "Kids",
@@ -657,6 +658,7 @@ const STRINGS = {
     prayer_maghrib: "Maghrib",
     prayer_isha: "Isha",
     editor_card_type: "Kaart",
+    editor_collapsed: "Vandaag-kaart: ingeklapt starten",
     editor_card_type_now: "Volgend gebed (dag/nacht)",
     editor_card_type_today: "Vandaag (dag/nacht)",
     editor_card_type_kids: "Kinderen",
@@ -964,6 +966,16 @@ class NidaCard extends HTMLElement {
         ${inner}
       </div>
     `;
+    const todayHead = this.shadowRoot.querySelector('[data-action="toggle-today"]');
+    if (todayHead) {
+      todayHead.addEventListener("click", () => this._toggleToday());
+      todayHead.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          this._toggleToday();
+        }
+      });
+    }
     const muteBtn = this.shadowRoot.querySelector('[data-action="toggle-silent-menu"]');
     if (muteBtn) {
       muteBtn.addEventListener("click", (e) => {
@@ -1055,10 +1067,12 @@ class NidaCard extends HTMLElement {
     const { next, schedule, nextDate } = info;
     const now = Date.now();
     const byPrayer = new Map(schedule.map((e) => [e.prayer, e.date]));
+    const collapsed = this._isTodayCollapsed();
     const rows = PRAYERS.map((prayer) => {
       const date = byPrayer.get(prayer);
       if (!date) return "";
       const isNext = prayer === next;
+      if (collapsed && !isNext) return "";
       const isPast = !isNext && date.getTime() < now;
       const glyphKey = PRAYER_ICON_KEY[prayer];
       const icon = isPast ? ICONS.checkCircle : ICONS[glyphKey];
@@ -1094,17 +1108,46 @@ class NidaCard extends HTMLElement {
         </div>`;
     }).join("");
 
+    // 2.5.2 — the header toggles the list. Collapsed it shows only the
+    // next prayer, so the card is as compact as the Next Prayer card
+    // beside it. Johann: "kunnen we de today card inklappen dat het gelijk
+    // is met de andere kaart".
     return `
-      <div class="today-head">
+      <div class="today-head ${collapsed ? "collapsed" : ""}" data-action="toggle-today"
+           role="button" tabindex="0" aria-expanded="${collapsed ? "false" : "true"}">
         <span class="today-title">${this._t("today")}</span>
-        <span class="today-hijri">${this._hijriText()}</span>
+        <span class="today-head-right">
+          <span class="today-hijri">${this._hijriText()}</span>
+          <span class="today-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        </span>
       </div>
       <div class="today-list">${rows}</div>
+      ${collapsed ? "" : `
       <div class="today-foot">
         <span class="refresh-ico">${ICONS.refresh}</span>
         ${this._t("last_updated")} ${this._lastUpdatedText()}
-      </div>
+      </div>`}
     `;
+  }
+
+  // Collapsed state: the user's last choice (kept in this browser) wins;
+  // before any choice the card follows `collapsed:` from its config.
+  _isTodayCollapsed() {
+    if (typeof this._todayCollapsed === "boolean") return this._todayCollapsed;
+    try {
+      const saved = window.localStorage.getItem("nida-card-today-collapsed");
+      if (saved === "1" || saved === "0") return saved === "1";
+    } catch (e) { /* storage blocked: fall through to the config */ }
+    return this._config?.collapsed === true;
+  }
+
+  _toggleToday() {
+    const next = !this._isTodayCollapsed();
+    this._todayCollapsed = next;
+    try {
+      window.localStorage.setItem("nida-card-today-collapsed", next ? "1" : "0");
+    } catch (e) { /* not persisted; still applies for this session */ }
+    this._render();
   }
 
   // ───── Kids variant (2.4.0) ───────────────────────────────────────────────
@@ -1318,8 +1361,13 @@ class NidaCard extends HTMLElement {
 
   _css(t) {
     return `
-      :host { display: block; }
+      :host { display: block; height: 100%; }
       * { box-sizing: border-box; }
+      /* Fill whatever height the dashboard gives the card (a Sections view
+         grid_options.rows), so a collapsed Today card can be stretched to line
+         up with its neighbours. With no fixed height around it (masonry, or no
+         rows set) 100% resolves to auto and nothing changes. */
+      .nida-card-root.type-today, .nida-card-root.type-now { min-height: 100%; }
       .nida-card-root {
         font-family: 'Inter', sans-serif;
         background: ${t.bg};
@@ -1464,6 +1512,12 @@ class NidaCard extends HTMLElement {
         color: ${t.text};
       }
       .today-hijri { font-size: 12px; color: ${t.textDim}; }
+      .today-head[data-action] { cursor: pointer; user-select: none; }
+      .today-head-right { display: inline-flex; align-items: center; gap: 8px; }
+      .today-chevron { display: inline-flex; width: 18px; height: 18px; color: ${t.textDim}; }
+      .today-chevron svg { width: 100%; height: 100%; transition: transform 0.2s ease; }
+      .today-head.collapsed .today-chevron svg { transform: rotate(-90deg); }
+      .today-head:focus-visible { outline: 2px solid ${t.accent}; outline-offset: 4px; border-radius: 6px; }
       .today-list { display: flex; flex-direction: column; }
       .today-row {
         display: flex;
@@ -1888,9 +1942,12 @@ class NidaCardEditor extends HTMLElement {
           },
         },
       },
+      { name: "collapsed", selector: { boolean: {} } },
     ];
     form.computeLabel = (schema) =>
-      schema.name === "card_type" ? t.editor_card_type : schema.name;
+      schema.name === "card_type" ? t.editor_card_type
+        : schema.name === "collapsed" ? (t.editor_collapsed || STRINGS.en.editor_collapsed)
+        : schema.name;
     form.addEventListener("value-changed", (ev) => {
       this._config = ev.detail.value;
       this.dispatchEvent(

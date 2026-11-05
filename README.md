@@ -1,280 +1,140 @@
-# 🕌 Nida — Islamic Prayer Times for Home Assistant
+<div align="center">
 
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
-[![HA Version](https://img.shields.io/badge/Home%20Assistant-2023.1%2B-blue)](https://home-assistant.io)
+<img src="https://raw.githubusercontent.com/joohann/Nida/main/custom_components/nida/brand/icon.png" width="120" alt="Nida icon">
+
+# Nida — نداء
+
+**Islamic prayer times, adhan and reminders for Home Assistant.**
+
+[![Marketplace](https://img.shields.io/badge/Home%20Assistant-Marketplace-41BDF5.svg)](https://www.hacs.xyz/docs/marketplace/)
+[![Release](https://img.shields.io/github/v/release/joohann/Nida)](https://github.com/joohann/Nida/releases)
+[![Hassfest](https://github.com/joohann/Nida/actions/workflows/hassfest.yml/badge.svg)](https://github.com/joohann/Nida/actions/workflows/hassfest.yml)
+[![Validate](https://github.com/joohann/Nida/actions/workflows/validate.yml/badge.svg)](https://github.com/joohann/Nida/actions/workflows/validate.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-![Nida icon](https://raw.githubusercontent.com/joohann/Nida/main/custom_components/nida/brand/icon.png)
+[English](README.md) · [Nederlands](README.nl.md) · [العربية](README.ar.md) · [Bahasa Indonesia](README.id.md)
 
-*Assalāmu ʿAlaykum wa Raḥmatullāhi wa Barakātuh*
-— Iftikhar Farzan Izz Al Din Muhsin
+</div>
 
-**Nida** (نداء) means *"the call"* — a full-featured Home Assistant integration for Islamic prayer times with automatic adhan, pre-adhan reminders, Ramadan features and a beautiful dashboard card.
-
-Prayer times are fetched from the free [AlAdhan API](https://aladhan.com/prayer-times-api) — no account or API key required. May Allah reward those who built and maintain it. 🤲
-
-🌍 🇬🇧 🇳🇱 🇩🇪 🇫🇷 🇮🇩 🇲🇾 🇸🇦 🇮🇷 🇵🇰
----
-
-## ✨ Features
-
-- 🕐 **Prayer Times** — Imsak, Fajr, Sunrise, Dhuhr, Asr, Sunset, Maghrib, Isha, Midnight
-- 📅 **Hijri Calendar** — date, day, month, year and Islamic holidays
-- 🔊 **Automatic Adhan** — plays at prayer time via any media player
-- 🔔 **Pre-Adhan Reminders** — up to 2 reminders with sound and/or TTS message before each prayer
-- 🌙 **Ramadan Features** — Tarhim before Fajr and Suhoor alarm
-- 🌙 **Night Volume** — automatically lower volume after a set hour
-- 📱 **Push Notifications** — receive a notification at each prayer time
-- ⏭️ **Next Prayer Sensor** — shows which prayer is coming up next
-- 🎵 **Preview Services** — test adhans and tarhim directly from the UI
-- 📊 **Dashboard Card** — beautiful card with live countdown timer
-- 🌍 **15+ Calculation Methods** — Muslim World League, ISNA, Karachi and more
-- 🗣️ **Multi-language** — English, Dutch, Arabic, Turkish, German, French, Malay, Indonesian, Urdu and Farsi (Persian).
+*Nida* means "the call". The integration fetches prayer times from the free
+[AlAdhan API](https://aladhan.com/prayer-times-api) (no account or API key),
+plays the adhan on your speakers at the right moment, warns you shortly before,
+and gives you a settings panel and dashboard cards that match your theme.
 
 ![Nida screens](https://github.com/user-attachments/assets/9886d410-56f3-4f5c-b3ad-3cab861d6721)
 
-![Nida screens](https://github.com/user-attachments/assets/bf29dd2d-da6c-422a-88e7-8986225035a8)
+## Features
 
----
-
-## 📦 Installation via HACS
-
-1. Go to **HACS → Integrations → ⋮ → Custom Repositories**
-2. Add: `https://github.com/joohann/Nida`
-3. Category: **Integration**
-4. Click **Download**
-5. Restart Home Assistant
-
----
-
-## ⚙️ Configuration
-
-Go to **Settings → Devices & Services → Add Integration → Nida**
-
-The setup consists of 6 steps:
-
-### Step 1 — Location & Method
-
-| Field | Description | Example |
-|---|---|---|
-| City | Your city | `Amsterdam` |
-| Country | Your country | `Netherlands` |
-| Calculation Method | Islamic calculation method | `Muslim World League` |
-
-### Step 2 — Pre-Adhan Reminders
-
-Configure up to 2 reminders that play before each prayer. Each reminder can have a sound and/or a spoken TTS message.
-
-| Field | Description |
+| | |
 |---|---|
-| Enable reminder | On/off |
-| Minutes before adhan | e.g. `10` or `5` |
-| Sound | Optional jingle sound |
-| Language | nl / en / ar / tr |
-| Message | e.g. `بعد [minutes] دقيقة حان وقت صلاة [prayer]` |
+| **Prayer times** | Imsak, Fajr, Sunrise, Dhuhr, Asr, Sunset, Maghrib, Isha and Midnight, with 15+ calculation methods |
+| **Adhan** | Per prayer on/off, own sound and volume, on one or more media players |
+| **Pre-adhan** | Jingle and a spoken (TTS) announcement before the prayer, with its own volume for Fajr |
+| **Night mode** | Lowers the volume of the adhan, jingle and announcement between set hours |
+| **Open-contact volume** | Lower volume when a window or door sensor is open |
+| **Music friendly** | Dips or pauses your music, fades it back in and restores playback afterwards; Sonos announcements supported |
+| **Ramadan** | Suhoor and iftar reminders, iftar dua, Tarhim, Fajr wake-up alarm with a scene |
+| **Notifications** | Push per prayer, Jumu'ah reminder, Hijri calendar events, iOS Live Activity countdown |
+| **Duas** | Play a dua on a trigger of your own, or from a button entity |
+| **Sound library** | A few sounds ship with Nida, the rest is downloaded on demand from a catalog |
+| **Dashboard cards** | Next prayer and Today cards with live countdown, light and dark |
+| **10 languages** | English, Dutch, Arabic, Turkish, German, French, Malay, Indonesian, Urdu, Persian |
 
-Use `[minutes]` and `[prayer]` as placeholders in your message.
+## Installation
 
-### Step 3 — Fajr Adhan
+### Marketplace
 
-Separate adhan settings for Fajr (different recitation than daily prayers).
+Nida is being submitted to the Home Assistant Marketplace (HACS, built in from
+Home Assistant 2026.11). Once it is listed:
 
-| Field | Description |
+1. Open the **Marketplace** in Home Assistant and search for **Nida**.
+2. Download it and restart Home Assistant.
+
+Until then, or on an older Home Assistant with HACS installed, add it as a
+custom repository: **HACS → ⋮ → Custom repositories**, URL
+`https://github.com/joohann/Nida`, category **Integration**.
+
+### Manual
+
+Copy `custom_components/nida` into your Home Assistant `config/custom_components/`
+folder and restart.
+
+## Setup
+
+1. Go to **Settings → Devices & services → Add integration → Nida**.
+2. Fill in your city and country, pick a calculation method and finish.
+3. Open **Nida** in the sidebar. All other settings live in this panel:
+   prayers, sounds, speakers, pre-adhan, night mode, notifications, Ramadan
+   and more.
+
+No YAML is needed. Settings are stored in the integration's options.
+
+## Entities
+
+| Entity | Description |
 |---|---|
-| Fajr Adhan Sound | Choose from available Fajr MP3s |
-| Speaker | Your media player entity |
-| Volume | 0 — 100% |
+| `sensor.nida_fajr`, `…_dhuhr`, `…_asr`, `…_maghrib`, `…_isha`, `…_sunrise`, … | Time of each prayer (timestamp) |
+| `sensor.nida_imsak` | Imsak |
+| `sensor.nida_next_prayer` | The next prayer and its time |
+| `sensor.nida_hijri_*` | Hijri date, day, month and year |
+| `binary_sensor.nida_<prayer>_active` | On while you are inside that prayer's window |
+| `switch.nida_<prayer>_adhan` | Turn the adhan for one prayer on or off |
+| `button.nida_dua_*` | Play a dua |
 
-### Step 4 — Daily Adhan
+Exact entity IDs depend on your device name; check **Settings → Devices & services → Nida**.
 
-| Field | Description |
+## Services
+
+| Service | What it does |
 |---|---|
-| Adhan Sound | Choose from available day adhan MP3s |
-| Speaker | Your media player entity |
-| Volume | 0 — 100% |
-| Night volume | Optional lower volume after set hour |
-| Night start hour | From which hour to use night volume |
-
-### Step 5 — Notifications
-
-| Field | Description |
-|---|---|
-| Notify at each prayer | Send push notification at prayer time |
-| Send notification to | Select notify service(s) |
-| Title | Notification title |
-| Message | Notification message (use `{prayer}`) |
-
-### Step 6 — Ramadan
-
-| Field | Description |
-|---|---|
-| Suhoor alarm | Play a sound before Suhoor ends |
-| Suhoor alarm minutes | How many minutes before Imsak |
-| Suhoor alarm sound | Choose sound |
-| Suhoor alarm volume | 0 — 100% |
-| Enable Tarhim | Play tarhim before Fajr during Ramadan |
-| Tarhim Sound | Choose tarhim MP3 |
-| Tarhim Speaker | Your media player entity |
-| Tarhim Volume | 0 — 100% |
-
-Tarhim plays automatically 6.5 minutes before Fajr during Ramadan.
-
----
-
-## 🔊 Sound Files
-
-Place your MP3 files in the `sounds/` folder of the integration. Files are automatically scanned and categorized by name:
-
-| Pattern | Type |
-|---|---|
-| `*fajr*.mp3` | Fajr adhan |
-| `*adhan*.mp3` | Daily adhan |
-| `*tarhim*.mp3` | Tarhim |
-| `*suhoor*.mp3` | Suhoor alarm |
-| `*jingle*.mp3` | Pre-adhan reminder sound |
-
-**Recommended naming:**
-```
-sounds/
-  adhan_fajr_ahmed_saeed_al-omrany.mp3
-  adhan_day_ahmed_saeed_al-omrany.mp3
-  ramadan_tarhim_ustaz_hendra.mp3
-  ramadan_suhoor_ustaz_hendra.mp3
-  nadir_jingle_annoucment.mp3
-```
-
-Sound files are automatically copied to `/www/nida/sounds/` on installation so media players can access them without authentication issues.
-
----
-
-## 📊 Sensors
-
-### 🕌 Prayer Times
-
-| Sensor | Description |
-|---|---|
-| `sensor.01_imsak` | Imsak time |
-| `sensor.02_fajr` | Fajr time |
-| `sensor.03_sunrise` | Sunrise time |
-| `sensor.04_dhuhr` | Dhuhr time |
-| `sensor.05_asr` | Asr time |
-| `sensor.06_sunset` | Sunset time |
-| `sensor.07_maghrib` | Maghrib time |
-| `sensor.08_isha` | Isha time |
-| `sensor.09_midnight` | Midnight time |
-| `sensor.next_prayer` | Next upcoming prayer with time |
-| `sensor.last_played_adhan` | Last played adhan |
-
-Readable versions (e.g. `05:41`) are also available as `sensor.01_imsak_readable`, etc.
-
-### 📅 Hijri Calendar
-
-| Sensor | Description |
-|---|---|
-| `sensor.hijri_date` | Full Hijri date (e.g. `04-09-1447`) |
-| `sensor.hijri_day` | Day number |
-| `sensor.hijri_month` | Month name (e.g. `Ramaḍān`) |
-| `sensor.hijri_year` | Year |
-| `sensor.islamic_holiday_today` | Islamic holiday today (if any) |
-
----
-
-## 🛠️ Services
-
-### `nida.preview_adhan`
-
-Play an adhan as a preview.
+| `nida.play_adhan` | Play the adhan for a prayer on one or more media players |
+| `nida.play_preview` | Preview a sound on chosen speakers |
+| `nida.test_pre_adhan` | Test the whole pre-adhan: jingle, pause and spoken announcement |
 
 ```yaml
-service: nida.preview_adhan
-data:
-  sound: adhan_day_ahmed_saeed_al-omrany.mp3
-  speaker: media_player.living_room
-  volume: 0.5
+service: nida.test_pre_adhan
 ```
 
-### `nida.test_prayer`
+Full field descriptions are in **Developer tools → Actions**.
 
-Test the adhan for a specific prayer.
+## Dashboard cards
 
-```yaml
-service: nida.test_prayer
-data:
-  prayer: dhuhr
-```
-
-### `nida.test_tarhim`
-
-Test the tarhim recitation.
-
-```yaml
-service: nida.test_tarhim
-data:
-  sound: nadir_jingle_annoucment.mp3
-  speaker: media_player.bedroom
-  volume: 0.4
-```
-
----
-
-## 📊 Dashboard Card
-
-Nida includes a beautiful custom Lovelace card (`nida-card.js`) with a live countdown timer that automatically adapts to your Home Assistant light or dark theme.
-
-The card is automatically copied to `/www/nida/nida-card.js` on installation.
-
-![Image](https://github.com/user-attachments/assets/8d4f679b-e885-4b49-9712-1ba9cc77a805)
-![Image](https://github.com/user-attachments/assets/f9dd210f-f15e-4d0c-b599-de69e2fa169a)
-
-**Step 1 — Add the resource** (once):
-
-Go to **Settings → Dashboards → ⋮ → Resources → Add Resource**
-
-| Field | Value |
-|---|---|
-| URL | `/local/nida/nida-card.js` |
-| Resource type | `JavaScript Module` |
-
-**Step 2 — Add the card** to your dashboard:
+The cards are registered automatically; there is nothing to add under Resources.
+Pick **Nida** in the card picker, or use YAML:
 
 ```yaml
 type: custom:nida-card
+card_type: now        # now, today, kids, scene_now, scene_today
 ```
 
-Optional configuration:
-
-```yaml
-type: custom:nida-card
-theme: auto   # auto (default), light, or dark
-```
----
-
-## 🌍 Calculation Methods
-
-| ID | Method |
+| Option | Description |
 |---|---|
-| 0 | Shia Ithna-Ashari |
-| 1 | University of Islamic Sciences, Karachi |
-| 2 | Islamic Society of North America (ISNA) |
-| 3 | Muslim World League |
-| 4 | Umm Al-Qura University, Makkah |
-| 5 | Egyptian General Authority of Survey |
-| 7 | Institute of Geophysics, University of Tehran |
-| 8 | Gulf Region |
-| 9 | Kuwait |
-| 10 | Qatar |
-| 11 | Majlis Ugama Islam Singapura |
-| 12 | Union Organization Islamic de France |
-| 13 | Diyanet İşleri Başkanlığı, Turkey |
-| 14 | Spiritual Administration of Muslims of Russia |
-| 15 | Moonsighting Committee Worldwide |
+| `card_type` | `now` (next prayer), `today` (all prayers), `kids`, `scene_now`, `scene_today` |
+| `collapsed` | `today` card only: start folded down to the next prayer |
+| `grid_options.rows` | In a Sections view the card fills the given height |
+
+![Nida cards](https://github.com/user-attachments/assets/8d4f679b-e885-4b49-9712-1ba9cc77a805)
+
+## Requirements
+
+- Home Assistant 2023.1 or newer
+- One or more `media_player` entities for the adhan
+- A TTS integration if you want the spoken announcement
+- The Home Assistant Companion app for push notifications and the Live Activity
+
+## Documentation and support
+
+- [Changelog](CHANGELOG.md)
+- [Issues](https://github.com/joohann/Nida/issues): bugs and feature requests
+- Prayer data by [AlAdhan](https://aladhan.com)
+
+Pull requests are welcome, including new sounds and translations.
 
 ---
 
-## 🤝 Contributing
+<div align="center">
 
-Pull requests are welcome! Feel free to add new adhan sounds, translations or features.
+*بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ*
+Made with care for the Muslim community.
 
----
-
-*بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ — Made with ❤️ for the Muslim community*
+</div>
