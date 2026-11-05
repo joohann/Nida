@@ -1,5 +1,11 @@
 {
   "config": {
+    "step": {
+      "user": {
+        "title": "Nida",
+        "description": "Nida is set up in one click. Afterwards, open Nida in the sidebar for all settings."
+      }
+    },
     "abort": {
       "single_instance_allowed": "Only one Nida instance can be configured."
     }

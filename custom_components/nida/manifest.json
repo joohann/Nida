@@ -8,6 +8,7 @@
   "dependencies": [
     "network",
     "frontend",
+    "http",
     "panel_custom"
   ],
   "documentation": "https://github.com/joohann/Nida",

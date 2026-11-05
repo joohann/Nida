@@ -21,8 +21,6 @@
 plays the adhan on your speakers at the right moment, warns you shortly before,
 and gives you a settings panel and dashboard cards that match your theme.
 
-![Nida screens](https://github.com/user-attachments/assets/9886d410-56f3-4f5c-b3ad-3cab861d6721)
-
 ## Features
 
 | | |
@@ -62,7 +60,7 @@ folder and restart.
 ## Setup
 
 1. Go to **Settings → Devices & services → Add integration → Nida**.
-2. Fill in your city and country, pick a calculation method and finish.
+2. Confirm. Nida is added in one click.
 3. Open **Nida** in the sidebar. All other settings live in this panel:
    prayers, sounds, speakers, pre-adhan, night mode, notifications, Ramadan
    and more.
@@ -112,8 +110,6 @@ card_type: now        # now, today, kids, scene_now, scene_today
 | `card_type` | `now` (next prayer), `today` (all prayers), `kids`, `scene_now`, `scene_today` |
 | `collapsed` | `today` card only: start folded down to the next prayer |
 | `grid_options.rows` | In a Sections view the card fills the given height |
-
-![Nida cards](https://github.com/user-attachments/assets/8d4f679b-e885-4b49-9712-1ba9cc77a805)
 
 ## Requirements
 

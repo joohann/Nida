@@ -1,0 +1,24 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nida",
+        "description": "Nida is set up in one click. Afterwards, open Nida in the sidebar for all settings."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Only one Nida instance can be configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Nida options",
+        "description": "Open the [Masjid dashboard](/nida) to manage prayer times, sounds, language, and media players.\n\nThe toggle below controls whether Masjid is also shown in the sidebar.",
+        "data": {
+          "show_in_sidebar": "Show Masjid in the sidebar"
+        }
+      }
+    }
+  }
+}
