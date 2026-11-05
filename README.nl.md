@@ -31,9 +31,7 @@ De gebedstijden worden opgehaald via de gratis [AlAdhan API](https://aladhan.com
 - 🌍 **15+ Rekenmethodes** — o.a. Muslim World League, ISNA en Karachi  
 - 🗣️ **Meertalige ondersteuning**
 
-<img width="6180" height="3000" alt="Image" src="https://github.com/user-attachments/assets/9886d410-56f3-4f5c-b3ad-3cab861d6721" />
 
-<img width="6180" height="3000" alt="Image" src="https://github.com/user-attachments/assets/bf29dd2d-da6c-422a-88e7-8986225035a8" />
 
 ---
 
