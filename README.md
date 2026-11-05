@@ -81,20 +81,6 @@ No YAML is needed. Settings are stored in the integration's options.
 
 Exact entity IDs depend on your device name; check **Settings → Devices & services → Nida**.
 
-## Services
-
-| Service | What it does |
-|---|---|
-| `nida.play_adhan` | Play the adhan for a prayer on one or more media players |
-| `nida.play_preview` | Preview a sound on chosen speakers |
-| `nida.test_pre_adhan` | Test the whole pre-adhan: jingle, pause and spoken announcement |
-
-```yaml
-service: nida.test_pre_adhan
-```
-
-Full field descriptions are in **Developer tools → Actions**.
-
 ## Dashboard cards
 
 The cards are registered automatically; there is nothing to add under Resources.

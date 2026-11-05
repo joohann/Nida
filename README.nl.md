@@ -81,20 +81,6 @@ YAML is niet nodig. Instellingen worden bewaard in de opties van de integratie.
 
 De exacte entiteit-ID's hangen af van de naam van je apparaat; kijk bij **Instellingen → Apparaten & diensten → Nida**.
 
-## Services
-
-| Service | Wat het doet |
-|---|---|
-| `nida.play_adhan` | Speel de adhan van een gebed af op één of meer mediaspelers |
-| `nida.play_preview` | Beluister een geluid op gekozen speakers |
-| `nida.test_pre_adhan` | Test de hele pre-adhan: jingle, pauze en gesproken aankondiging |
-
-```yaml
-service: nida.test_pre_adhan
-```
-
-Volledige veldbeschrijvingen staan onder **Ontwikkelhulpmiddelen → Acties**.
-
 ## Dashboardkaarten
 
 De kaarten worden automatisch geregistreerd; je hoeft niets toe te voegen onder Bronnen.

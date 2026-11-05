@@ -81,20 +81,6 @@ YAML tidak diperlukan. Pengaturan disimpan di opsi integrasi.
 
 ID entitas persisnya bergantung pada nama perangkat Anda; lihat **Pengaturan → Perangkat & layanan → Nida**.
 
-## Layanan
-
-| Layanan | Fungsi |
-|---|---|
-| `nida.play_adhan` | Memutar adzan untuk satu salat di satu atau lebih media player |
-| `nida.play_preview` | Pratinjau suara di speaker pilihan |
-| `nida.test_pre_adhan` | Menguji seluruh pra-adzan: jingle, jeda, dan pengumuman lisan |
-
-```yaml
-service: nida.test_pre_adhan
-```
-
-Deskripsi lengkap kolom ada di **Alat pengembang → Aksi**.
-
 ## Kartu dasbor
 
 Kartu terdaftar otomatis; tidak perlu menambahkan apa pun di Sumber daya.
