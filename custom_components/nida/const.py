@@ -19,8 +19,8 @@ Changelog:
                        can watch for, to actually mute/restore the Mac's
                        own local audio via a user-built Shortcut. See
                        services.py's changelog for the send-side logic.
-  2.1.35 (2026-07-11): Fajr wake-up alarm (Johann: "hebben we een fajr
-                       wekker voor ramadan?") + countdown-to-Ramadan pill
+  2.1.35 (2026-07-11): Fajr wake-up alarm (Johann: "do we have a Fajr
+                       alarm for Ramadan?") + countdown-to-Ramadan pill
                        (frontend-only, no new const.py options). Ramadan-
                        only (confirmed via AskUserQuestion), gated the same
                        way as the other 2.1.34 Ramadan features. Wakes the
@@ -38,8 +38,8 @@ Changelog:
                        transition finishes, for a gentler wake-up).
                        OPT_FAJR_ALARM_SOUND/MEDIA_PLAYER/VOLUME are an
                        independent sound setup (Johann's choice via
-                       AskUserQuestion: "een apart wek-geluid met eigen
-                       speaker/volume", not the Fajr adhan sound reused).
+                       AskUserQuestion: "a separate wake-up sound with its
+                       own speaker/volume", not the Fajr adhan sound reused).
                        The sound picker deliberately reuses the Sound
                        Library's existing pre_adhan_jingle category
                        (a short attention sound is exactly what a jingle
@@ -50,8 +50,8 @@ Changelog:
                        it doesn't have to match the user's regular
                        pre-adhan jingle. See scheduler.py's changelog for
                        the trigger-side implementation.
-  2.1.34 (2026-07-11): Ramadan features (Johann: "wat kunnen we inbouwen
-                       voor ramadan?"). Four additions, all gated on "is
+  2.1.34 (2026-07-11): Ramadan features (Johann: "what can we build in
+                       for Ramadan?"). Four additions, all gated on "is
                        today within Ramadan" (Hijri month 9 —
                        HIJRI_MONTH_RAMADAN), checked directly against the
                        coordinator's own already-fetched Hijri data, no
@@ -144,129 +144,129 @@ Changelog:
                        added to SOUND_CATEGORIES so the sound_/volume_
                        option loops stay untouched. Playback via
                        nida.play_dua and per-dua button entities.
-  2.0.46 (2026-07-02): Bezoekersmodus krijgt een duur. Nieuwe opties
-                       guest_mode_hours (1-24, default 4) en
-                       guest_mode_until (ISO-timestamp, gezet door het
-                       paneel bij inschakelen). services.py beschouwt
-                       de modus als actief zolang enabled=True en de
-                       until-tijd niet verstreken is; ontbreekt until
-                       dan geldt "aan tot handmatig uit". Lazy expiry —
-                       geen achtergrond-timer nodig, de vergelijking
-                       gebeurt op het afspeelmoment.
-  2.0.45 (2026-07-02): Bezoekersmodus (guest mode). Nieuwe optie
-                       guest_mode_enabled (default False): zolang aan
-                       slaan play_adhan, play_pre_adhan_jingle en
-                       speak_pre_adhan hun audio over. Testknoppen
-                       blijven werken (expliciete gebruikersactie).
-                       Paneel-subgroep heet nu "Geluidsmodi".
-  2.0.41 (2026-07-01): Open-contact volume toegevoegd als tweede
-                       volume-aanpassing naast night mode. Nieuwe
-                       opties open_contact_enabled (default False),
-                       open_contact_sensors (lijst binary_sensor
+  2.0.46 (2026-07-02): Guest mode gets a duration. New options
+                       guest_mode_hours (1-24, default 4) and
+                       guest_mode_until (ISO timestamp, set by the
+                       panel when switching on). services.py treats
+                       the mode as active while enabled=True and the
+                       until time has not passed; without until it
+                       means "on until switched off manually". Lazy
+                       expiry — no background timer needed, the
+                       comparison happens at playback time.
+  2.0.45 (2026-07-02): Guest mode. New option
+                       guest_mode_enabled (default False): while on,
+                       play_adhan, play_pre_adhan_jingle and
+                       speak_pre_adhan skip their audio. Test buttons
+                       keep working (explicit user action).
+                       The panel subgroup is now called "Sound modes".
+  2.0.41 (2026-07-01): Open-contact volume added as a second
+                       volume adjustment next to night mode. New
+                       options open_contact_enabled (default False),
+                       open_contact_sensors (list of binary_sensor
                        entity_ids, device_class door/window/opening),
-                       open_contact_volume_factor (percentage van
-                       normaal, default 130 = luider). services.py
-                       neemt bij meerdere actieve condities de LAAGSTE
-                       factor (stilste wint), zodat een luide open-
-                       contact-boost 's nachts niet wint van night
-                       mode.
-  2.0.32 (2026-06-29): TTS pre-adhan announcement opties toegevoegd
+                       open_contact_volume_factor (percentage of
+                       normal, default 130 = louder). With several
+                       active conditions services.py takes the LOWEST
+                       factor (quietest wins), so a loud open-contact
+                       boost does not beat night mode at night.
+  2.0.32 (2026-06-29): TTS pre-adhan announcement options added
                        (enabled/services list/message/delay). Fires
-                       AFTER pre_adhan_jingle op dezelfde speakers.
-                       Taal volgt paneel-instelling. Empty services
-                       list = silent no-op zelfs als enabled.
-  2.0.29 (2026-06-29): DEFAULT_CATALOG_URL gezet op
+                       AFTER pre_adhan_jingle on the same speakers.
+                       Language follows the panel setting. Empty services
+                       list = silent no-op even when enabled.
+  2.0.29 (2026-06-29): DEFAULT_CATALOG_URL set to
                        https://majikan.nl/nida/adhan/manifest.json
-                       zodat nieuwe installs meteen items zien zonder
-                       config-stap.
-  2.0.28 (2026-06-29): OPT_CATALOG_URL + DEFAULT_CATALOG_URL toegevoegd
-                       voor de Sound Library catalog-fetcher. Schema in
-                       de comment hierboven. User stelt z'n eigen
-                       server-URL in via options flow.
+                       so new installs see items right away without a
+                       config step.
+  2.0.28 (2026-06-29): OPT_CATALOG_URL + DEFAULT_CATALOG_URL added
+                       for the Sound Library catalog fetcher. Schema in
+                       the comment above. The user sets their own
+                       server URL via the options flow.
   2.0.23 (2026-06-28): OPT_VOLUME_PRE_ADHAN_TEST + DEFAULT_VOLUME_PRE_ADHAN_TEST
-                       toegevoegd voor de play/stop pre-adhan test in
-                       het paneel — krijgt z'n eigen volume zoals de
-                       Speakers-test. Service play_pre_adhan_test in
-                       services.py gebruikt deze key.
-  2.0.22 (2026-06-28): Drie features in één — pre-adhan audio playback,
-                       speakers test play/stop + eigen volume, en
-                       night-mode volume reductie. Nieuwe options:
+                       added for the play/stop pre-adhan test in
+                       the panel — it gets its own volume like the
+                       Speakers test. Service play_pre_adhan_test in
+                       services.py uses this key.
+  2.0.22 (2026-06-28): Three features in one — pre-adhan audio playback,
+                       speakers test play/stop + own volume, and
+                       night-mode volume reduction. New options:
                        pre_adhan_audio_enabled (default True),
                        volume_test (default 30), night_mode_enabled
                        (default False), night_start "22:00",
                        night_end "07:00", night_volume_factor 50.
-                       De night_volume_factor is een percentage van
-                       de normale volume binnen het tijd-window —
-                       services.py past het toe op alle play_*
+                       The night_volume_factor is a percentage of
+                       the normal volume within the time window —
+                       services.py applies it to all play_*
                        service calls.
-  2.0.18 (2026-06-28): OPT_JUMUAH_TARGETS toegevoegd — Jumu'ah heeft nu
-                       een eigen target-lijst los van de algemene
-                       notify_targets (use case: niet alle gezinsleden
-                       hoeven die specifieke reminder, e.g. vrouwen).
-                       Plus TEST_SOUND_PATH voor de Speakers-test
-                       knop — een speciale jingle ipv de Dhuhr-adhan.
-                       Gebruiker moet sounds/test/test_jingle.mp3 zelf
-                       aanleveren.
-  2.0.17 (2026-06-28): OPT_THEME + theme-constanten toegevoegd voor de
-                       light/dark/auto picker in de header. Default
-                       blijft dark — bestaande installaties merken
-                       niets tot ze in het paneel actief switchen.
-  2.0.15 (2026-06-28): Notification + Jumu'ah constanten toegevoegd voor
+  2.0.18 (2026-06-28): OPT_JUMUAH_TARGETS added — Jumu'ah now has
+                       its own target list separate from the general
+                       notify_targets (use case: not every family member
+                       needs that specific reminder).
+                       Plus TEST_SOUND_PATH for the Speakers test
+                       button — a dedicated jingle instead of the Dhuhr adhan.
+                       The user has to supply sounds/test/test_jingle.mp3
+                       themselves.
+  2.0.17 (2026-06-28): OPT_THEME + theme constants added for the
+                       light/dark/auto picker in the header. Default
+                       stays dark — existing installs notice nothing
+                       until they actively switch in the panel.
+  2.0.15 (2026-06-28): Notification + Jumu'ah constants added for
                        Release B. Notifications: master toggle, targets
                        (list of notify.* services), title, message
                        (with [prayer] placeholder), per-prayer enabled
                        toggles. Jumu'ah (Friday): reminder enabled,
                        minutes-before-Dhuhr (30-120, default 60),
                        message (with [minutes] placeholder). Backend
-                       defaults zijn fallbacks — panel vult bij eerste
-                       init de tekst-defaults in op basis van de
-                       actieve paneel-taal.
-  2.0.13 (2026-06-28): DEFAULT_VOLUMES bijgesteld op Johanns voorkeur
+                       defaults are fallbacks — on first init the panel
+                       fills in the text defaults based on the
+                       active panel language.
+  2.0.13 (2026-06-28): DEFAULT_VOLUMES adjusted to Johann's preference
                        (fajr_adhan 10, adhan 20, pre_adhan_jingle 20)
-                       en optionele tweede pre-adhan reminder
-                       toegevoegd: OPT_PRE_ADHAN_TWO_ENABLED +
+                       and an optional second pre-adhan reminder
+                       added: OPT_PRE_ADHAN_TWO_ENABLED +
                        OPT_PRE_ADHAN_MINUTES_2 + DEFAULT_PRE_ADHAN_MINUTES_2.
-                       Scheduler plant beide reminders als
-                       pre_adhan_two_enabled True is.
-  2.0.12 (2026-06-28): OPT_VOLUME_PREFIX + DEFAULT_VOLUMES toegevoegd voor
-                       de panel volume-sliders per sound-categorie.
-                       Volumes worden als int 0-100 opgeslagen in options
+                       The scheduler plans both reminders when
+                       pre_adhan_two_enabled is True.
+  2.0.12 (2026-06-28): OPT_VOLUME_PREFIX + DEFAULT_VOLUMES added for
+                       the panel volume sliders per sound category.
+                       Volumes are stored as int 0-100 in options
                        (volume_fajr_adhan, volume_adhan,
-                       volume_pre_adhan_jingle); services.py rekent ze om
-                       naar de 0.0-1.0 float die media_player.volume_set
-                       wil.
+                       volume_pre_adhan_jingle); services.py converts them
+                       to the 0.0-1.0 float media_player.volume_set
+                       wants.
   2.0.7 (2026-06-28): OPT_PRE_ADHAN_MINUTES + DEFAULT_PRE_ADHAN_MINUTES
-                      toegevoegd voor de pre-adhan reminder feature.
-                      Scheduler plant nu een tweede trigger N min vóór
-                      elke adhan die een persistent_notification stuurt.
-  2.0.1 (2026-06-28): DEFAULT_SOUNDS toegevoegd — de drie standaard mp3-paden
-                      die meegeleverd worden in sounds/. Worden door
-                      services.py gebruikt als fallback wanneer
-                      options.sound_<categorie> niet gezet is. Plus
-                      OPT_ADHAN_MEDIA_PLAYERS option-key voor de scheduler.
-  2.0.0 (2026-06-27): Sensor-set herzien — PRAYERS afgeschaald van 9 naar de
-                      5 gebeden met adhan (imsak/sunrise/sunset/midnight eruit,
-                      komen pas terug bij Ramadan-herbouw). Entity_id-naamgeving
-                      gewijzigd van volgnummer-prefix (sensor.02_fajr) naar
-                      domain-prefix (sensor.nida_fajr) — geen migratie, schone
-                      herbouw. Sound-categorieën (fajr_adhan/adhan/pre_adhan_jingle)
-                      vervangen de oude per-gebed _SOUND_FIELDS.
+                       added for the pre-adhan reminder feature.
+                       The scheduler now plans a second trigger N min before
+                       each adhan that sends a persistent_notification.
+  2.0.1 (2026-06-28): DEFAULT_SOUNDS added — the three default mp3 paths
+                       shipped in sounds/. Used by
+                       services.py as a fallback when
+                       options.sound_<category> is not set. Plus the
+                       OPT_ADHAN_MEDIA_PLAYERS option key for the scheduler.
+  2.0.0 (2026-06-27): Sensor set revised — PRAYERS scaled down from 9 to the
+                       5 prayers with an adhan (imsak/sunrise/sunset/midnight
+                       removed, they return with the Ramadan rebuild). Entity
+                       id naming changed from the sequence-number prefix
+                       (sensor.02_fajr) to a domain prefix (sensor.nida_fajr) —
+                       no migration, clean rebuild. Sound categories
+                       (fajr_adhan/adhan/pre_adhan_jingle) replace the old
+                       per-prayer _SOUND_FIELDS.
 """
 from __future__ import annotations
 
 DOMAIN = "nida"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Config flow / options keys (basisinstellingen, niet sound-gerelateerd)
+# Config flow / options keys (basic settings, not sound-related)
 # ─────────────────────────────────────────────────────────────────────────────
 CONF_CITY = "city"
 CONF_COUNTRY = "country"
 CONF_METHOD = "method"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Gebeden — alleen de 5 met een adhan-afspeelmoment. imsak/sunrise/sunset/
-# midnight zijn bewust geschrapt in 2.0.0 fase 1 (zie changelog hierboven);
-# komen terug zodra Ramadan/vasten-features herbouwd worden.
+# Prayers — only the 5 with an adhan playback moment. imsak/sunrise/sunset/
+# midnight were deliberately dropped in 2.0.0 phase 1 (see changelog above);
+# they come back once the Ramadan/fasting features are rebuilt.
 # ─────────────────────────────────────────────────────────────────────────────
 PRAYERS = ("fajr", "dhuhr", "asr", "maghrib", "isha")
 
@@ -296,11 +296,11 @@ PRAYER_SOUND_CATEGORY = {
 OPT_ENABLED_PREFIX = "enabled_"
 OPT_SOUND_PREFIX = "sound_"
 
-# Volume per sound-categorie. Opgeslagen als int 0-100 (UI-friendly).
-# services.py converteert naar float 0.0-1.0 voor media_player.volume_set.
-# Defaults zijn bewust laag — adhan/fajr-adhan kan in een rustige woonkamer
-# luid overkomen; gebruiker kan in het paneel altijd hoger. Fajr lager
-# dan de dag-adhan omdat het 's ochtends vroeg afgaat.
+# Volume per sound category. Stored as int 0-100 (UI-friendly).
+# services.py converts to float 0.0-1.0 for media_player.volume_set.
+# Defaults are deliberately low — the adhan/fajr adhan can come across as
+# loud in a quiet living room; the user can always go higher in the panel.
+# Fajr is lower than the daytime adhan because it sounds early in the morning.
 OPT_VOLUME_PREFIX = "volume_"
 DEFAULT_VOLUMES = {
     SOUND_CATEGORY_FAJR_ADHAN: 10,
@@ -458,8 +458,8 @@ DEFAULT_DUCK_MEDIA_ENABLED = False
 # Distinct from duck-media above: that pauses OTHER players (a TV in
 # another room) and never touches the adhan speakers, so music playing on
 # the adhan speaker itself was simply overwritten by the adhan and never
-# came back. Johann: "ik heb als ik muziek luister dan de mediaplayer
-# daarna niet hersteld ... het zou fijn zijn als muziek erna hersteld".
+# came back. Johann: "when I listen to music the media player is not
+# restored afterwards ... it would be nice if the music came back".
 # Sonos gets sonos.snapshot/restore (with_group, so a grouped zone comes
 # back grouped and at the same queue position); everything else falls
 # back to saving volume_level + state and re-issuing media_play, which
@@ -467,10 +467,10 @@ DEFAULT_DUCK_MEDIA_ENABLED = False
 OPT_RESTORE_PLAYBACK_ENABLED = "restore_playback_enabled"
 DEFAULT_RESTORE_PLAYBACK_ENABLED = False
 
-# 2.2.4 — pre-adhan dip. Johann, after 2.2.3 shipped: "volume wordt
-# verhoogd terwijl de muziek nog speelt. Misschien is het rustiger als
-# die iets verlaagd [wordt voor] de jingle en tts en daarna weer hersteld
-# op de waarde voordat de pre-adhan ging." Setting the configured
+# 2.2.4 — pre-adhan dip. Johann, after 2.2.3 shipped: "the volume is
+# raised while the music is still playing. Maybe it is calmer if it is
+# lowered a little [for] the jingle and TTS and then restored to the
+# value from before the pre-adhan." Setting the configured
 # pre-adhan level BEFORE play_media means the music itself audibly jumps
 # to that level for a moment first — jarring when the point of a
 # pre-adhan is a gentle heads-up. So when the adhan speaker is already
@@ -484,8 +484,8 @@ DEFAULT_RESTORE_PLAYBACK_ENABLED = False
 # fraction of it is quiet-but-audible on any speaker, whereas a fixed
 # level would be a jump-up again for anyone listening quietly.
 # Deliberately NOT applied to the adhan itself — that one is meant to
-# be heard at its configured volume, and Johann only asked about "de
-# jingle en tts". Also deliberately not passed through
+# be heard at its configured volume, and Johann only asked about "the
+# jingle and TTS". Also deliberately not passed through
 # _apply_volume_modifiers: night mode / open-contact already shaped the
 # level the music is playing at right now, so scaling again would
 # double-count them.
@@ -493,9 +493,9 @@ DEFAULT_RESTORE_PLAYBACK_ENABLED = False
 # Only has any effect when OPT_RESTORE_PLAYBACK_ENABLED is on (no
 # snapshot otherwise) AND something was actually playing — an idle
 # speaker still gets the normal configured pre-adhan volume.
-# 2.3.2 — smooth the hand-over into the adhan. Johann: "de muziek wordt
-# gepauzeerd en dat abrupt, er achteraan begint de adhan — zou die
-# overgang beter kunnen." Until now the sequence was a hard cut: pause
+# 2.3.2 — smooth the hand-over into the adhan. Johann: "the music is
+# paused, abruptly, and right after it the adhan starts — could that
+# transition be better." Until now the sequence was a hard cut: pause
 # the music mid-note, snap the volume to the adhan level, start the
 # adhan. Now, when something is genuinely playing, its volume is ramped
 # down over fade_seconds, the player is paused while silent, and after a
@@ -506,8 +506,8 @@ DEFAULT_RESTORE_PLAYBACK_ENABLED = False
 # Costs a couple of seconds before the adhan actually sounds, so it is
 # deliberately skipped entirely when nothing is playing — the common
 # case, which stays exactly as immediate as before.
-# 2.3.4 — Sonos announcements. Johann: "Sonos heeft toch ook een
-# announcement manier?" — yes, and it's strictly better than everything
+# 2.3.4 — Sonos announcements. Johann: "doesn't Sonos also have an
+# announcement mode?" — yes, and it's strictly better than everything
 # we hand-roll around it. media_player.play_media accepts announce: True,
 # which on Sonos goes through its native audioClip API: the speaker ducks
 # whatever is playing, plays the clip at extra.volume, and restores the
@@ -526,8 +526,8 @@ DEFAULT_RESTORE_PLAYBACK_ENABLED = False
 # they always take the manual path, since announce is a no-op or an error
 # on players that don't implement it.
 # 2.3.12 — make Nida's notifications recognisable at a glance. Johann:
-# "nu kan je geen onderscheid maken tussen een HA melding of nida melding
-# ... en dan gaat het om Android en iOS." The two platforms allow very
+# "right now you cannot tell an HA notification from a Nida notification
+# ... and that is about Android and iOS." The two platforms allow very
 # different things here, so this is deliberately not one setting:
 #
 #   ANDROID — the Companion app honours data.notification_icon, an
@@ -550,8 +550,8 @@ OPT_NOTIFY_ICON_COLOR = "notify_icon_color"
 DEFAULT_NOTIFY_ICON_COLOR = "#1F7A4D"      # Nida green
 OPT_NOTIFY_IOS_IMAGE_ENABLED = "notify_ios_image_enabled"
 DEFAULT_NOTIFY_IOS_IMAGE_ENABLED = False
-# 2.3.13 — the thing Johann actually wants: "ze [moeten] niet stapelen
-# onder homeassistant, je ziet gewoon geen onderscheid." Both platforms
+# 2.3.13 — the thing Johann actually wants: "they [should] not stack
+# under Home Assistant, you simply see no difference." Both platforms
 # bundle notifications per APP, so everything Nida sends lands on the
 # same Home Assistant pile as every other automation. Each platform has
 # exactly one key that splits that pile, and neither is the icon:
@@ -584,8 +584,8 @@ NOTIFY_CHANNEL = "Nida"
 NOTIFY_ICON_IMAGE_PATH = "/local/nida/brand/icon_notify.png"
 
 # 2.3.15 — the big round image on an Android notification. Johann, on a
-# screenshot of a live adhan notification: "kunnen we dat belletje nu
-# veranderen in ons eigen logo?" That bell is the SMALL icon
+# screenshot of a live adhan notification: "can we now change that
+# little bell into our own logo?" That bell is the SMALL icon
 # (notification_icon), which Android blows up to fill the circle whenever
 # no large icon was supplied — and a small icon can only ever be a
 # monochrome mdi path, never an image, so the logo cannot go there.
@@ -815,7 +815,7 @@ THEME_AUTO = "auto"
 DEFAULT_THEME = THEME_DARK
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Standaard mp3-bestanden die meegeleverd worden in sounds/<categorie>/.
+# Default mp3 files shipped in sounds/<category>/.
 # ─────────────────────────────────────────────────────────────────────────────
 DEFAULT_SOUNDS = {
     SOUND_CATEGORY_FAJR_ADHAN: "adhan/adhan_fajr_ahmed_saeed_al-omrany.mp3",
@@ -1005,9 +1005,9 @@ OPT_FAJR_ALARM_VOLUME = "fajr_alarm_volume"
 DEFAULT_FAJR_ALARM_VOLUME = 40
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Settings access (2.3.16) — Johann: "kunnen we instellingen verbergen voor
-# andere gebruikers? We hebben admins maar kunnen we ook gewone maar ook
-# andere admins de instellingen verbergen."
+# Settings access (2.3.16) — Johann: "can we hide the settings from
+# other users? We have admins, but can we also hide the settings from
+# regular users and from other admins."
 #
 # Empty list  → every Home Assistant ADMIN may change Nida's settings.
 # Non-empty   → ONLY the listed user ids may, admin or not. That is what

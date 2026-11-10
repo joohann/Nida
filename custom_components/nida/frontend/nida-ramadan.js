@@ -36,7 +36,7 @@
  *                       hanging lanterns (qadr card), gold lantern
  *                       (progress card), arabesque medallion (dua card).
  *                       Sizing pass after first on-device review (Johann:
- *                       "te groot, kan er te weinig op een pagina"):
+ *                       "too big, too little fits on a page"):
  *                       column narrowed 1080→880px (TV 1180px), type
  *                       scale and paddings tightened across all cards,
  *                       hero capped at 320px, schedule rows compacted,
@@ -1223,13 +1223,13 @@ function qadrCard(p, st) {
 }
 
 function debugBar(p, st) {
-  // 1:1 met de goedgekeurde mockup-previewbalk. Clicking the active phase
+  // 1:1 with the approved mockup preview bar. Clicking the active phase
   // again returns to live ("auto") behaviour.
   //
   // 2.3.8 — this bar used to be reachable only via ?debug in the URL, so
   // in practice only by whoever knew the flag existed. Johann asked for a
-  // button that opens the Ramadan Edition as a preview "zodat je alles
-  // kan doorlopen" — which is exactly this bar, it just needed a door.
+  // button that opens the Ramadan Edition as a preview "so you can walk
+  // through everything" — which is exactly this bar, it just needed a door.
   // The Ramadan settings section now has that button; when the preview is
   // what's driving the layout (rather than it genuinely being Ramadan),
   // the bar also carries the way back out.

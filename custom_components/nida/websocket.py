@@ -1,15 +1,15 @@
-"""Nida websocket API — panel <-> config_entry communicatie.
+"""Nida websocket API — panel <-> config_entry communication.
 
-Het Nida-panel (frontend/nida-panel.js) praat via deze commands met de
-Python-backend, omdat een custom panel geen directe toegang heeft tot
-hass.config_entries. Alle instellingen die voorheen in de config/options
-flow zaten (locatie, methode, per-gebed aan/uit, sound-keuze) lopen vanaf
-2.0.0 via dit kanaal.
+The Nida panel (frontend/nida-panel.js) talks to the Python backend through
+these commands, because a custom panel has no direct access to
+hass.config_entries. All settings that used to live in the config/options
+flow (location, method, per-prayer on/off, sound choice) have gone through
+this channel since 2.0.0.
 
-Sound-download-on-demand (categorie 5 in references/architecture.md) is
-nog niet geïmplementeerd in dit skelet — ws_update_settings slaat alleen
-de gekozen waarde op. De daadwerkelijke download volgt zodra de
-sound-catalogus (sounds/catalog/catalog.json) er is.
+Historic note from the 2.0.0 skeleton: sound download-on-demand (category 5
+in references/architecture.md) was not implemented yet at that point —
+ws_update_settings only stored the chosen value. The Sound Library
+(catalog.py) added the actual download later.
 
 Changelog:
   2.5.0 (2026-10-10): New nida/test_live_activity command — a 90-second preview
@@ -107,27 +107,27 @@ Changelog:
                        Quran-verse/hadith of the current 4h slot for a
                        given language, delegating to quotes.py (cached
                        there, so this stays cheap).
-  2.0.18 (2026-06-28): nida/test_jumuah leest nu options.jumuah_targets
-                       i.p.v. notify_targets, conform de scheduler-
-                       wijziging in dezelfde release. Geen no_targets-
-                       error meer als notify_targets leeg is maar
-                       jumuah_targets wel gevuld.
-  2.0.16 (2026-06-28): nida/test_notify + nida/test_jumuah toegevoegd
-                       voor de test-knoppen in het paneel. Beide lezen
-                       de huidige options (targets, title, message) en
-                       sturen direct naar de geconfigureerde notify.*
-                       services — net als de scheduler dat doet bij
-                       een echt gebed, maar dan on-demand. Returns
-                       {sent: [...], total: N} zodat het paneel kan
-                       laten zien hoeveel targets daadwerkelijk een
-                       call hebben ontvangen vs. silent gefaalde.
-  2.0.15 (2026-06-28): nida/list_notify_services toegevoegd voor de
-                       Notifications-sectie van Release B. Geeft alle
-                       beschikbare notify.* HA-services terug (filtert
-                       de generieke "notify" eruit als die er staat,
-                       want die is meestal een group/fallback en niet
-                       zelf direct bedoeld). Backend voor de targets-
-                       picker overlay in het paneel.
+  2.0.18 (2026-06-28): nida/test_jumuah now reads options.jumuah_targets
+                       instead of notify_targets, in line with the
+                       scheduler change in the same release. No more
+                       no_targets error when notify_targets is empty but
+                       jumuah_targets is filled.
+  2.0.16 (2026-06-28): nida/test_notify + nida/test_jumuah added
+                       for the test buttons in the panel. Both read
+                       the current options (targets, title, message) and
+                       send straight to the configured notify.*
+                       services — just like the scheduler does for
+                       a real prayer, but on demand. Returns
+                       {sent: [...], total: N} so the panel can
+                       show how many targets actually received a
+                       call versus the ones that failed silently.
+  2.0.15 (2026-06-28): nida/list_notify_services added for the
+                       Notifications section of Release B. Returns all
+                       available notify.* HA services (filters out
+                       the generic "notify" when present,
+                       because that is usually a group/fallback and not
+                       meant to be targeted directly). Backend for the
+                       targets picker overlay in the panel.
   2.0.13 (2026-06-28): nida/get_ha_info now also returns a
                        `location_display` string when reverse geocoding
                        succeeds — Nominatim's /reverse endpoint with
@@ -152,25 +152,25 @@ Changelog:
                        to place entries — but kept for safety so the
                        odd `administrative` region with no settlement
                        semantics stays out.
-  2.0.10 (2026-06-28): nida/search_cities toegevoegd — queries OpenStreetMap
-                       Nominatim met ISO-2 country code + free-text query
-                       en geeft een lijst van plaatsen terug (name, lat,
-                       lon, display_name). Filtert resultaten op
-                       class=place + place-types (city/town/village/...)
-                       zodat de dropdown geen straten of winkels toont.
-                       Nominatim usage policy: 1 req/sec en User-Agent
-                       header verplicht — frontend debouncet op 300ms,
-                       backend zet de UA-string.
-  2.0.9 (2026-06-28): Twee nieuwe commands toegevoegd voor het panel:
-                      nida/list_media_players geeft alle media_player.*
-                      entities terug met friendly_name (voor de Speakers-
-                      picker), en nida/get_ha_info geeft HA's
-                      location_name + lat/lon terug (voor het tonen van
-                      de resolved locatie in device-mode in het paneel).
-  2.0.0 (2026-06-27): Nieuw bestand — get_settings/update_settings commands
-                      voor het panel. async_setup is sync (@callback), conform
-                      het standaard HA-patroon voor websocket-command-registratie.
-                      Download-on-demand nog niet geïmplementeerd.
+  2.0.10 (2026-06-28): nida/search_cities added — queries OpenStreetMap
+                       Nominatim with an ISO-2 country code + free-text query
+                       and returns a list of places (name, lat,
+                       lon, display_name). Filters results on
+                       class=place + place types (city/town/village/...)
+                       so the dropdown shows no streets or shops.
+                       Nominatim usage policy: 1 req/sec and a User-Agent
+                       header is required — the frontend debounces at 300ms,
+                       the backend sets the UA string.
+  2.0.9 (2026-06-28): Two new commands added for the panel:
+                      nida/list_media_players returns all media_player.*
+                      entities with friendly_name (for the Speakers
+                      picker), and nida/get_ha_info returns HA's
+                      location_name + lat/lon (to show the resolved
+                      location in device mode in the panel).
+  2.0.0 (2026-06-27): New file — get_settings/update_settings commands
+                      for the panel. async_setup is sync (@callback), following
+                      the standard HA pattern for websocket command registration.
+                      Download-on-demand not implemented yet.
 """
 from __future__ import annotations
 
@@ -196,7 +196,7 @@ from .catalog import (
     async_download_sound,
     async_fetch_catalog,
     async_find_orphan_sounds,
-    local_sound_exists,
+    async_local_sounds_present,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -222,7 +222,7 @@ _PLACE_TYPES = {
 
 
 def _get_entry(hass: HomeAssistant, entry_id: str):
-    """Haal de Nida config entry op, of None als die niet bestaat."""
+    """Return the Nida config entry, or None when it does not exist."""
     return hass.config_entries.async_get_entry(entry_id)
 
 
@@ -275,10 +275,10 @@ def _deny_settings(connection, msg) -> None:
 )
 @websocket_api.async_response
 async def ws_get_settings(hass: HomeAssistant, connection, msg) -> None:
-    """Geef de huidige config_entry.options terug aan het panel."""
+    """Return the current config_entry.options to the panel."""
     entry = _get_entry(hass, msg["entry_id"])
     if entry is None:
-        connection.send_error(msg["id"], "not_found", "Config entry niet gevonden")
+        connection.send_error(msg["id"], "not_found", "Config entry not found")
         return
     connection.send_result(msg["id"], dict(entry.options))
 
@@ -292,7 +292,7 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg) -> None:
 )
 @websocket_api.async_response
 async def ws_update_settings(hass: HomeAssistant, connection, msg) -> None:
-    """Sla nieuwe instellingen op vanuit het panel."""
+    """Store new settings sent by the panel."""
     # 2.3.16 — server-side gate; the panel hiding its settings is
     # cosmetic, this is what actually refuses the write.
     if not _may_edit_settings(hass, connection):
@@ -301,7 +301,7 @@ async def ws_update_settings(hass: HomeAssistant, connection, msg) -> None:
         return
     entry = _get_entry(hass, msg["entry_id"])
     if entry is None:
-        connection.send_error(msg["id"], "not_found", "Config entry niet gevonden")
+        connection.send_error(msg["id"], "not_found", "Config entry not found")
         return
 
     hass.config_entries.async_update_entry(entry, options=msg["options"])
@@ -590,8 +590,8 @@ async def ws_list_notify_services(hass: HomeAssistant, connection, msg) -> None:
     this list only ever contains services that actually exist right now
     (hass.services.async_services()), so an Android TV target can only
     ever appear here if the nfandroidtv integration is actually installed
-    and configured — Johann's other request ("alleen mogelijk als je de
-    plugin geïnstalleerd hebt") is satisfied for free by that, no extra
+    and configured — Johann's other request ("only possible when you have the
+    plugin installed") is satisfied for free by that, no extra
     gating needed.
     """
     items = []
@@ -895,8 +895,12 @@ async def ws_get_catalog(hass: HomeAssistant, connection, msg) -> None:
     download vs delete buttons without a second round-trip.
     """
     result = await async_fetch_catalog(hass, force_refresh=bool(msg.get("force_refresh")))
-    for s in result.get("sounds", []):
-        s["downloaded"] = local_sound_exists(hass, s["rel_path"])
+    sounds = result.get("sounds", [])
+    present = await async_local_sounds_present(
+        hass, [s["rel_path"] for s in sounds if s.get("rel_path")]
+    )
+    for s in sounds:
+        s["downloaded"] = s.get("rel_path") in present
     connection.send_result(msg["id"], result)
 
 

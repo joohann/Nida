@@ -45,10 +45,10 @@ Changelog:
                       since auto-generated entity_ids now produce the
                       expected sensor.nida_<x> form. Resolves Johann's
                       "all entities show 'Nida' or 'Timestamp'" issue.
-  2.0.0 (2026-06-27): Nieuw bestand voor deze herbouwstap. Entity_ids met
-                      domain-prefix (sensor.nida_fajr) i.p.v. de oude
-                      volgnummer-prefix (sensor.02_fajr). Hijri-data komt
-                      rechtstreeks uit coordinator.data, geen aparte call.
+  2.0.0 (2026-06-27): New file for this rebuild step. Entity ids with a
+                      domain prefix (sensor.nida_fajr) instead of the old
+                      sequence-number prefix (sensor.02_fajr). Hijri data comes
+                      straight from coordinator.data, no separate call.
 """
 from __future__ import annotations
 

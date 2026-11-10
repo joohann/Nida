@@ -25,10 +25,10 @@
  *   catalog wiring is built.
  *
  * Changelog:
- *   2.3.0  (2026-07-28): Menu regroup + speaker previews. Johann: "elke vorm
- *                        dat je geluid afspeelt moet kunnen testen wat het
- *                        volume is", and "ik denk dat het onoverzichtelijk
- *                        begint te worden".
+ *   2.3.0  (2026-07-28): Menu regroup + speaker previews. Johann: "every way
+ *                        of playing a sound must let you test what the
+ *                        volume is", and "I think it is starting to get
+ *                        cluttered".
  *                        (1) Group nav — 11 top-level sections became five
  *                        groups (see NIDA_GROUPS), rendered as a nav strip
  *                        rather than a nested accordion so the existing
@@ -132,11 +132,11 @@
  *                        border/radius/glow via --nida-next-*, deep
  *                        green text via --nida-gold-bright) instead of
  *                        the old solid dark-green fill + white text +
- *                        ring — Johann: "ik wil de today van de
- *                        kalender gelijk aan de stijl van opkomend
- *                        gebed". Also: Today card footer opacity
+ *                        ring — Johann: "I want today in the
+ *                        calendar to match the style of the upcoming
+ *                        prayer". Also: Today card footer opacity
  *                        lowered further to 0.4 (was 0.65) per a quick
- *                        follow-up ("mag nog wat lichter") — no version
+ *                        follow-up ("can be a bit lighter still") — no version
  *                        bump was made for that one at the time since
  *                        2.1.41 hadn't been reported as installed yet.
  *   2.1.41 (2026-07-11): Today card's footer ("🔄 Last updated HH:MM")
@@ -149,8 +149,8 @@
  *   2.1.40 (2026-07-11): Now-card ("Next prayer" hero) rebuilt to match
  *                        nida-card.js's 2.1.39/2.1.40 fixes, applied here
  *                        after Johann pointed out I'd only fixed the
- *                        Lovelace card ("ja de kaart heb je gedaan maar
- *                        niet paneel"). .now-text/.now-right (two flex
+ *                        Lovelace card ("yes, you did the card but
+ *                        not the panel"). .now-text/.now-right (two flex
  *                        columns) replaced by .now-body, a single column
  *                        of three .now-line rows (eyebrows / name+
  *                        countdown / footer), each justify-content:
@@ -161,8 +161,8 @@
  *                        button is now .now-mute-btn-text, a plain-text
  *                        control in the footer row next to LAST PRAYER —
  *                        styled identically to .now-current (not a
- *                        pill), per Johann's follow-up ("gelijk aan
- *                        tekst als 'last pray' en niet een pil"); only
+ *                        pill), per Johann's follow-up ("the same as
+ *                        text like 'last pray' and not a pill"); only
  *                        its color shifts to gold while active. New
  *                        "visitors_mode_button_label" i18n key added in
  *                        all 10 languages, replacing the old speaker/
@@ -216,8 +216,8 @@
  *                        left instead. .brand is already `display: flex;
  *                        gap: 10px`, so the pill just slots in as a
  *                        third flex child, no new CSS needed.
- *   2.1.36 (2026-07-11): Bugfix — Johann reported the panel "blijft
- *                        hangen op [thema/]loading" right after 2.1.35.
+ *   2.1.36 (2026-07-11): Bugfix — Johann reported the panel "stays
+ *                        stuck on [theme/]loading" right after 2.1.35.
  *                        Root cause: the new countdown-to-Ramadan header
  *                        pill calls _ensureRamadanCountdownReady() on
  *                        EVERY render (headers render constantly), which
@@ -249,8 +249,8 @@
  *                        the new caller.
  *   2.1.35 (2026-07-11): Two more Ramadan additions, from a screenshot +
  *                        follow-up message (Johann sent a header
- *                        screenshot mid-turn to answer "waar moet de pil
- *                        komen" after the missing attachment on his first
+ *                        screenshot mid-turn to answer "where should the pill
+ *                        go" after the missing attachment on his first
  *                        message): (1) countdown-to-Ramadan pill in the
  *                        header (_htmlHeader, next to the theme/language
  *                        pills) — fixed green border/text (NOT a theme
@@ -287,7 +287,7 @@
  *                        trigger math + guest-mode check) — see those
  *                        files' own changelogs.
  *   2.1.34 (2026-07-11): Four new Ramadan features, all requested together
- *                        by Johann ("Wat kunnen we inbouwen voor ramadan?"
+ *                        by Johann ("What can we build in for Ramadan?"
  *                        → picked all four via AskUserQuestion): (1) Suhoor
  *                        reminder — toggle + minutes-before-Imsak slider +
  *                        optional custom message, in _htmlSectionRamadan().
@@ -322,8 +322,8 @@
  *                        session — see those files' own changelogs.
  *   2.1.33 (2026-07-10): Two changes. (1) Full RTL layout mirroring, on
  *                        top of the 2.1.31/2.1.32 text-direction-only
- *                        support (Johann: "kan je nu RTL volledige
- *                        layout-spiegeling doen"). Converted the
+ *                        support (Johann: "can you now do full RTL
+ *                        layout mirroring"). Converted the
  *                        directional CSS throughout _css() and
  *                        NIDA_OVERLAY_CSS to logical properties (the
  *                        margin-inline, padding-inline, border-inline and
@@ -353,8 +353,8 @@
  *                        single-column breakpoint — Johann's tablet
  *                        screenshot (Indonesian) showed settings rows
  *                        stretched edge-to-edge with the chevron pinned to
- *                        the screen's right edge ("de rijen op de tablet
- *                        moeten smaller"); unchanged on desktop, where the
+ *                        the screen's right edge ("the rows on the tablet
+ *                        must be narrower"); unchanged on desktop, where the
  *                        1.3fr column share was already narrower than 640px.
  *   2.1.32 (2026-07-10): Full German, French, Malay, Indonesian, Urdu and
  *                        Farsi translations — the six languages that were
@@ -722,8 +722,8 @@
  *                        card: (1) .calendar-day.today now gets a solid,
  *                        theme-independent dark-green fill + ring instead
  *                        of the gold-tint that blended into the card
- *                        background ("ik zie niet wat de huidige dag
- *                        is"). (2) Overlay backdrop (.nida-overlay-portal
+ *                        background ("I cannot see which day is the
+ *                        current one"). (2) Overlay backdrop (.nida-overlay-portal
  *                        ::backdrop) is darker (0.55 → 0.72 alpha) and
  *                        now has a backdrop-filter: blur(4px), applies
  *                        to every popup. (3) Quote feature (rotating
@@ -1595,7 +1595,7 @@
  *                        all scheduled adhan + pre-adhan audio (jingle
  *                        and TTS); the test buttons keep working.
  *                        Companion to services.py + const.py 2.0.45.
- *   2.0.44 (2026-07-02): Companion release naast services.py — TTS
+ *   2.0.44 (2026-07-02): Companion release alongside services.py — TTS
  *                        language is now tried per engine (bare code →
  *                        regional locale → engine default) with blocking
  *                        calls so rejections are caught. Fixes HA Cloud /
@@ -1673,316 +1673,317 @@
  *                        so the card is correct even if the backend
  *                        mishandles the after-midnight Isha.
  *
- *   2.0.38 (2026-06-29): Pre-adhan subgroep herontworpen. Was: 7
- *                        warrige rijen met door elkaar lopende
- *                        concerns. Nu: (1) wat-er-speelt (jingle-rij
- *                        met audio-toggle inline + TTS-rij), (2) TIMING
- *                        subheader met first reminder slider + 2e
- *                        reminder toggle + sub-indent slider voor
- *                        interval, (3) "Actief voor gebeden" picker
- *                        met chevron-overlay voor per-gebed
- *                        suppressie (Fajr om 04:30 hoef je niet meer
- *                        te slikken), (4) test-rij. "Play pre-adhan
- *                        audio" als losse rij is weg — die toggle zit
- *                        nu in de jingle-rij waar 'ie logisch hoort.
- *                        Nieuwe overlay pre-adhan-prayers met 5
+ *   2.0.38 (2026-06-29): Pre-adhan subgroup redesigned. Was: 7
+ *                        messy rows with concerns running through
+ *                        each other. Now: (1) what plays (jingle row
+ *                        with inline audio toggle + TTS row), (2) TIMING
+ *                        subheader with the first-reminder slider + 2nd
+ *                        reminder toggle + sub-indented slider for the
+ *                        interval, (3) "Active for prayers" picker
+ *                        with a chevron overlay for per-prayer
+ *                        suppression (no more putting up with Fajr at
+ *                        04:30), (4) test row. "Play pre-adhan
+ *                        audio" as a separate row is gone — that toggle
+ *                        now sits in the jingle row where it belongs.
+ *                        New overlay pre-adhan-prayers with 5
  *                        toggles. Backend: per-prayer
  *                        pre_adhan_enabled_<prayer> opt (default True
- *                        = backward compat), scheduler skipt
- *                        gates pre-reminders erop.
+ *                        = backward compat), the scheduler gates
+ *                        the pre-reminders on it.
  *
- *   2.0.37 (2026-06-29): TTS-talenlijst gestuurd vanuit de bestaande
- *                        panel-LANGUAGES const i.p.v. een aparte
- *                        TTS_LANGUAGES dup. Eén bron van waarheid:
- *                        een nieuwe paneeltaal verschijnt automatisch
- *                        in de TTS-picker. Default-berichten dict
- *                        uitgebreid van 6 naar 10 talen (en/nl/ar/tr/
- *                        de/fr/ms/id/ur/fa) zodat alle paneel-talen
- *                        een localised seed-bericht krijgen.
+ *   2.0.37 (2026-06-29): TTS language list driven from the existing
+ *                        panel LANGUAGES const instead of a separate
+ *                        TTS_LANGUAGES duplicate. One source of truth:
+ *                        a new panel language appears automatically
+ *                        in the TTS picker. Default messages dict
+ *                        extended from 6 to 10 languages (en/nl/ar/tr/
+ *                        de/fr/ms/id/ur/fa) so every panel language
+ *                        gets a localised seed message.
  *
- *   2.0.36 (2026-06-29): TTS taalkeuze. Picker in de TTS-overlay
- *                        boven het bericht-veld: auto / en / nl / ar /
- *                        id / de / fr. Wisselen van taal triggert
- *                        slimme auto-update van het bericht: als het
- *                        huidige bericht een van de bekende defaults
- *                        is (in welke taal dan ook) of leeg, vervangen
- *                        we het door de nieuwe taal-default. Zelf
- *                        getypte tekst wordt nooit overschreven.
- *                        Backend: nieuwe OPT_TTS_PRE_ADHAN_LANGUAGE,
- *                        services.py leest 'm vóór de panel-language
+ *   2.0.36 (2026-06-29): TTS language choice. Picker in the TTS overlay
+ *                        above the message field: auto / en / nl / ar /
+ *                        id / de / fr. Switching language triggers a
+ *                        smart auto-update of the message: when the
+ *                        current message is one of the known defaults
+ *                        (in any language) or empty, we replace it
+ *                        with the new language default. Text the user
+ *                        typed is never overwritten.
+ *                        Backend: new OPT_TTS_PRE_ADHAN_LANGUAGE,
+ *                        services.py reads it before the panel-language
  *                        fallback.
  *
- *   2.0.32 (2026-06-29): TTS pre-adhan announcement. Nieuwe rij in
- *                        de Pre-adhan-subgroep met master toggle +
- *                        chevron naar TTS settings overlay. Multi-
- *                        select van HA's tts.* entities (Google Cloud,
- *                        Nabu Casa Cloud, Piper, ...) en een bericht-
- *                        veld met [prayer] placeholder. Backend:
- *                        nieuwe nida.speak_pre_adhan service, nieuwe
+ *   2.0.32 (2026-06-29): TTS pre-adhan announcement. New row in
+ *                        the Pre-adhan subgroup with a master toggle +
+ *                        chevron to the TTS settings overlay. Multi-
+ *                        select of HA's tts.* entities (Google Cloud,
+ *                        Nabu Casa Cloud, Piper, ...) and a message
+ *                        field with a [prayer] placeholder. Backend:
+ *                        new nida.speak_pre_adhan service, new
  *                        WS command nida/list_tts_services,
- *                        scheduler chained na pre_adhan_jingle met
- *                        configurable delay (default 5s) zodat de
- *                        jingle eerst kan finishen. Taal volgt
- *                        paneel-instelling (auto → HA system lang).
- *                        Multi-select fanned out — alle geselecteerde
- *                        engines spreken hetzelfde bericht parallel,
- *                        bedoeld voor multi-zone setups waar
- *                        verschillende speakers aan verschillende
- *                        TTS engines hangen.
+ *                        scheduler chained after pre_adhan_jingle with
+ *                        a configurable delay (default 5s) so the
+ *                        jingle can finish first. Language follows the
+ *                        panel setting (auto → HA system lang).
+ *                        Multi-select fanned out — all selected
+ *                        engines speak the same message in parallel,
+ *                        meant for multi-zone setups where
+ *                        different speakers hang off different
+ *                        TTS engines.
  *
- *   2.0.31 (2026-06-29): Sound Library krijgt category-scope. Chevron-
- *                        rechts op een sound-rij opent de library nu
- *                        gescoped naar die ene categorie i.p.v. alle
- *                        drie. Daardoor is het onmogelijk om per
- *                        ongeluk een Fajr-adhan te kiezen vanuit de
- *                        Adhan-rij (wat in 2.0.30 stilletjes naar
- *                        sound_fajr_adhan schreef terwijl Asr-tijd
- *                        sound_adhan leest — gevolg: bundled default
- *                        speelde af, "verkeerde adhan"-bug). Overlay-
- *                        titel toont de categorienaam wanneer gescoped,
- *                        category-headers verbergen zich (redundant).
- *                        scope wordt gereset op overlay-close zodat
- *                        een latere open zonder argument weer alle
- *                        categorieën toont.
+ *   2.0.31 (2026-06-29): Sound Library gets a category scope. The
+ *                        chevron on a sound row now opens the library
+ *                        scoped to that one category instead of all
+ *                        three. That makes it impossible to pick a
+ *                        Fajr adhan by accident from the
+ *                        Adhan row (which in 2.0.30 silently wrote to
+ *                        sound_fajr_adhan while Asr time reads
+ *                        sound_adhan — result: the bundled default
+ *                        played, the "wrong adhan" bug). The overlay
+ *                        title shows the category name when scoped,
+ *                        category headers hide themselves (redundant).
+ *                        The scope is reset on overlay close so a
+ *                        later open without an argument shows all
+ *                        categories again.
  *
- *   2.0.30 (2026-06-29): Sound Library CSS-scoping fix. 2.0.28's
- *                        styles waren toegevoegd aan de shadow-DOM
- *                        stylesheet, maar de overlay rendert in een
- *                        body-level <dialog> portal die zijn eigen
- *                        stylesheet heeft (zoek op .nida-overlay-portal
- *                        in de source). Resultaat: geen van mijn
- *                        .sl-* regels werd toegepast — items vielen
- *                        terug op default block-layout, daarom stond
- *                        de play-knop op de regel onder de naam in
- *                        plaats van ernaast, en was de actieve-state
- *                        amper zichtbaar. Verplaatst naar de juiste
- *                        portal-scope. Tegelijk de actieve-state
- *                        opgewaardeerd: gouden linker-balk + getinte
- *                        gradient + gouden vetgedrukte naam + check-
- *                        icoon in een gouden cirkel ervoor. Niet meer
- *                        te missen.
+ *   2.0.30 (2026-06-29): Sound Library CSS scoping fix. The 2.0.28
+ *                        styles were added to the shadow-DOM
+ *                        stylesheet, but the overlay renders in a
+ *                        body-level <dialog> portal that has its own
+ *                        stylesheet (search for .nida-overlay-portal
+ *                        in the source). Result: none of the
+ *                        .sl-* rules were applied — items fell
+ *                        back to the default block layout, which is why
+ *                        the play button sat on the line below the name
+ *                        instead of next to it, and the active state
+ *                        was barely visible. Moved to the right
+ *                        portal scope. The active state was upgraded
+ *                        at the same time: golden left bar + tinted
+ *                        gradient + golden bold name + check
+ *                        icon in a golden circle in front. Impossible
+ *                        to miss now.
  *
- *   2.0.29 (2026-06-29): Sound Library adapter aangepast op de echte
- *                        majikan.nl/nida/adhan/manifest.json structuur:
- *                        `items[]` met `type`/`label`/`id`/`url`/
- *                        `sizeBytes`/`sha256` i.p.v. mijn aanvankelijke
- *                        `sounds[]` met `category`/`name`/`rel_path`.
+ *   2.0.29 (2026-06-29): Sound Library adapter adjusted to the real
+ *                        majikan.nl/nida/adhan/manifest.json structure:
+ *                        `items[]` with `type`/`label`/`id`/`url`/
+ *                        `sizeBytes`/`sha256` instead of the initial
+ *                        `sounds[]` with `category`/`name`/`rel_path`.
  *                        Type → category mapping: fajr→fajr_adhan,
  *                        day→adhan, jingle→pre_adhan_jingle. `tarhim`
- *                        wordt nu geskipt (komt later met Ramadan-
- *                        features). rel_path wordt afgeleid uit
- *                        category-folder + id. Label-prefix
- *                        ("Adhan Day ", "Nadir Jingle ", ...) wordt
- *                        gestript zodat de picker "Amer Marei" toont
- *                        i.p.v. "Adhan Day Amer Marei". Default
- *                        catalog_url staat nu op majikan.nl manifest.
- *                        Geen frontend wijzigingen — paneel ziet nog
- *                        steeds de genormaliseerde shape.
+ *                        is skipped for now (comes later with the
+ *                        Ramadan features). rel_path is derived from
+ *                        category folder + id. The label prefix
+ *                        ("Adhan Day ", "Nadir Jingle ", ...) is
+ *                        stripped so the picker shows "Amer Marei"
+ *                        instead of "Adhan Day Amer Marei". The default
+ *                        catalog_url now points at the majikan.nl manifest.
+ *                        No frontend changes — the panel still sees
+ *                        the normalised shape.
  *
  *   2.0.28 (2026-06-29): Sound Library — catalog-driven adhan picker.
- *                        Chevron-rechts naast elke sound-row opent een
- *                        overlay met alle beschikbare sounds gegroepeerd
- *                        per categorie. Backend leest catalog.json van
- *                        options.catalog_url (user-gehoste server),
- *                        cached in memory. Per-row acties: play (browser
- *                        Audio met sound.url, vraagt CORS), download
- *                        (WS naar nida/download_sound → atomic write
- *                        in www/nida/sounds/<rel_path>), delete (X-knop
- *                        op gedownloade items → nida/delete_sound),
- *                        tap-row-naam selecteert als actieve sound voor
- *                        die categorie (writes options.sound_<cat>).
- *                        Niet-gedownloade selectie triggert
- *                        download-eerst-dan-select om 404 bij adhan-
- *                        tijd te voorkomen. Catalog-url-prompt
- *                        verschijnt wanneer leeg. Refresh-knop in
- *                        header forceert re-fetch (omzeilt cache).
+ *                        The chevron next to every sound row opens an
+ *                        overlay with all available sounds grouped
+ *                        per category. The backend reads catalog.json from
+ *                        options.catalog_url (user-hosted server),
+ *                        cached in memory. Per-row actions: play (browser
+ *                        Audio with sound.url, needs CORS), download
+ *                        (WS to nida/download_sound → atomic write
+ *                        in www/nida/sounds/<rel_path>), delete (X button
+ *                        on downloaded items → nida/delete_sound),
+ *                        tapping the row name selects it as the active
+ *                        sound for that category (writes options.sound_<cat>).
+ *                        Selecting a sound that is not downloaded triggers
+ *                        download-first-then-select to prevent a 404 at
+ *                        adhan time. A catalog-url prompt
+ *                        appears when empty. The refresh button in the
+ *                        header forces a re-fetch (bypasses the cache).
  *
- *   2.0.27 (2026-06-29): Companion-cards zijn sleepbaar om de volgorde
- *                        te bepalen. HTML5 native drag&drop (werkt op
- *                        desktop en Safari/iPad-pencil; touch op
- *                        telefoon zou een pointer-event-fallback
- *                        vereisen — niet nu gebouwd). Volgorde gaat in
- *                        localStorage als JSON-array onder
- *                        nida_companion_order. Missende key = defaults
- *                        ("hijri", "now", "quote", "holiday") — dat
- *                        maakt clear-localStorage = layout-reset.
- *                        Sanity-filter bij read: onbekende ids worden
- *                        verwijderd, ontbrekende defaults achteraan
- *                        toegevoegd, zodat een nieuwe card in een
- *                        volgende versie automatisch verschijnt voor
- *                        bestaande users. Visuele feedback: bron-card
- *                        wordt half-transparent + lichtjes geschaald,
- *                        drop-target krijgt een gouden top-accent.
- *                        Drag-handle (6 dots) verschijnt rechtsboven
- *                        on hover; hele kaart is sleepbaar (handle is
- *                        affordance, niet hit-target).
+ *   2.0.27 (2026-06-29): Companion cards can be dragged to set their
+ *                        order. HTML5 native drag&drop (works on
+ *                        desktop and Safari/iPad pencil; touch on a
+ *                        phone would need a pointer-event fallback
+ *                        — not built now). The order goes into
+ *                        localStorage as a JSON array under
+ *                        nida_companion_order. Missing key = defaults
+ *                        ("hijri", "now", "quote", "holiday") — which
+ *                        makes clear-localStorage = layout reset.
+ *                        Sanity filter on read: unknown ids are
+ *                        removed, missing defaults are appended,
+ *                        so a new card in a later version
+ *                        appears automatically for existing users.
+ *                        Visual feedback: the source card
+ *                        turns half-transparent + slightly scaled,
+ *                        the drop target gets a golden top accent.
+ *                        A drag handle (6 dots) appears top right
+ *                        on hover; the whole card is draggable (the
+ *                        handle is an affordance, not the hit target).
  *
- *   2.0.26 (2026-06-29): Now-card herontworpen om visueel gelijk te
- *                        lopen met de nida-card. Was: tall centered
- *                        layout (eyebrow → grote naam → "Starts at
- *                        HH:MM" → divider → twee hours/minutes-boxes).
- *                        Wordt: compact horizontaal — 🕌 gold-gradient
- *                        icon links, NEXT PRAYER + grote naam in het
- *                        midden, REMAINING + HH:MM countdown rechts,
- *                        op één rij. Daaronder optioneel "Current
- *                        prayer · Dhuhr" sub-line (verbergt zichzelf
- *                        wanneer current prayer ontbreekt, via :empty
- *                        selector). Live-update writer schrijft nu
- *                        ook naar data-live="cd-combined" voor het
- *                        nieuwe samengevoegde HH:MM veld; per-unit
- *                        cd-h/cd-m writes blijven voor backward-compat
- *                        tijdens deploy-window (browser-cache kan nog
- *                        het oude DOM hebben).
+ *   2.0.26 (2026-06-29): Now card redesigned to line up visually
+ *                        with the nida-card. Was: tall centered
+ *                        layout (eyebrow → large name → "Starts at
+ *                        HH:MM" → divider → two hours/minutes boxes).
+ *                        Becomes: compact horizontal — 🕌 gold-gradient
+ *                        icon left, NEXT PRAYER + large name in the
+ *                        middle, REMAINING + HH:MM countdown right,
+ *                        on one row. Below it an optional "Current
+ *                        prayer · Dhuhr" sub-line (hides itself
+ *                        when the current prayer is missing, via the
+ *                        :empty selector). The live-update writer now
+ *                        also writes to data-live="cd-combined" for the
+ *                        new combined HH:MM field; the per-unit
+ *                        cd-h/cd-m writes stay for backward compat
+ *                        during the deploy window (the browser cache may
+ *                        still hold the old DOM).
  *
- *   2.0.25 (2026-06-29): Holiday-card aangesloten + kolommen omgedraaid.
+ *   2.0.25 (2026-06-29): Holiday card connected + columns swapped.
  *                        (1) Holiday: Aladhan's /specialDays endpoint
- *                        bleek te breed (honderden commemoraties incl.
- *                        Sufi-urs); status-doc merkte al op dat een
- *                        vetted source nodig was. Daarom een
- *                        gecureerde HIJRI_HOLIDAYS-lijst van de tien
- *                        universeel-erkende Soenni feestdagen binnen
- *                        het paneel zelf — vertaalbare namen (i.p.v.
- *                        Engelse-only Aladhan strings), nul extra API
- *                        calls, nul backend wijzigingen. Card leest
- *                        de huidige Hijri datum uit sensor.nida_hijri_
- *                        day/month/year en zoekt de eerstvolgende
- *                        holiday in de lijst — "Today: <name>" als
- *                        dag matcht, anders "Upcoming: <name>" met
- *                        Hijri datum als secundaire regel. Match op
- *                        maandnaam is tolerant (NFD + strip diacritics
- *                        + strip ʾ/ʿ) zodat varianten als "Shaʿbān",
- *                        "Sha'ban", "Shaban" allemaal werken.
- *                        (2) Kolommen omgedraaid: companion-cards
- *                        (hijri/now/quote/holiday) staan nu LINKS en
- *                        settings RECHTS. Zowel DOM-volgorde als
- *                        grid-template-columns (nu 1fr 1.3fr i.p.v.
- *                        1.3fr 1fr) zijn aangepast zodat visuele
- *                        layout en tab-volgorde overeenkomen.
- *                        border-right op .col-settings is border-left
- *                        geworden om de scheidingslijn op de juiste
- *                        plek te houden.
+ *                        turned out too broad (hundreds of commemorations
+ *                        incl. Sufi urs); the status doc already noted
+ *                        that a vetted source was needed. Hence a
+ *                        curated HIJRI_HOLIDAYS list of the ten
+ *                        universally recognised Sunni holidays inside
+ *                        the panel itself — translatable names (instead
+ *                        of English-only Aladhan strings), zero extra API
+ *                        calls, zero backend changes. The card reads
+ *                        the current Hijri date from sensor.nida_hijri_
+ *                        day/month/year and looks up the next
+ *                        holiday in the list — "Today: <name>" when
+ *                        the day matches, otherwise "Upcoming: <name>"
+ *                        with the Hijri date as a secondary line. The
+ *                        month-name match is tolerant (NFD + strip
+ *                        diacritics + strip ʾ/ʿ) so variants like
+ *                        "Shaʿbān", "Sha'ban", "Shaban" all work.
+ *                        (2) Columns swapped: the companion cards
+ *                        (hijri/now/quote/holiday) are now on the LEFT
+ *                        and settings on the RIGHT. Both the DOM order
+ *                        and grid-template-columns (now 1fr 1.3fr
+ *                        instead of 1.3fr 1fr) were changed so the
+ *                        visual layout and tab order match.
+ *                        border-right on .col-settings became
+ *                        border-left to keep the divider in the right
+ *                        place.
  *
- *   2.0.24 (2026-06-29): Drie kleine fixes (Release D + alignment).
- *                        (1) Test-rijen (Speakers + Pre-adhan) hebben nu
- *                            een onzichtbare .chevron-btn.spacer aan het
- *                            eind zodat de play-knop in lijn staat met
- *                            de play-knoppen van sound-rijen erboven.
- *                            visibility:hidden behoudt de breedte; geen
- *                            display:none — dat zou de uitlijning juist
- *                            wegnemen.
- *                        (2) Opslaan-feedback: na elke succesvolle
- *                            _saveSettings verschijnt rechtsonder een
- *                            subtiele toast-pil ("Opgeslagen"/"Saved")
- *                            die na 1500ms uitfadet. Bij snel-achter-
- *                            elkaar saven wordt de timer gereset; geen
- *                            stack. Errors triggeren 'm niet (de
- *                            inline error-banner blijft de bron-van-
- *                            waarheid voor faal).
- *                        (3) Manual-mode waarschuwing: wanneer
- *                            location_mode=manual maar er staat geen
- *                            latitude/longitude in settings (typisch:
- *                            stad ingetypt zonder uit suggesties te
- *                            kiezen), toont Location-card een amber
- *                            warning-rij met uitleg dat HA-home-coords
- *                            worden gebruikt tot er een stad uit
- *                            suggesties is gekozen.
+ *   2.0.24 (2026-06-29): Three small fixes (Release D + alignment).
+ *                        (1) Test rows (Speakers + Pre-adhan) now have
+ *                            an invisible .chevron-btn.spacer at the
+ *                            end so the play button lines up with
+ *                            the play buttons of the sound rows above.
+ *                            visibility:hidden keeps the width; not
+ *                            display:none — that would remove the
+ *                            alignment.
+ *                        (2) Save feedback: after every successful
+ *                            _saveSettings a subtle toast pill
+ *                            ("Opgeslagen"/"Saved") appears bottom right
+ *                            and fades out after 1500ms. With quick
+ *                            successive saves the timer is reset; no
+ *                            stack. Errors do not trigger it (the
+ *                            inline error banner stays the source of
+ *                            truth for failure).
+ *                        (3) Manual-mode warning: when
+ *                            location_mode=manual but there is no
+ *                            latitude/longitude in settings (typical:
+ *                            a city typed without picking one from
+ *                            the suggestions), the Location card shows an
+ *                            amber warning row explaining that the HA home
+ *                            coords are used until a city is picked
+ *                            from the suggestions.
  *
- *   2.0.23 (2026-06-28): Vier paneel-wijzigingen.
- *                        (1) Sounds-sectie gesplitst in drie subgroepen:
- *                            "Adhan" (fajr_adhan + adhan rijen),
- *                            "Pre-adhan" (jingle rij + minuten-blok + audio
- *                            toggle + tweede reminder + play/stop test met
- *                            eigen volume), en "Nachtmodus" (verplaatst uit
- *                            zijn eigen sectie). Subgroepen tonen een
- *                            kleine subheader binnen dezelfde card.
- *                        (2) Pre-adhan test-knop is nu een play/stop knop
- *                            in Sounds-rij-stijl met eigen volume_pre_adhan_test
- *                            slider — mirror van het Speakers-test patroon.
- *                            Play roept nida.play_pre_adhan_test aan; Stop
- *                            roept media_player.media_stop op de geselecteerde
- *                            speakers. Auto-reset na 8s als safety net.
- *                        (3) Aparte Night-mode sectie verwijderd uit render
- *                            (_htmlSectionNightMode is nu inline in Sounds).
- *                        (4) Alle paneel-secties zijn nu inklapbare
- *                            <details>-elementen met per-sectie open/dicht
- *                            geheugen in localStorage onder de key
+ *   2.0.23 (2026-06-28): Four panel changes.
+ *                        (1) Sounds section split into three subgroups:
+ *                            "Adhan" (fajr_adhan + adhan rows),
+ *                            "Pre-adhan" (jingle row + minutes block + audio
+ *                            toggle + second reminder + play/stop test with
+ *                            its own volume), and "Night mode" (moved out of
+ *                            its own section). Subgroups show a
+ *                            small subheader inside the same card.
+ *                        (2) The pre-adhan test button is now a play/stop
+ *                            button in Sounds-row style with its own
+ *                            volume_pre_adhan_test slider — mirror of the
+ *                            Speakers test pattern. Play calls
+ *                            nida.play_pre_adhan_test; Stop calls
+ *                            media_player.media_stop on the selected
+ *                            speakers. Auto-reset after 8s as a safety net.
+ *                        (3) Separate Night-mode section removed from render
+ *                            (_htmlSectionNightMode is now inline in Sounds).
+ *                        (4) All panel sections are now collapsible
+ *                            <details> elements with per-section open/closed
+ *                            memory in localStorage under the key
  *                            nida_collapsed_<sectionId>. Custom chevron
- *                            rechts in de header die 180° draait bij [open].
- *                            Defaults: alle secties open op eerste bezoek.
- *                            Reden voor <details>: native browser-state,
- *                            keyboard- en a11y-vriendelijk out-of-the-box,
- *                            en het 'toggle'-event is genoeg om naar
- *                            localStorage te schrijven zonder height-tween
- *                            JS te bouwen.
+ *                            on the right of the header that rotates 180°
+ *                            on [open]. Defaults: all sections open on the
+ *                            first visit. Reason for <details>: native
+ *                            browser state, keyboard and a11y friendly out
+ *                            of the box, and the 'toggle' event is enough
+ *                            to write to localStorage without building
+ *                            height-tween JS.
  *
- *   2.0.22 (2026-06-28): Drie features in één release. (1) Pre-adhan
- *                        audio playback — nieuwe toggle "Audio
- *                        afspelen" in de pre-adhan block (default
- *                        aan); scheduler vuurt nu ook
- *                        nida.play_pre_adhan_jingle af. Plus test-
- *                        knop in de pre-adhan block. (2) Speakers
- *                        test refactor — was een one-shot knop, is
- *                        nu een Sounds-rij stijl met label/sub +
- *                        eigen volume slider (volume_test, default
- *                        30) + play/stop knop. Stop call't
- *                        media_player.media_stop op de gekozen
- *                        speakers. Auto-reset na 8s safety-net.
- *                        (3) Nachtmodus sectie — toggle + start/end
- *                        tijd inputs (HH:MM) + volume factor slider
- *                        (% van normaal). Backend past het toe op
- *                        alle play_* services.
+ *   2.0.22 (2026-06-28): Three features in one release. (1) Pre-adhan
+ *                        audio playback — new toggle "Play
+ *                        audio" in the pre-adhan block (default
+ *                        on); the scheduler now also fires
+ *                        nida.play_pre_adhan_jingle. Plus a test
+ *                        button in the pre-adhan block. (2) Speakers
+ *                        test refactor — was a one-shot button, is
+ *                        now a Sounds-row style with label/sub +
+ *                        its own volume slider (volume_test, default
+ *                        30) + play/stop button. Stop calls
+ *                        media_player.media_stop on the chosen
+ *                        speakers. Auto-reset after 8s safety net.
+ *                        (3) Night mode section — toggle + start/end
+ *                        time inputs (HH:MM) + volume factor slider
+ *                        (% of normal). The backend applies it to
+ *                        all play_* services.
  *   2.0.21 (2026-06-28): Companion release — binary_sensor platform
- *                        toegevoegd in de Python-kant. Geen panel-
- *                        wijzigingen behalve de footer-versie.
- *   2.0.20 (2026-06-28): theme_auto label van "Auto" → "Automatic" (EN)
- *                        / "Automatisch" (NL), parallel aan de taal-
- *                        pill ernaast. Cosmetisch only.
- *   2.0.19 (2026-06-28): CSS-fix voor de "box-in-a-box" look van een
- *                        enkele select-field in een card. Speakers,
- *                        Notify-targets en Jumu'ah-targets gebruiken
- *                        nu de nieuwe .select-field.flat variant —
- *                        zelfde klik-gedrag maar zonder eigen border
- *                        en background. Voorkomt de cream-rechthoek-
- *                        in-witte-card mismatch die Johann zag in
+ *                        added on the Python side. No panel
+ *                        changes besides the footer version.
+ *   2.0.20 (2026-06-28): theme_auto label from "Auto" → "Automatic" (EN)
+ *                        / "Automatisch" (NL), parallel to the language
+ *                        pill next to it. Cosmetic only.
+ *   2.0.19 (2026-06-28): CSS fix for the "box-in-a-box" look of a
+ *                        single select-field in a card. Speakers,
+ *                        Notify targets and Jumu'ah targets now use
+ *                        the new .select-field.flat variant —
+ *                        same click behaviour but without its own border
+ *                        and background. Prevents the cream-rectangle-
+ *                        in-a-white-card mismatch Johann saw in
  *                        light mode.
- *   2.0.18 (2026-06-28): Twee functionele wijzigingen. (1) Jumu'ah heeft
- *                        nu een eigen targets-rij in het paneel, los
- *                        van de algemene notify-targets. Klik opent
- *                        dezelfde overlay-stijl als de gewone
- *                        targets-picker. Test-knop in Jumu'ah-sectie
- *                        is disabled tot er minstens één Jumu'ah-
- *                        target gekozen is. (2) Speakers-test gebruikt
- *                        nu nida.play_test_sound i.p.v. play_adhan —
- *                        speelt een speciaal test_jingle.mp3 bestand
- *                        op de gekozen speakers met de adhan-volume.
- *                        Vereist dat de gebruiker zelf
- *                        sounds/test/test_jingle.mp3 plaatst in zijn
- *                        Nida-installatie.
- *   2.0.17 (2026-06-28): Three things at once. (1) Speakers-sectie heeft
- *                        nu een subtitle ("Gebruikt bij elk adhan-
- *                        moment") en een test-knop die nida.play_adhan
- *                        rechtstreeks aanroept met "dhuhr" als
- *                        representatief geluid. (2) Light theme +
- *                        theme-picker pill in de header naast taal —
- *                        cycle Dark → Light → Auto → Dark. Auto volgt
- *                        de OS-voorkeur via prefers-color-scheme. CSS-
- *                        vars worden via :host(.theme-*) en
- *                        .nida-overlay-portal.theme-* per stand
- *                        gewisseld. (3) Theme-pill toont een glyph
- *                        (☾ / ☀ / ◐) + label, en de portal-class
- *                        wordt bij elke open op het juiste theme
- *                        gezet zodat overlay en host nooit uit
- *                        elkaar lopen.
- *   2.0.16 (2026-06-28): Test-knoppen toegevoegd onder de Notifications-
- *                        en Jumu'ah-secties. Klikken stuurt direct
- *                        naar de geconfigureerde targets via twee
- *                        nieuwe ws-commands (nida/test_notify,
- *                        nida/test_jumuah). Knop-tekst geeft feedback:
- *                        "Sending…" tijdens de call, "Sent (2/3)" op
- *                        success met aantal geslaagde vs totaal,
- *                        "Failed" of "Choose targets first" op fout.
- *                        Disabled-state als er geen targets gekozen
- *                        zijn — voorkomt onbedoelde no-op klikken.
+ *   2.0.18 (2026-06-28): Two functional changes. (1) Jumu'ah now has
+ *                        its own targets row in the panel, separate
+ *                        from the general notify targets. A click opens
+ *                        the same overlay style as the regular
+ *                        targets picker. The test button in the Jumu'ah
+ *                        section is disabled until at least one Jumu'ah
+ *                        target is chosen. (2) The Speakers test now
+ *                        uses nida.play_test_sound instead of play_adhan —
+ *                        it plays a dedicated test_jingle.mp3 file
+ *                        on the chosen speakers at the adhan volume.
+ *                        Requires the user to place
+ *                        sounds/test/test_jingle.mp3 in their
+ *                        Nida installation themselves.
+ *   2.0.17 (2026-06-28): Three things at once. (1) The Speakers section
+ *                        now has a subtitle ("Used at every adhan
+ *                        moment") and a test button that calls
+ *                        nida.play_adhan directly with "dhuhr" as the
+ *                        representative sound. (2) Light theme +
+ *                        theme-picker pill in the header next to the
+ *                        language — cycle Dark → Light → Auto → Dark.
+ *                        Auto follows the OS preference via
+ *                        prefers-color-scheme. CSS vars are switched
+ *                        per mode via :host(.theme-*) and
+ *                        .nida-overlay-portal.theme-*. (3) The theme
+ *                        pill shows a glyph (☾ / ☀ / ◐) + label, and
+ *                        the portal class is set to the right theme
+ *                        on every open so overlay and host never
+ *                        drift apart.
+ *   2.0.16 (2026-06-28): Test buttons added below the Notifications
+ *                        and Jumu'ah sections. A click sends straight
+ *                        to the configured targets via two
+ *                        new ws commands (nida/test_notify,
+ *                        nida/test_jumuah). The button text gives feedback:
+ *                        "Sending…" during the call, "Sent (2/3)" on
+ *                        success with the number succeeded vs total,
+ *                        "Failed" or "Choose targets first" on error.
+ *                        Disabled state when no targets are chosen
+ *                        — prevents unintended no-op clicks.
  *   2.0.15 (2026-06-28): Release B — notifications + Jumu'ah. New
  *                        Notifications section (master toggle, multi-
  *                        select targets via overlay backed by
@@ -1999,11 +2000,11 @@
  *                        template with [minutes] placeholder.
  *                        Scheduler picks up all of this; both fire
  *                        through the same notify_targets list.
- *   2.0.14 (2026-06-28): ² positie aangepast: top -0.8em → -0.4em
- *                        (lager), left -5px → 0 (rechter). Cosmetisch
- *                        only — geen functionele wijzigingen.
+ *   2.0.14 (2026-06-28): ² position adjusted: top -0.8em → -0.4em
+ *                        (lower), left -5px → 0 (further right). Cosmetic
+ *                        only — no functional changes.
  *   2.0.13 (2026-06-28): Four follow-up changes after Release A landed.
- *                        (1) Default volumes lowered to Johanns voorkeur:
+ *                        (1) Default volumes lowered to Johann's preference:
  *                        fajr 10%, adhan 20%, pre-adhan 20%.
  *                        (2) Pre-adhan minutes is now a 2-30 slider, not
  *                        a number input. Added optional second reminder
@@ -2128,8 +2129,8 @@
  *                       and websocket roundtrip; no real settings UI.
  */
 
-// Gedeelde "Steun de ontwikkelaar"-knop + popup (Majikan). Eén bron van
-// waarheid; ditzelfde bestand staat in elke Majikan-integratie.
+// Shared "Support the developer" button + popup (Majikan). One source of
+// truth; this same file lives in every Majikan integration.
 import "./majikan-donate.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3494,6 +3495,8 @@ const TRANSLATIONS = {
     tts_pick_agents: "محركات TTS",
     tts_no_services: "لا توجد محركات TTS مُعدَّة في Home Assistant.",
     tts_message_label: "رسالة الإعلان",
+    tts_fajr_volume_label: "مستوى صوت إعلان الفجر",
+    tts_fajr_volume_sub: "مستوى صوت الجملة المنطوقة قبل الفجر فقط",
     tts_reset_default: "إعادة التعيين إلى الافتراضي",
     tts_msg_hint_full: "استخدم [prayer] لاسم الصلاة · الجملة الافتراضية تتبع اللغة المختارة حتى تُخصّصها",
     tts_message_hint: "اقترب وقت صلاة [prayer]",
@@ -3901,6 +3904,8 @@ const TRANSLATIONS = {
     tts_pick_agents: "TTS motorları",
     tts_no_services: "Home Assistant'ta yapılandırılmış TTS motoru yok.",
     tts_message_label: "Anons mesajı",
+    tts_fajr_volume_label: "Sabah namazı duyuru sesi",
+    tts_fajr_volume_sub: "Yalnızca sabah namazından önceki sesli duyurunun ses düzeyi",
     tts_reset_default: "Varsayılana sıfırla",
     tts_msg_hint_full: "Namaz adı için [prayer] kullanın · siz özelleştirene kadar varsayılan cümle seçili dili takip eder",
     tts_message_hint: "[prayer] namazı vaktine az kaldı",
@@ -4308,6 +4313,8 @@ const TRANSLATIONS = {
     tts_pick_agents: "TTS-Engines",
     tts_no_services: "Keine TTS-Engines in Home Assistant konfiguriert.",
     tts_message_label: "Ansagetext",
+    tts_fajr_volume_label: "Lautstärke der Fajr-Ansage",
+    tts_fajr_volume_sub: "Lautstärke der gesprochenen Ansage nur vor Fajr",
     tts_reset_default: "Auf Standard zurücksetzen",
     tts_msg_hint_full: "Verwende [prayer] für den Gebetsnamen · der Standardsatz folgt der gewählten Sprache, bis du ihn anpasst",
     tts_message_hint: "Es ist bald Zeit für das [prayer]-Gebet",
@@ -4715,6 +4722,8 @@ const TRANSLATIONS = {
     tts_pick_agents: "Moteurs TTS",
     tts_no_services: "Aucun moteur TTS configuré dans Home Assistant.",
     tts_message_label: "Message d'annonce",
+    tts_fajr_volume_label: "Volume de l'annonce du Fajr",
+    tts_fajr_volume_sub: "Volume de l'annonce vocale avant le Fajr uniquement",
     tts_reset_default: "Réinitialiser par défaut",
     tts_msg_hint_full: "Utilisez [prayer] pour le nom de la prière · la phrase par défaut suit la langue sélectionnée jusqu'à ce que vous la personnalisiez",
     tts_message_hint: "C'est bientôt l'heure de la prière du [prayer]",
@@ -5122,6 +5131,8 @@ const TRANSLATIONS = {
     tts_pick_agents: "Enjin TTS",
     tts_no_services: "Tiada enjin TTS dikonfigurasikan dalam Home Assistant.",
     tts_message_label: "Mesej pengumuman",
+    tts_fajr_volume_label: "Kelantangan pengumuman Subuh",
+    tts_fajr_volume_sub: "Kelantangan pengumuman lisan sebelum Subuh sahaja",
     tts_reset_default: "Tetapkan semula ke lalai",
     tts_msg_hint_full: "Guna [prayer] untuk nama solat · ayat lalai mengikut bahasa yang dipilih sehingga anda menyesuaikannya",
     tts_message_hint: "Hampir tiba waktu solat [prayer]",
@@ -5529,6 +5540,8 @@ const TRANSLATIONS = {
     tts_pick_agents: "Mesin TTS",
     tts_no_services: "Tidak ada mesin TTS yang dikonfigurasi di Home Assistant.",
     tts_message_label: "Pesan pengumuman",
+    tts_fajr_volume_label: "Volume pengumuman Subuh",
+    tts_fajr_volume_sub: "Volume pengumuman lisan hanya sebelum Subuh",
     tts_reset_default: "Atur ulang ke default",
     tts_msg_hint_full: "Gunakan [prayer] untuk nama salat · kalimat default mengikuti bahasa yang dipilih sampai Anda menyesuaikannya",
     tts_message_hint: "Sebentar lagi waktunya salat [prayer]",
@@ -5936,6 +5949,8 @@ const TRANSLATIONS = {
     tts_pick_agents: "TTS انجنز",
     tts_no_services: "Home Assistant میں کوئی TTS انجن ترتیب نہیں دیا گیا۔",
     tts_message_label: "اعلان کا پیغام",
+    tts_fajr_volume_label: "فجر کے اعلان کی آواز",
+    tts_fajr_volume_sub: "صرف فجر سے پہلے بولے جانے والے اعلان کی آواز",
     tts_reset_default: "پہلے سے طے شدہ پر ری سیٹ کریں",
     tts_msg_hint_full: "نماز کے نام کے لیے [prayer] استعمال کریں · جب تک آپ اسے حسب ضرورت نہیں بناتے، پہلے سے طے شدہ جملہ منتخب کردہ زبان کی پیروی کرتا ہے",
     tts_message_hint: "[prayer] کی نماز کا وقت قریب ہے",
@@ -6343,6 +6358,8 @@ const TRANSLATIONS = {
     tts_pick_agents: "موتورهای TTS",
     tts_no_services: "هیچ موتور TTS در Home Assistant پیکربندی نشده است.",
     tts_message_label: "متن اعلان",
+    tts_fajr_volume_label: "بلندی صدای اعلان صبح",
+    tts_fajr_volume_sub: "بلندی صدای اعلان گفتاری فقط پیش از نماز صبح",
     tts_reset_default: "بازنشانی به پیش‌فرض",
     tts_msg_hint_full: "برای نام نماز از [prayer] استفاده کنید · جمله پیش‌فرض تا زمانی که آن را سفارشی نکنید از زبان انتخاب‌شده پیروی می‌کند",
     tts_message_hint: "به‌زودی وقت نماز [prayer] فرا می‌رسد",
@@ -6395,8 +6412,8 @@ const NIDA_PANEL_VERSION = "2.5.0";
 // module carries its own copy (frontend/nida-ramadan.js ASSETS).
 const NIDA_BRAND_IMG = "data:image/webp;base64,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";
 
-// 2.3.0 — group layer over the settings accordion. Johann: "ik denk dat
-// het onoverzichtelijk begint te worden" — 11 top-level sections had
+// 2.3.0 — group layer over the settings accordion. Johann: "I think it
+// is starting to get cluttered" — 11 top-level sections had
 // accumulated, all stacked in one column, and the two biggest (Ramadan,
 // Sound modes) had each grown into three or four unrelated features.
 //
@@ -6417,9 +6434,9 @@ const NIDA_GROUPS = [
   { id: "audio", label_key: "group_audio", icon: "speaker",
     sections: ["speakers", "sounds", "volume_modes", "other_audio", "dua"] },
   // 2.3.6 — the Islamic Calendar section moved here, and what was left
-  // became a Ramadan group. Johann: "kunnen we kalender onderdeel alle
-  // herinneringen onder herinneringen zetten en kalender ombouwen tot
-  // ramadan?" It reads right: that section is nothing BUT reminders
+  // became a Ramadan group. Johann: "can we put all the reminders
+  // from the calendar part under reminders and turn the calendar into
+  // Ramadan?" It reads right: that section is nothing BUT reminders
   // (holidays, Ashura/Arafah, white days, weekly sunnah, Laylatul Qadr —
   // each a toggle feeding one daily notify), so it belongs next to the
   // adhan and Jumu'ah reminders rather than in a group of its own.
@@ -8282,8 +8299,8 @@ class NidaPanel extends HTMLElement {
 
   // 2.3.1 — duas had no in-browser preview at all: their one button plays
   // on the configured speaker, so auditioning a dua meant putting it
-  // through the house (Johann: "bij dua kan ik lokaal niet luisteren
-  // alleen per speaker"). The dua's sound is stored per-dua rather than
+  // through the house (Johann: "with a dua I cannot listen locally,
+  // only through a speaker"). The dua's sound is stored per-dua rather than
   // under a sound_<category> key, so it can't go through _soundUrlFor —
   // hence the explicit-URL entry point below. The `category` slot doubles
   // as the "what is currently previewing" key, so passing "dua:<id>"
@@ -8476,7 +8493,25 @@ class NidaPanel extends HTMLElement {
       return;
     }
     this._ensurePortal();
+    // 2.5.3 — keep the scroll position when the SAME overlay repaints.
+    // Replacing innerHTML recreates the scrolling list, so pressing play on
+    // a sound far down the Sound Library jumped the list back to the top.
+    const sameOverlay = this._portalOverlayId === this._activeOverlay;
+    const scrolled = [];
+    if (sameOverlay) {
+      this._overlayPortal.querySelectorAll("*").forEach((el) => {
+        if (el.scrollTop > 0 && el.className) {
+          scrolled.push([String(el.className), el.scrollTop]);
+        }
+      });
+    }
     this._overlayPortal.innerHTML = this._htmlOverlay();
+    this._portalOverlayId = this._activeOverlay;
+    for (const [cls, top] of scrolled) {
+      const match = Array.from(this._overlayPortal.querySelectorAll("*"))
+        .find((el) => String(el.className) === cls);
+      if (match) match.scrollTop = top;
+    }
     this._attachInputListeners(this._overlayPortal);
   }
 
@@ -8923,7 +8958,7 @@ class NidaPanel extends HTMLElement {
     // theme picked explicitly) rather than the browser/OS-level
     // prefers-color-scheme media query. Those two can disagree — e.g. HA
     // set to a light theme on a device whose OS is in dark mode — and
-    // Johann's report ("nida volgt HA's thema niet overdag") was exactly
+    // Johann's report ("Nida does not follow HA's theme during the day") was exactly
     // that mismatch. Falls back to the OS media query only when
     // hass.themes isn't available yet (very first paint, before `hass` is
     // set).
@@ -9676,7 +9711,7 @@ class NidaPanel extends HTMLElement {
   }
 
   _htmlPreAdhanFullTestRow() {
-    // 2.5.0 — Johann: "een knop voor hele pre-adhan testen inclusief de
+    // 2.5.0 — Johann: "a button to test the whole pre-adhan including the
     // jingle". The jingle and the TTS each had their own test, but never
     // together, which is the one thing you cannot judge from the parts
     // (the pause between them, the dip, the music coming back). The
@@ -11606,8 +11641,8 @@ class NidaPanel extends HTMLElement {
 
   // ───── Header: countdown-to-Ramadan pill (2.1.35) ──────────────────────
   // Green-bordered pill in the header, next to the theme/language pills
-  // (Johann: screenshot of the header + "pil met aantal dagen tot
-  // ramadan ... groene rand"). Hidden once Ramadan itself has started —
+  // (Johann: screenshot of the header + "pill with the number of days until
+  // Ramadan ... green border"). Hidden once Ramadan itself has started —
   // the Today-card day counter (_ramadanDayCounterText above) takes over
   // at that point. Target: the 1st of the NEXT Hijri Ramadan (this
   // Hijri year if Ramadan hasn't happened yet, next Hijri year if it
@@ -12376,7 +12411,7 @@ class NidaPanel extends HTMLElement {
   }
 
   // ───── Speaker preview (2.3.0) ────────────────────────────────────────────
-  // Johann: "elke vorm dat je geluid afspeelt moet kunnen testen wat het
+  // Johann: "every way of playing a sound must let you test what the
   // volume is." Every sound row already had a ▶ that played through
   // `new Audio()` in the BROWSER — good for "which muezzin is this",
   // useless for "how loud will the house get", and the adhan had no
@@ -12841,8 +12876,8 @@ class NidaPanel extends HTMLElement {
     // plain-text "visitors mode" control sitting in the footer row next
     // to the LAST PRAYER sub-line — styled identically to that sub-line
     // (same size/weight/color as .now-current), not a pill, per
-    // Johann's explicit follow-up ("gelijk aan tekst als 'last pray' en
-    // niet een pil"). Only its color shifts (to gold) while active, for
+    // Johann's explicit follow-up ("the same as text like 'last pray' and
+    // not a pill"). Only its color shifts (to gold) while active, for
     // feedback without a background shape.
     const next = this._nextPrayer();
     const current = this._currentPrayer();
@@ -12925,8 +12960,8 @@ class NidaPanel extends HTMLElement {
     if (cd.h === "—" || cd.m === "—") return "";
     const h = parseInt(cd.h, 10);
     const m = parseInt(cd.m, 10);
-    // 2.3.2 — Johann: "als het nog 0 minuten is dan zou hij eigenlijk
-    // moeten aftellen van 59 sec naar 0". Inside the last minute h/m
+    // 2.3.2 — Johann: "when 0 minutes are left it should really
+    // count down from 59 sec to 0". Inside the last minute h/m
     // both read 0, so the row sat frozen on "in 0 h 0 m" for a whole
     // minute — exactly the moment it's most worth watching. Seconds
     // only appear in that last minute; above it the h/m form stays, so
@@ -13096,7 +13131,7 @@ class NidaPanel extends HTMLElement {
     // 2.1.35 — Ramadan only, and only while the Fajr wake-up alarm is
     // enabled: the calculated wake time (Fajr minus fajr_alarm_minutes),
     // shown right above the Imsak row per Johann's answer to the
-    // clarifying question ("Today-kaart, bij de Imsak/Fajr-rij"). Same
+    // clarifying question ("Today card, at the Imsak/Fajr row"). Same
     // row styling as the Imsak row above/below it.
     let wakeAlarmRow = "";
     if (ramadan) {
@@ -13203,7 +13238,7 @@ class NidaPanel extends HTMLElement {
     // call to this same method, which itself rendered again, which
     // queued another... an ever-growing pile of duplicate Aladhan
     // round-trips that kept _calendarLoading effectively stuck on,
-    // reported by Johann as "hij blijft hangen op [thema/]loading".
+    // reported by Johann as "it stays stuck on [theme/]loading".
     // _ensureCalendarMonthReady()/_ensureRamadanDayCountReady() dodge
     // this differently (they set their own state synchronously before
     // queuing), but the countdown pill has no such per-call state to

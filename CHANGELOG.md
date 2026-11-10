@@ -4,6 +4,30 @@ All notable changes to Nida are documented here. The `version` in
 `custom_components/nida/manifest.json` is the source of truth for the current
 release; newest entry on top.
 
+## 2.5.3 — 2026-11-10
+
+- **No more disk access on Home Assistant's event loop.** Listing old sound
+  files walked the bundled sounds folder on the event loop, and the sound
+  library, the random adhan pick and the sound-length lookup each checked
+  files there too. All of these now run in the executor, so Home Assistant
+  stays responsive on slow storage.
+- **Minimum Home Assistant version is now 2024.11.** The old value (2023.1)
+  was wrong: Nida already needed a newer Home Assistant to load.
+- **Housekeeping.** The options dialog no longer sets its own config entry
+  (deprecated in Home Assistant), and the manifest drops an unused
+  dependency (`network`) and an incorrect `loggers` entry.
+- **The Sound Library keeps its place.** Pressing play, download or delete on
+  a sound further down the list no longer jumps the list back to the top.
+- **Dashboard cards in all ten languages.** The Next Prayer and Today cards
+  were English and Dutch only; they now also speak Arabic, Turkish, German,
+  French, Malay, Indonesian, Urdu and Persian, following Home Assistant's
+  language.
+- **Missing translations filled in.** The Fajr announcement volume texts in
+  the panel and the options dialog (Settings, Devices & services, Nida,
+  Configure) were English-only in eight languages.
+- **All code comments are now in English.** The remaining Dutch comments,
+  docstrings and in-file changelogs were translated; no behaviour changes.
+
 ## 2.5.2 — 2026-11-05
 
 - **New README.** Rewritten for the 2.x panel, with Marketplace install instructions.

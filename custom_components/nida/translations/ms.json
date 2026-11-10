@@ -10,6 +10,17 @@
       "single_instance_allowed": "Hanya satu contoh Nida boleh dikonfigurasikan."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Pilihan Nida",
+        "description": "Buka [papan pemuka Masjid](/nida) untuk mengurus waktu solat, bunyi, bahasa dan pemain media.\n\nSuis di bawah menentukan sama ada Masjid turut dipaparkan di bar sisi.",
+        "data": {
+          "show_in_sidebar": "Paparkan Masjid di bar sisi"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "fajr": {

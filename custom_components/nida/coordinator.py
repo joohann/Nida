@@ -1,23 +1,23 @@
-"""Nida prayer-times coordinator — fetcht timings + hijri-datum van Aladhan API.
+"""Nida prayer-times coordinator — fetches timings + hijri date from the Aladhan API.
 
-De Aladhan /timings-response bevat data.date.hijri al standaard mee (date,
-day, weekday, month, year, holidays) — er is dus geen aparte API-call nodig
-om hijri-gegevens te krijgen. sensor.py leest dit rechtstreeks uit
+The Aladhan /timings response already includes data.date.hijri (date,
+day, weekday, month, year, holidays) — so no separate API call is needed
+to get the hijri data. sensor.py reads it straight from
 coordinator.data["data"]["date"]["hijri"].
 
 Changelog:
-  2.0.10 (2026-06-28): _build_url gebruikt nu eerst lat/lon uit
-                       entry.options als die zijn gezet (door de panel
-                       city-autocomplete via Nominatim). Pas als die er
-                       niet zijn valt het terug op hass.config (device
-                       mode). En pas helemaal achteraan op de oude
-                       country+city tekstvelden naar /timingsByCity.
-                       Dit verwijdert de manual-mode bug waar
-                       ?country=NL naar Aladhan ging (Aladhan wil
-                       "Netherlands", geen ISO-code).
-  2.0.0 (2026-06-27): Changelog-kop toegevoegd bij de 2.0.0-herbouw. Functioneel
-                      ongewijzigd t.o.v. 1.1.7 — hijri-data zat al in de response,
-                      coordinator hoefde niet aangepast om dit te ontsluiten.
+  2.0.10 (2026-06-28): _build_url now first uses lat/lon from
+                       entry.options when set (by the panel city
+                       autocomplete via Nominatim). Only when those are
+                       missing does it fall back to hass.config (device
+                       mode), and only last to the old country+city
+                       text fields via /timingsByCity.
+                       This removes the manual-mode bug where
+                       ?country=NL was sent to Aladhan (Aladhan wants
+                       "Netherlands", not an ISO code).
+  2.0.0 (2026-06-27): Changelog header added with the 2.0.0 rebuild. Functionally
+                      unchanged from 1.1.7 — the hijri data was already in the
+                      response, the coordinator needed no change to expose it.
 """
 from __future__ import annotations
 
@@ -46,12 +46,12 @@ API_BASE = "https://api.aladhan.com/v1"
 
 
 class PrayerTimesCoordinator(DataUpdateCoordinator):
-    """Coordinator dat dagelijkse prayer-timings ophaalt.
+    """Coordinator that fetches the daily prayer timings.
 
-    Naast de standaard 12-uurs polling triggert deze coordinator ook een
-    extra refresh op 00:01 lokale tijd — _build_url() gebruikt date.today()
-    waardoor je anders het hele uur na middernacht nog gisterens timings
-    serveert tot de volgende reguliere refresh.
+    Besides the standard 12-hour polling this coordinator also triggers an
+    extra refresh at 00:01 local time — _build_url() uses date.today(), so
+    otherwise yesterday's timings would still be served after midnight
+    until the next regular refresh.
     """
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -66,9 +66,9 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
 
     async def async_config_entry_first_refresh(self) -> None:  # type: ignore[override]
         await super().async_config_entry_first_refresh()
-        # Plan een extra refresh net na middernacht zodat date.today() in
-        # _build_url() de nieuwe dag oppakt zonder te wachten op het
-        # 12-uurs interval.
+        # Schedule an extra refresh just after midnight so date.today() in
+        # _build_url() picks up the new day without waiting for the
+        # 12-hour interval.
         self._unsub_midnight = async_track_time_change(
             self.hass,
             self._async_midnight_refresh,
@@ -81,18 +81,18 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
         await self.async_request_refresh()
 
     def _build_url(self) -> str:
-        """Bouw API-URL.
+        """Build the API URL.
 
-        Volgorde van voorkeur:
-          1. lat/lon uit entry.options — door de panel city-autocomplete
-             gezet (manual mode). Coordinaten zijn ondubbelzinnig, dus
-             als die er zijn, gebruik die ongeacht location_mode.
-          2. hass.config.latitude/longitude — HA's eigen home-locatie
+        Order of preference:
+          1. lat/lon from entry.options — set by the panel city
+             autocomplete (manual mode). Coordinates are unambiguous, so
+             when present they are used regardless of location_mode.
+          2. hass.config.latitude/longitude — HA's own home location
              (device mode).
-          3. Tekstuele city+country naar /timingsByCity — pure fallback
-             voor entries die nog geen coords hebben en niet op HA's
-             location vertrouwen. Werkt alleen als CONF_COUNTRY een
-             land-naam is die Aladhan kent ("Netherlands"), geen ISO-code.
+          3. Textual city+country via /timingsByCity — pure fallback
+             for entries that have no coords yet and do not rely on HA's
+             location. Only works when CONF_COUNTRY is a country name
+             Aladhan knows ("Netherlands"), not an ISO code.
         """
         method = int(
             self.entry.options.get(
@@ -129,7 +129,7 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
         )
 
     async def _async_update_data(self):
-        """Fetch fresh timings van de API."""
+        """Fetch fresh timings from the API."""
         url = self._build_url()
         session = async_get_clientsession(self.hass)
         try:

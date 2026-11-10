@@ -10,6 +10,17 @@
       "single_instance_allowed": "Yalnızca bir Nida yapılandırılabilir."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Nida seçenekleri",
+        "description": "Namaz vakitlerini, sesleri, dili ve medya oynatıcıları yönetmek için [Masjid panosunu](/nida) açın.\n\nAşağıdaki anahtar, Masjid'in kenar çubuğunda da gösterilip gösterilmeyeceğini belirler.",
+        "data": {
+          "show_in_sidebar": "Masjid'i kenar çubuğunda göster"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "fajr": {

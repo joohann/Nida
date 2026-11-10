@@ -12,8 +12,8 @@ scheduler fires `hass.services.async_call('notify', <target>, ...)`
 directly because the routing logic is purely scheduler-internal.
 
 Changelog:
-  2.1.35 (2026-07-11): Fajr wake-up alarm, Ramadan only (Johann: "hebben
-                       we een fajr wekker voor ramadan?", confirmed
+  2.1.35 (2026-07-11): Fajr wake-up alarm, Ramadan only (Johann: "do we
+                       have a Fajr alarm for Ramadan?", confirmed
                        Ramadan-scoped via AskUserQuestion). New
                        fajr_target_for_ramadan capture in _async_reschedule
                        (same pattern as dhuhr_target_for_jumuah/
@@ -46,8 +46,8 @@ Changelog:
                        auto-dua guest-mode check, 2.1.34, for the same
                        precedent) of not importing underscore-prefixed
                        names across modules.
-  2.1.34 (2026-07-11): Ramadan features (Johann: "wat kunnen we inbouwen
-                       voor ramadan?" — see const.py's changelog for the
+  2.1.34 (2026-07-11): Ramadan features (Johann: "what can we build in
+                       for Ramadan?" — see const.py's changelog for the
                        full option-key rationale). All gated on
                        _is_ramadan_today(), read directly off the
                        coordinator's own Hijri data in _async_reschedule
@@ -77,8 +77,8 @@ Changelog:
                        the other four.
   2.1.29 (2026-07-09): Android TV notification duration now matches the
                        real adhan length instead of a fixed 5s (Johann:
-                       "kan de notificatie op de tv blijven staan tot het
-                       einde van de adhan?"). _async_make_notify_handler
+                       "can the notification on the TV stay up until the
+                       end of the adhan?"). _async_make_notify_handler
                        resolves the sound that WILL play for this prayer
                        today (services.async_resolve_adhan_sound_rel) and
                        looks up its real length
@@ -214,18 +214,18 @@ Changelog:
                        list. _maybe_schedule_notify reads the flag and
                        threads it through _async_make_notify_handler.
                        SUPERSEDED by 2.0.90 (master flag → per-prayer).
-  2.0.22 (2026-06-28): Pre-adhan reminder vuurt nu ook audio af via
-                       nieuwe nida.play_pre_adhan_jingle service (mits
-                       options.pre_adhan_audio_enabled True is —
-                       default True). Voorheen was er alleen een
-                       persistent_notification; audio was de lang
-                       openstaande 🔴 in de status-tabel.
-  2.0.18 (2026-06-28): Jumu'ah heeft eigen target-lijst nu —
-                       options.jumuah_targets, los van de algemene
-                       notify_targets. Bij leeg blijft de
-                       persistent_notification fallback bestaan (was
-                       al zo). Use case: niet alle gezinsleden hoeven
-                       de Friday reminder.
+  2.0.22 (2026-06-28): The pre-adhan reminder now also plays audio via
+                       the new nida.play_pre_adhan_jingle service (when
+                       options.pre_adhan_audio_enabled is True —
+                       default True). Previously there was only a
+                       persistent_notification; audio was the long
+                       outstanding 🔴 in the status table.
+  2.0.18 (2026-06-28): Jumu'ah now has its own target list —
+                       options.jumuah_targets, separate from the general
+                       notify_targets. When empty, the
+                       persistent_notification fallback remains (as
+                       before). Use case: not every family member needs
+                       the Friday reminder.
   2.0.15 (2026-06-28): Release B — notification triggers + Jumu'ah
                        reminder. For each scheduled adhan, when the
                        master notify_enabled is on and the per-prayer
@@ -248,11 +248,11 @@ Changelog:
                        scheduler plants a second persistent_notification
                        at options.pre_adhan_minutes_2 minutes before
                        each adhan.
-  2.0.7 (2026-06-28): Pre-adhan reminder toegevoegd — voor elk gepland
-                      gebed plant de scheduler nu een tweede trigger N
-                      minuten ervoor (default 25, configureerbaar via
-                      options.pre_adhan_minutes) die een
-                      persistent_notification "X is in N minutes" toont.
+  2.0.7 (2026-06-28): Pre-adhan reminder added — for every scheduled
+                      prayer the scheduler now plans a second trigger N
+                      minutes before it (default 25, configurable via
+                      options.pre_adhan_minutes) that shows a
+                      persistent_notification "X is in N minutes".
   2.0.1 (2026-06-28): New file — initial scheduler for automatic adhan
                       playback. Reads enabled_<prayer> toggles, skips
                       disabled prayers, skips prayers already passed today.
@@ -1492,8 +1492,8 @@ def _apply_notify_branding(
     """Split Nida's notifications out of the Home Assistant pile, and
     label them as Nida's (2.3.12/2.3.13).
 
-    Johann, on the first attempt: "waar het mij om gaat is dat ze niet
-    stapelen onder Home Assistant, je ziet gewoon geen onderscheid." That
+    Johann, on the first attempt: "what matters to me is that they do not
+    stack under Home Assistant, you simply see no difference." That
     is the real problem, and it is a GROUPING problem, not an icon one —
     both platforms bundle by app, so every Nida notification lands on the
     same stack as every other automation's. Two keys fix it, one per

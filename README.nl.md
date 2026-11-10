@@ -99,7 +99,7 @@ card_type: now        # now, today, kids, scene_now, scene_today
 
 ## Vereisten
 
-- Home Assistant 2023.1 of nieuwer
+- Home Assistant 2024.11 of nieuwer
 - Een of meer `media_player`-entiteiten voor de adhan
 - Een TTS-integratie als je de gesproken aankondiging wilt
 - De Home Assistant Companion-app voor pushmeldingen en de Live Activity

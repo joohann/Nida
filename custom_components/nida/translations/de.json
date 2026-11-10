@@ -10,6 +10,17 @@
       "single_instance_allowed": "Es kann nur eine Nida-Instanz eingerichtet werden."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Nida-Optionen",
+        "description": "Öffnen Sie das [Masjid-Dashboard](/nida), um Gebetszeiten, Töne, Sprache und Mediaplayer zu verwalten.\n\nDer Schalter unten legt fest, ob Masjid auch in der Seitenleiste angezeigt wird.",
+        "data": {
+          "show_in_sidebar": "Masjid in der Seitenleiste anzeigen"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "fajr": {

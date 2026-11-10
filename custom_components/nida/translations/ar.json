@@ -10,6 +10,17 @@
       "single_instance_allowed": "Er kan slechts één Nida-integratie worden geconfigureerd."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "خيارات نداء",
+        "description": "افتح [لوحة المسجد](/nida) لإدارة أوقات الصلاة والأصوات واللغة ومشغلات الوسائط.\n\nيتحكم المفتاح أدناه في إظهار المسجد في الشريط الجانبي أيضًا.",
+        "data": {
+          "show_in_sidebar": "إظهار المسجد في الشريط الجانبي"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "fajr": {

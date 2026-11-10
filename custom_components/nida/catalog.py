@@ -80,7 +80,6 @@ from .const import (
     DOMAIN,
     OPT_CATALOG_URL,
     OPT_DUA_CATALOG_URL,
-    SOUND_CATEGORIES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -172,11 +171,40 @@ def _abs_path(hass: HomeAssistant, rel_path: str) -> str | None:
 
 
 def local_sound_exists(hass: HomeAssistant, rel_path: str) -> bool:
-    """True if the file exists on disk under www/nida/sounds/."""
+    """True if the file exists on disk under www/nida/sounds/.
+
+    Blocking (touches the disk): call it from the executor only. On the
+    event loop use async_local_sounds_present() instead.
+    """
     abs_path = _abs_path(hass, rel_path)
     if not abs_path:
         return False
     return os.path.isfile(abs_path)
+
+
+async def async_local_sounds_present(
+    hass: HomeAssistant, rel_paths: list[str]
+) -> set[str]:
+    """Return the subset of rel_paths that exist under www/nida/sounds/.
+
+    One executor job for the whole list, so checking a full catalog never
+    does disk I/O on the event loop.
+    """
+
+    def _check() -> set[str]:
+        return {rel for rel in rel_paths if local_sound_exists(hass, rel)}
+
+    return await hass.async_add_executor_job(_check)
+
+
+def _mtime_or_none(abs_path: str) -> float | None:
+    """Modification time of a file, None when it is missing. Blocking."""
+    try:
+        if not os.path.isfile(abs_path):
+            return None
+        return os.path.getmtime(abs_path)
+    except OSError:
+        return None
 
 
 # In-memory duration cache, keyed by absolute path — a sound file's
@@ -324,9 +352,9 @@ async def async_sound_duration_seconds(
     """Real length (whole seconds) of a sound file under www/nida/sounds/.
 
     2.1.29 — added so the Android TV notification's `duration` can match
-    how long the adhan actually plays instead of a fixed guess (Johann:
-    "kan de notificatie op de tv blijven staan tot het einde van de
-    adhan?"). Reads the file directly via mutagen rather than relying on
+    how long the adhan actually plays instead of a fixed guess (Johann
+    asked whether the notification on the TV could stay up until the end
+    of the adhan). Reads the file directly via mutagen rather than relying on
     the adhan media_player's own media_duration attribute, which isn't
     populated by every integration/player and would require waiting on
     live playback state — this works for any file the moment it exists
@@ -342,7 +370,9 @@ async def async_sound_duration_seconds(
     function only reports what it actually knows.
     """
     abs_path = _abs_path(hass, rel_path)
-    if not abs_path or not os.path.isfile(abs_path):
+    if not abs_path:
+        return None
+    if await hass.async_add_executor_job(_mtime_or_none, abs_path) is None:
         return None
     if abs_path in _DURATION_CACHE:
         return _DURATION_CACHE[abs_path]
@@ -367,9 +397,12 @@ async def async_sound_length_seconds(
     unreadable; the caller then falls back to watching the player.
     """
     abs_path = _abs_path(hass, rel_path)
-    if not abs_path or not os.path.isfile(abs_path):
+    if not abs_path:
         return None
-    key = f"{abs_path}:{os.path.getmtime(abs_path)}"
+    mtime = await hass.async_add_executor_job(_mtime_or_none, abs_path)
+    if mtime is None:
+        return None
+    key = f"{abs_path}:{mtime}"
     if key in _LENGTH_CACHE:
         return _LENGTH_CACHE[key]
     length = await hass.async_add_executor_job(_read_length_blocking, abs_path)
@@ -686,8 +719,11 @@ def _bundled_rel_paths() -> set[str]:
 
 
 def _find_orphans_blocking(
-    www_root: str, catalog_paths: set[str], referenced: set[str], bundled: set[str]
+    www_root: str, catalog_paths: set[str], referenced: set[str]
 ) -> list[str]:
+    # Walks the bundled sounds folder: blocking I/O, so it happens here in
+    # the executor and never on the event loop.
+    bundled = _bundled_rel_paths()
     safe_folders = {p.split("/", 1)[0] for p in catalog_paths if "/" in p}
     orphans: list[str] = []
     for folder in _ORPHAN_FOLDERS:
@@ -728,7 +764,6 @@ async def async_find_orphan_sounds(hass: HomeAssistant) -> dict[str, Any]:
         _www_root(hass),
         catalog_paths,
         referenced,
-        _bundled_rel_paths(),
     )
     return {"orphans": orphans}
 

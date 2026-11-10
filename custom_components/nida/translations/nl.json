@@ -1,5 +1,11 @@
 {
   "config": {
+    "step": {
+      "user": {
+        "title": "Nida",
+        "description": "Nida is met één klik ingesteld. Open daarna Nida in de zijbalk voor alle instellingen."
+      }
+    },
     "abort": {
       "single_instance_allowed": "Er kan maar één Nida-instantie geconfigureerd worden."
     }

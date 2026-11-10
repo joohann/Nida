@@ -10,6 +10,17 @@
       "single_instance_allowed": "Une seule instance de Nida peut être configurée."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options de Nida",
+        "description": "Ouvrez le [tableau de bord Masjid](/nida) pour gérer les horaires de prière, les sons, la langue et les lecteurs multimédias.\n\nL'interrupteur ci-dessous détermine si Masjid apparaît aussi dans la barre latérale.",
+        "data": {
+          "show_in_sidebar": "Afficher Masjid dans la barre latérale"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "fajr": {

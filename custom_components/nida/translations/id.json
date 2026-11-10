@@ -10,6 +10,17 @@
       "single_instance_allowed": "Hanya satu instans Nida yang dapat dikonfigurasi."
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opsi Nida",
+        "description": "Buka [dasbor Masjid](/nida) untuk mengelola waktu salat, suara, bahasa, dan pemutar media.\n\nSakelar di bawah menentukan apakah Masjid juga ditampilkan di bilah sisi.",
+        "data": {
+          "show_in_sidebar": "Tampilkan Masjid di bilah sisi"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "fajr": {

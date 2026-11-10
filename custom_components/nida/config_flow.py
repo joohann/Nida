@@ -19,11 +19,11 @@ Two flows live in this file:
     Markdown link to /nida + sidebar visibility toggle.
 
 Changelog:
-  2.0.8 (2026-06-28): Submit-step verwijderd — entry wordt nu direct
-                      aangemaakt zonder formulier. Welkomsttekst leefde
-                      al in het panel (WELCOME_CONTENT) en in de
-                      persistent_notification, dus de tussen-step had
-                      geen functie meer dan een lege blokker zijn.
+  2.0.8 (2026-06-28): Submit step removed — the entry is now created
+                      directly without a form. The welcome text already
+                      lived in the panel (WELCOME_CONTENT) and in the
+                      persistent_notification, so the in-between step
+                      did nothing except block.
   2.0.6 (2026-06-28): Welcome text removed — moved into the panel as an
                       overlay (see nida-panel.js WELCOME_CONTENT). The
                       config flow now just shows a one-line confirmation
@@ -37,8 +37,8 @@ Changelog:
                       show_in_sidebar toggle and a Markdown dashboard
                       link so the panel stays reachable even when the
                       sidebar entry is hidden.
-  2.0.0 (2026-06-27): Herbouw — flow teruggebracht tot alleen entry aanmaken.
-                      Sound-keuze en per-gebed instellingen verhuisd naar het panel.
+  2.0.0 (2026-06-27): Rebuild — flow reduced to only creating the entry.
+                      Sound choice and per-prayer settings moved to the panel.
 """
 from __future__ import annotations
 
@@ -68,7 +68,7 @@ class NidaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def async_get_options_flow(
         config_entry: ConfigEntry,
     ) -> "NidaOptionsFlowHandler":
-        return NidaOptionsFlowHandler(config_entry)
+        return NidaOptionsFlowHandler()
 
     async def async_step_user(
         self, user_input: dict | None = None
@@ -81,8 +81,7 @@ class NidaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class NidaOptionsFlowHandler(config_entries.OptionsFlow):
     """Post-install options — dashboard link + sidebar toggle."""
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        self.config_entry = config_entry
+    # No __init__: Home Assistant (2024.11+) provides self.config_entry.
 
     async def async_step_init(
         self, user_input: dict | None = None

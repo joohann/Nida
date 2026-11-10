@@ -1,4 +1,4 @@
-"""Nida switch platform — per-prayer adhan AAN/UIT als HA-entities.
+"""Nida switch platform — per-prayer adhan ON/OFF as HA entities.
 
 Until 2.0.17 the per-prayer toggle lived only in entry.options
 (via the panel). That meant automations and dashboards outside the
@@ -29,7 +29,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, OPT_ENABLED_PREFIX, PRAYERS, SENSOR_ENTITY_PREFIX
+from .const import OPT_ENABLED_PREFIX, PRAYERS, SENSOR_ENTITY_PREFIX
 
 _LOGGER = logging.getLogger(__name__)
 

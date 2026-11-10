@@ -105,7 +105,7 @@ card_type: now        # now, today, kids, scene_now, scene_today
 
 ## المتطلبات
 
-- Home Assistant 2023.1 أو أحدث
+- Home Assistant 2024.11 أو أحدث
 - كيان `media_player` واحد أو أكثر للأذان
 - تكامل TTS إذا أردت الإعلان الصوتي
 - تطبيق Home Assistant Companion للإشعارات وLive Activity

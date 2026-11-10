@@ -1,4 +1,4 @@
-"""Nida binary_sensor platform — per-gebed "currently in window" status.
+"""Nida binary_sensor platform — per-prayer "currently in window" status.
 
 Publishes five binary_sensor.nida_<prayer>_active entities, one per
 adhan-prayer. Each entity's is_on reflects whether the current local

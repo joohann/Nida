@@ -1,25 +1,25 @@
 """Nida Integration — Islamic prayer times + adhan + reminders for Home Assistant.
 
-HERBOUW-STATUS (2.0.2). Dit bestand bouwt stap voor stap weer op richting het
-volledige eindbeeld in references/architecture.md.
+REBUILD STATUS (2.0.2). This file was rebuilt step by step towards the
+full target picture in references/architecture.md.
 
-Nog NIET terug (komt later):
-  - binary_sensor.py / switch.py                → entities (per-gebed aan/uit)
-  - media/*                                       → tarhim/suhoor/reminder afspelen
-  - notify/*                                       → push-notificaties
-  - fasting.py / fasting_binary_sensors.py        → Ramadan/vasten-logica
+NOT back yet at the time (came later):
+  - binary_sensor.py / switch.py                → entities (per-prayer on/off)
+  - media/*                                       → tarhim/suhoor/reminder playback
+  - notify/*                                       → push notifications
+  - fasting.py / fasting_binary_sensors.py        → Ramadan/fasting logic
   - volume.py                                       → night volume
-  - pre-adhan jingle scheduling                     → een trigger N min voor elk gebed
+  - pre-adhan jingle scheduling                     → a trigger N min before each prayer
 
-Wel aanwezig vanaf 2.0.2:
-  - coordinator.py  → ongewijzigd, haalt prayer timings + hijri op
-  - sensor.py        → 16 sensors: 5 gebeden (timestamp+readable), 5 hijri, next_prayer
-  - panel.py          → Masjid sidebar-entry (toggleable via options flow)
-  - websocket.py       → get_settings/update_settings commands voor het panel
+Present from 2.0.2:
+  - coordinator.py  → unchanged, fetches prayer timings + hijri
+  - sensor.py        → 16 sensors: 5 prayers (timestamp+readable), 5 hijri, next_prayer
+  - panel.py          → Masjid sidebar entry (toggleable via options flow)
+  - websocket.py       → get_settings/update_settings commands for the panel
   - config_flow.py     → auto-create entry + options flow
-  - helpers.py        → kopieert bundled sounds naar <config>/www/nida/sounds/
+  - helpers.py        → copies bundled sounds to <config>/www/nida/sounds/
   - services.py        → nida.play_adhan service
-  - scheduler.py        → plant adhan-triggers per prayer-time
+  - scheduler.py        → plans adhan triggers per prayer time
 
 Changelog:
   2.5.0 (2026-10-10): Sets up NidaLiveActivity (live_activity.py) next to the
@@ -70,213 +70,214 @@ Changelog:
                        button entities track the config. Edits within
                        an existing dua need no reload.
   2.0.46 (2026-07-02): Companion release — bezoekersmodus met duur
-                       (1-24 uur) en rode statusbanner in het paneel.
-                       Alleen de versie-logregel wijzigt hier.
-  2.0.45 (2026-07-02): Bezoekersmodus + sidebar rename. Guest mode
-                       (const/services/paneel) dempt geplande adhan en
-                       pre-adhan; panel.py sidebar-titel Masjid → Nida.
-                       Alleen de versie-logregel wijzigt hier.
-  2.0.44 (2026-07-02): Companion release naast services.py — TTS-taal
-                       wordt nu per engine geprobeerd (bare code,
-                       regionale locale, engine-default) met blocking
-                       calls zodat afwijzingen gevangen worden. Alleen
-                       de versie-logregel wijzigt hier.
-  2.0.43 (2026-07-01): Companion release naast nida-panel.js — TTS-
-                       overlay single-select engine-picker, zichtbare
-                       [prayer]-hint, portal-styling voor de testknop,
-                       en now-card label "Last prayer". Alleen de
-                       versie-logregel wijzigt hier.
-  2.0.38 (2026-06-29): Pre-adhan subgroep herontwerp + per-gebed
-                       toggles. Wijzigingen in const.py + scheduler.py
-                       + nida-panel.js. __init__.py log-line bumped.
-  2.0.37 (2026-06-29): Companion release naast nida-panel.js — TTS-
-                       talenlijst uit panel-LANGUAGES, defaults voor
-                       alle 10 paneeltalen. __init__.py alleen log-line
-                       versie bumped.
-  2.0.36 (2026-06-29): TTS-taalkeuze + auto-update bericht. Wijzigingen
+  2.0.46 (2026-07-02): Companion release — guest mode with a duration
+                       (1-24 hours) and a red status banner in the panel.
+                       Only the version log line changes here.
+  2.0.45 (2026-07-02): Guest mode + sidebar rename. Guest mode
+                       (const/services/panel) mutes the scheduled adhan
+                       and pre-adhan; panel.py sidebar title Masjid → Nida.
+                       Only the version log line changes here.
+  2.0.44 (2026-07-02): Companion release alongside services.py — the TTS
+                       language is now tried per engine (bare code,
+                       regional locale, engine default) with blocking
+                       calls so rejections are caught. Only the version
+                       log line changes here.
+  2.0.43 (2026-07-01): Companion release alongside nida-panel.js — TTS
+                       overlay single-select engine picker, visible
+                       [prayer] hint, portal styling for the test button,
+                       and now-card label "Last prayer". Only the
+                       version log line changes here.
+  2.0.38 (2026-06-29): Pre-adhan subgroup redesign + per-prayer
+                       toggles. Changes in const.py + scheduler.py
+                       + nida-panel.js. __init__.py log line bumped.
+  2.0.37 (2026-06-29): Companion release alongside nida-panel.js — TTS
+                       language list from the panel LANGUAGES, defaults
+                       for all 10 panel languages. __init__.py only the
+                       log line version bumped.
+  2.0.36 (2026-06-29): TTS language choice + auto-update message. Changes
                        in const.py + services.py + nida-panel.js.
-                       __init__.py log-line versie bumped.
-  2.0.35 (2026-06-29): Companion release naast services.py — taal-code
-                       normalisatie naar 2-letter ISO voor TTS.
-                       __init__.py alleen log-line versie bumped.
-  2.0.34 (2026-06-29): Companion release naast scheduler.py —
-                       pre-adhan persistent_notification is nu een
-                       echte fallback: alleen firen als zowel jingle
-                       als TTS uitgeschakeld zijn. __init__.py alleen
-                       log-line versie bumped.
-  2.0.33 (2026-06-29): Companion release naast services.py — TTS-call
-                       payload-fix (language top-level i.p.v. in
-                       options). __init__.py alleen log-line versie
+                       __init__.py log line version bumped.
+  2.0.35 (2026-06-29): Companion release alongside services.py — language
+                       code normalised to 2-letter ISO for TTS.
+                       __init__.py only the log line version bumped.
+  2.0.34 (2026-06-29): Companion release alongside scheduler.py — the
+                       pre-adhan persistent_notification is now a real
+                       fallback: it only fires when both the jingle and
+                       TTS are disabled. __init__.py only the log line
+                       version bumped.
+  2.0.33 (2026-06-29): Companion release alongside services.py — TTS call
+                       payload fix (language top-level instead of inside
+                       options). __init__.py only the log line version
                        bumped.
-  2.0.32 (2026-06-29): TTS pre-adhan announcement. Wijzigingen in
+  2.0.32 (2026-06-29): TTS pre-adhan announcement. Changes in
                        const.py + websocket.py (list_tts_services) +
                        services.py (speak_pre_adhan service) +
-                       scheduler.py (chain TTS na jingle) +
-                       nida-panel.js (TTS-rij + overlay). __init__.py
-                       alleen log-line versie bumped.
-  2.0.31 (2026-06-29): Companion release naast nida-panel.js — Sound
-                       Library krijgt category-scope. Fix voor
-                       verkeerde-adhan-bug. __init__.py alleen
-                       log-line versie bumped.
-  2.0.30 (2026-06-29): Companion release naast nida-panel.js — Sound
-                       Library CSS verplaatst naar de portal-scope.
-                       __init__.py alleen log-line versie bumped.
-  2.0.29 (2026-06-29): Catalog adapter aangepast op echte
-                       majikan.nl manifest schema. Default URL gezet.
-                       Wijzigingen in catalog.py + const.py.
-                       __init__.py log-line versie bumped.
+                       scheduler.py (chain TTS after the jingle) +
+                       nida-panel.js (TTS row + overlay). __init__.py
+                       only the log line version bumped.
+  2.0.31 (2026-06-29): Companion release alongside nida-panel.js — the
+                       Sound Library gets a category scope. Fix for the
+                       wrong-adhan bug. __init__.py only the log line
+                       version bumped.
+  2.0.30 (2026-06-29): Companion release alongside nida-panel.js — Sound
+                       Library CSS moved to the portal scope.
+                       __init__.py only the log line version bumped.
+  2.0.29 (2026-06-29): Catalog adapter adjusted to the real
+                       majikan.nl manifest schema. Default URL set.
+                       Changes in catalog.py + const.py.
+                       __init__.py log line version bumped.
   2.0.28 (2026-06-29): Sound Library — catalog-driven adhan picker.
-                       Nieuw bestand catalog.py + 3 WS commands in
+                       New file catalog.py + 3 WS commands in
                        websocket.py (get_catalog/download_sound/
-                       delete_sound). Const-bestand: OPT_CATALOG_URL.
-                       Geen verdere __init__.py wijzigingen behalve
-                       log-line versie.
-  2.0.27 (2026-06-29): Companion release naast nida-panel.js — companion
-                       cards (Hijri/Now/Quote/Holiday) zijn sleepbaar
-                       om de volgorde te bepalen. Volgorde in
-                       localStorage. Geen backend wijzigingen.
-                       __init__.py zelf alleen log-line versie bumped.
-  2.0.26 (2026-06-29): Companion release naast nida-panel.js — Now-card
-                       herontworpen naar compact horizontaal layout dat
-                       matcht met de nida-card "next-block". Geen
-                       backend wijzigingen. __init__.py zelf alleen
-                       log-line versie bumped.
-  2.0.25 (2026-06-29): Companion release naast nida-panel.js —
-                       Holiday-card aangesloten op gecureerde lijst van
-                       10 universele Soenni feestdagen (geen Aladhan
-                       /specialDays — te breed), én companion + settings
-                       kolommen omgedraaid (companion nu links, settings
-                       rechts). Geen backend wijzigingen. __init__.py
-                       zelf alleen log-line versie bumped.
-  2.0.24 (2026-06-29): Companion release naast nida-panel.js — Release D
-                       polish (opslaan-toast + manual-mode-warning) plus
-                       een UI alignment-fix in de Speakers- en Pre-adhan
-                       test-rijen. Geen backend wijzigingen. __init__.py
-                       zelf alleen log-line versie bumped.
-  2.0.23 (2026-06-28): Vier paneel/backend wijzigingen in één release.
-                       (1) binary_sensor.py defensieve rewrite — droppen
-                       van CoordinatorEntity subclass + try/except om
-                       setup-breakage te elimineren. (2) Nieuwe service
-                       nida.play_pre_adhan_test met eigen volume
-                       (volume_pre_adhan_test) — gebruikt door de
-                       play/stop-knop in het paneel. (3) Sounds-sectie
-                       in nida-panel.js gesplitst in drie subgroepen
-                       (Adhan, Pre-adhan, Nachtmodus); aparte Night-mode
-                       sectie verwijderd uit render. (4) Alle paneel-
-                       secties zijn nu inklapbaar (<details>) met
-                       per-sectie localStorage-memory. Wijzigingen in
+                       delete_sound). Const file: OPT_CATALOG_URL.
+                       No further __init__.py changes besides the
+                       log line version.
+  2.0.27 (2026-06-29): Companion release alongside nida-panel.js — the
+                       companion cards (Hijri/Now/Quote/Holiday) can be
+                       dragged to set their order. Order is kept in
+                       localStorage. No backend changes.
+                       __init__.py itself only the log line version bumped.
+  2.0.26 (2026-06-29): Companion release alongside nida-panel.js — Now card
+                       redesigned into a compact horizontal layout that
+                       matches the nida-card "next-block". No backend
+                       changes. __init__.py itself only the log line
+                       version bumped.
+  2.0.25 (2026-06-29): Companion release alongside nida-panel.js — the
+                       Holiday card is connected to a curated list of
+                       10 universal Sunni holidays (not Aladhan
+                       /specialDays — too broad), and the companion and
+                       settings columns are swapped (companion now left,
+                       settings right). No backend changes. __init__.py
+                       itself only the log line version bumped.
+  2.0.24 (2026-06-29): Companion release alongside nida-panel.js — Release D
+                       polish (save toast + manual-mode warning) plus a
+                       UI alignment fix in the Speakers and Pre-adhan
+                       test rows. No backend changes. __init__.py
+                       itself only the log line version bumped.
+  2.0.23 (2026-06-28): Four panel/backend changes in one release.
+                       (1) binary_sensor.py defensive rewrite — dropped
+                       the CoordinatorEntity subclass + try/except to
+                       eliminate setup breakage. (2) New service
+                       nida.play_pre_adhan_test with its own volume
+                       (volume_pre_adhan_test) — used by the play/stop
+                       button in the panel. (3) Sounds section in
+                       nida-panel.js split into three subgroups
+                       (Adhan, Pre-adhan, Night mode); the separate
+                       Night-mode section removed from render. (4) All
+                       panel sections are now collapsible (<details>)
+                       with per-section localStorage memory. Changes in
                        const.py + services.py + binary_sensor.py +
-                       nida-panel.js. __init__.py: PLATFORMS bevat nu
-                       binary_sensor + log-line versie bumped.
+                       nida-panel.js. __init__.py: PLATFORMS now contains
+                       binary_sensor + log line version bumped.
   2.0.22 (2026-06-28): Pre-adhan audio playback + Speakers test
-                       play/stop + nachtmodus. Wijzigingen in
+                       play/stop + night mode. Changes in
                        const.py + services.py + scheduler.py +
-                       nida-panel.js. __init__.py zelf alleen
-                       log-line versie bumped.
-  2.0.21 (2026-06-28): Binary_sensor platform toegevoegd —
-                       binary_sensor.nida_<prayer>_active per gebed,
-                       ON gedurende dat gebed's window. Isha
-                       overspant middernacht; pre-Fajr-branch
-                       approximeert gisterens Isha als today's Isha -
-                       24h. PLATFORMS uitgebreid.
-  2.0.20 (2026-06-28): Companion release naast nida-panel.js (theme_auto
-                       label naar "Automatic"/"Automatisch"). __init__.py
-                       alleen log-line versie bumped.
-  2.0.19 (2026-06-28): Companion release naast nida-panel.js (.select-
-                       field.flat CSS-variant voor enkele-rij cards).
-                       __init__.py alleen log-line versie bumped.
-  2.0.18 (2026-06-28): Companion release voor de Jumu'ah-eigen-targets
-                       en de Speakers test-jingle. Wijzigingen in
+                       nida-panel.js. __init__.py itself only the
+                       log line version bumped.
+  2.0.21 (2026-06-28): Binary_sensor platform added —
+                       binary_sensor.nida_<prayer>_active per prayer,
+                       ON during that prayer's window. Isha spans
+                       midnight; the pre-Fajr branch approximates
+                       yesterday's Isha as today's Isha - 24h.
+                       PLATFORMS extended.
+  2.0.20 (2026-06-28): Companion release alongside nida-panel.js (theme_auto
+                       label to "Automatic"/"Automatisch"). __init__.py
+                       only the log line version bumped.
+  2.0.19 (2026-06-28): Companion release alongside nida-panel.js (.select-
+                       field.flat CSS variant for single-row cards).
+                       __init__.py only the log line version bumped.
+  2.0.18 (2026-06-28): Companion release for the Jumu'ah own targets
+                       and the Speakers test jingle. Changes in
                        const.py + services.py + scheduler.py +
-                       websocket.py + nida-panel.js. __init__.py zelf
-                       alleen log-line versie bumped.
-  2.0.17 (2026-06-28): Switch platform toegevoegd voor per-gebed adhan
-                       AAN/UIT (switch.nida_<prayer>_enabled). Scheduler
-                       wordt nu opgeslagen in hass.data zodat het
-                       update-listener-pad het direct kan reschedulen
-                       bij elke options-wijziging — voorheen moest je
-                       12 uur wachten tot de coordinator zelf
-                       reschedulede. Toegevoegd aan PLATFORMS.
-  2.0.16 (2026-06-28): Companion release naast nida-panel.js + websocket.py
-                       (test-knoppen + ws-commands voor on-demand
-                       notify-testing). __init__.py alleen log-line
-                       versie bumped.
-  2.0.15 (2026-06-28): Release B — notifications + Jumu'ah. Wijzigingen
+                       websocket.py + nida-panel.js. __init__.py itself
+                       only the log line version bumped.
+  2.0.17 (2026-06-28): Switch platform added for per-prayer adhan
+                       ON/OFF (switch.nida_<prayer>_enabled). The scheduler
+                       is now stored in hass.data so the update-listener
+                       path can reschedule it directly on every options
+                       change — previously you had to wait 12 hours for
+                       the coordinator to reschedule by itself. Added to
+                       PLATFORMS.
+  2.0.16 (2026-06-28): Companion release alongside nida-panel.js + websocket.py
+                       (test buttons + ws commands for on-demand
+                       notify testing). __init__.py only the log line
+                       version bumped.
+  2.0.15 (2026-06-28): Release B — notifications + Jumu'ah. Changes
                        in const.py + websocket.py + scheduler.py +
-                       nida-panel.js. __init__.py zelf alleen log-line
-                       versie bumped.
-  2.0.14 (2026-06-28): Companion release naast nida-panel.js (² CSS
-                       tweak). __init__.py alleen log-line versie
+                       nida-panel.js. __init__.py itself only the log line
+                       version bumped.
+  2.0.14 (2026-06-28): Companion release alongside nida-panel.js (² CSS
+                       tweak). __init__.py only the log line version
                        bumped.
-  2.0.13 (2026-06-28): Companion release voor de feedback op 2.0.12 —
+  2.0.13 (2026-06-28): Companion release for the feedback on 2.0.12 —
                        lower default volumes (10/20/20), pre-adhan
-                       minuten als slider 2-30 met optionele tweede
-                       reminder, reverse-geocode voor de device-mode
-                       locatie-rij, en fix voor de city-pick blur-race.
-                       Wijzigingen in nida-panel.js + websocket.py +
-                       scheduler.py + const.py. __init__.py zelf alleen
-                       log-line versie bumped.
-  2.0.12 (2026-06-28): Companion release voor Release A — panel volume
-                       sliders, pre-adhan minuten input, Nida²
-                       superscript-spacing fix, en Nominatim city=
-                       structured-search fix voor de city autocomplete
-                       (was 0 hits met q= bij prefixes <4 chars).
-                       Wijzigingen in nida-panel.js + websocket.py +
-                       services.py + const.py. __init__.py zelf alleen
-                       log-line versie bumped.
-  2.0.11 (2026-06-28): Companion release naast nida-panel.js (zie zijn
-                       changelog voor de <dialog>-based portal en de
+                       minutes as a 2-30 slider with an optional second
+                       reminder, reverse geocode for the device-mode
+                       location row, and a fix for the city-pick blur race.
+                       Changes in nida-panel.js + websocket.py +
+                       scheduler.py + const.py. __init__.py itself only
+                       the log line version bumped.
+  2.0.12 (2026-06-28): Companion release for Release A — panel volume
+                       sliders, pre-adhan minutes input, Nida²
+                       superscript spacing fix, and a Nominatim city=
+                       structured-search fix for the city autocomplete
+                       (was 0 hits with q= for prefixes <4 chars).
+                       Changes in nida-panel.js + websocket.py +
+                       services.py + const.py. __init__.py itself only
+                       the log line version bumped.
+  2.0.11 (2026-06-28): Companion release alongside nida-panel.js (see its
+                       changelog for the <dialog>-based portal and the
                        city-input partial-update fix). __init__.py
-                       zelf alleen log-line versie bumped.
-  2.0.10 (2026-06-28): Companion release naast websocket.py + coordinator.py
-                       + nida-panel.js (zie hun changelogs voor de overlay
-                       portal-fix en de Nominatim-backed city autocomplete).
-                       __init__.py zelf alleen log-line versie bumped.
-  2.0.9 (2026-06-28): Companion release naast websocket.py + nida-panel.js
-                      (zie hun changelogs voor de Speakers-picker en
-                      resolved-location-rij). __init__.py zelf alleen
-                      log-line versie bumped.
+                       itself only the log line version bumped.
+  2.0.10 (2026-06-28): Companion release alongside websocket.py + coordinator.py
+                       + nida-panel.js (see their changelogs for the overlay
+                       portal fix and the Nominatim-backed city autocomplete).
+                       __init__.py itself only the log line version bumped.
+  2.0.9 (2026-06-28): Companion release alongside websocket.py + nida-panel.js
+                      (see their changelogs for the Speakers picker and
+                      the resolved-location row). __init__.py itself only
+                      the log line version bumped.
   2.0.8 (2026-06-28): Welcome notification text expanded to point at
                       the Masjid sidebar entry, now that the config
                       flow no longer shows a welcome step (entry is
                       auto-created without a form).
-  2.0.7 (2026-06-28): Companion release naast const.py + scheduler.py +
-                      nida-panel.js (zie hun changelogs voor pre-adhan
-                      notification en country search). __init__.py
-                      zelf alleen log-line versie bumped.
-  2.0.6 (2026-06-28): Companion release naast sensor.py + nida-panel.js
-                      + config_flow.py changes (zie hun changelogs).
-                      __init__.py zelf alleen log-line versie bumped.
-  2.0.5 (2026-06-28): Companion release naast sensor.py en config_flow.py
-                      changes (zie hun changelogs). __init__.py zelf
-                      ongewijzigd qua structuur — alleen log-line versie
-                      bumped en strings.json/welcome flow vertrouwt nu
-                      op description_placeholders i.p.v. embedded text.
-  2.0.4 (2026-06-28): One-shot welcome notification toegevoegd na de
-                      eerste async_setup_entry — markdown-link naar
-                      /nida zodat de gebruiker direct in het Masjid-
-                      paneel kan landen na install. Gated op
-                      entry.data["welcome_shown"] zodat de banner
-                      niet bij elke restart/reload terugkomt.
-  2.0.3 (2026-06-28): _async_update_listener is nu selectief — alleen
-                      een integratie-reload bij wijziging van
-                      show_in_sidebar. Voorheen reloadde de integratie
-                      bij ELKE options-change (toggle, city, method...),
-                      wat het paneel kort uit de sidebar haalde en de
-                      browser terug deed gaan naar het dashboard.
+  2.0.7 (2026-06-28): Companion release alongside const.py + scheduler.py +
+                      nida-panel.js (see their changelogs for the pre-adhan
+                      notification and country search). __init__.py
+                      itself only the log line version bumped.
+  2.0.6 (2026-06-28): Companion release alongside sensor.py + nida-panel.js
+                      + config_flow.py changes (see their changelogs).
+                      __init__.py itself only the log line version bumped.
+  2.0.5 (2026-06-28): Companion release alongside sensor.py and config_flow.py
+                      changes (see their changelogs). __init__.py itself
+                      unchanged in structure — only the log line version
+                      bumped, and strings.json/welcome flow now relies
+                      on description_placeholders instead of embedded text.
+  2.0.4 (2026-06-28): One-shot welcome notification added after the
+                      first async_setup_entry — markdown link to
+                      /nida so the user can land directly in the Masjid
+                      panel after install. Gated on
+                      entry.data["welcome_shown"] so the banner does
+                      not return on every restart/reload.
+  2.0.3 (2026-06-28): _async_update_listener is now selective — it only
+                      reloads the integration when show_in_sidebar
+                      changes. Previously the integration reloaded on
+                      EVERY options change (toggle, city, method...),
+                      which briefly removed the panel from the sidebar
+                      and sent the browser back to the dashboard.
   2.0.2 (2026-06-28): Sidebar entry is now conditional on
                       options.show_in_sidebar (default True). Welcome
                       step in the config flow restored. Sidebar label
                       renamed to "Masjid" (URL path stays /nida). On
                       unload the panel is also removed cleanly.
-  2.0.1 (2026-06-28): Automatic adhan playback toegevoegd — helpers,
-                      services en scheduler aangehaakt. async_copy_sounds()
-                      draait op elke setup; nida.play_adhan service
-                      geregistreerd; NidaScheduler plant triggers en
-                      ruimt zichzelf op via entry.async_on_unload.
-  2.0.0 (2026-06-27): Sensor-platform (sensor.py) toegevoegd aan PLATFORMS en
-                      async_unload_entry — eerste herbouwstap na het kale
-                      coordinator+panel+websocket-skelet.
+  2.0.1 (2026-06-28): Automatic adhan playback added — helpers,
+                      services and scheduler hooked up. async_copy_sounds()
+                      runs on every setup; the nida.play_adhan service is
+                      registered; NidaScheduler plans triggers and
+                      cleans up after itself via entry.async_on_unload.
+  2.0.0 (2026-06-27): Sensor platform (sensor.py) added to PLATFORMS and
+                      async_unload_entry — first rebuild step after the bare
+                      coordinator+panel+websocket skeleton.
 """
 from __future__ import annotations
 
@@ -396,7 +397,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from homeassistant.helpers import device_registry as dr
 
     dev_reg = dr.async_get(hass)
-    device = dev_reg.async_get_or_create(
+    dev_reg.async_get_or_create(
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, entry.entry_id)},
         name="Nida Prayer Times",
@@ -468,7 +469,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             entry, data={**entry.data, "welcome_shown": True}
         )
 
-    _LOGGER.info("Nida (2.0.46) succesvol geladen voor entry %s", entry.entry_id)
+    _LOGGER.info("Nida loaded successfully for entry %s", entry.entry_id)
     return True
 
 

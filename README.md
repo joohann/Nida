@@ -99,7 +99,7 @@ card_type: now        # now, today, kids, scene_now, scene_today
 
 ## Requirements
 
-- Home Assistant 2023.1 or newer
+- Home Assistant 2024.11 or newer
 - One or more `media_player` entities for the adhan
 - A TTS integration if you want the spoken announcement
 - The Home Assistant Companion app for push notifications and the Live Activity

@@ -1,34 +1,34 @@
 /**
- * <majikan-donate> — herbruikbare "Steun de ontwikkelaar"-knop met
- * bevestigingspopup, voor alle Majikan-integraties (NL-Alert, Nida,
+ * <majikan-donate> — reusable "Support the developer" button with a
+ * confirmation popup, for all Majikan integrations (NL-Alert, Nida,
  * Chihiros Plus, ...).
  *
- * Eén bron van waarheid: elke integratie kopieert dit ene bestand naar zijn
- * eigen frontend/-map (HACS levert per integratie zijn eigen frontend) en
- * plaatst het element waar de knop moet komen.
+ * One source of truth: every integration copies this one file into its
+ * own frontend/ folder (HACS ships each integration its own frontend) and
+ * places the element where the button should appear.
  *
  * Gebruik:
  *   import "./majikan-donate.js";
  *   <majikan-donate accent="--nl-accent"></majikan-donate>          // balk
  *   <majikan-donate inline accent="--nl-accent"></majikan-donate>   // inline
  *
- * Attributen (optioneel):
- *   accent   CSS-variabelenaam voor de accentkleur van die integratie
- *            (bijv. "--nl-accent", "--chihiros-accent"). Valt terug op --primary-color.
- *   label    Knoptekst.  Standaard: "Support the developer".
- *   made     Wat er onder Majikan valt.  Standaard: "several open-source projects".
- *   url      PayPal-donatielink.  Standaard: de hosted Donate-knop hieronder.
- *   contact  Optionele contact-/formulier-URL. Toont een extra "Contact"-link
- *            in de bevestigingspopup (opent in een nieuw tabblad).
+ * Attributes (optional):
+ *   accent   CSS variable name for that integration's accent colour
+ *            (e.g. "--nl-accent", "--chihiros-accent"). Falls back to --primary-color.
+ *   label    Button text.  Default: "Support the developer".
+ *   made     What falls under Majikan.  Default: "several open-source projects".
+ *   url      PayPal donation link.  Default: the hosted Donate button below.
+ *   contact  Optional contact/form URL. Shows an extra "Contact" link
+ *            in the confirmation popup (opens in a new tab).
  *
- * De popup rendert in document.body (portal) met inline-stijlen, zodat een
- * transform-voorouder in het paneel de fixed-overlay niet kan breken.
+ * The popup renders in document.body (portal) with inline styles, so a
+ * transform ancestor in the panel cannot break the fixed overlay.
  */
 
 const DEFAULT_URL =
   "https://www.paypal.com/donate/?hosted_button_id=SGVVUM4GVYF66";
 
-// Teksten per taal. Standaard Engels; NL-Alert gebruikt lang="nl".
+// Strings per language. Default English; NL-Alert uses lang="nl".
 const STRINGS = {
   en: {
     label: "Support the developer",
@@ -63,7 +63,7 @@ const HEART =
   'aria-hidden="true"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7' +
   'a5 5 0 1 0-7.1 7.1L12 21l8.8-8.3a5 5 0 0 0 0-7.1z"/></svg>';
 
-/** Zwarte of witte tekst kiezen die leesbaar is op de gegeven kleur. */
+/** Pick black or white text that is readable on the given colour. */
 function readableOn(color) {
   let r, g, b;
   const m = color.match(/rgba?\(([^)]+)\)/i);

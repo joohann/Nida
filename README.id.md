@@ -99,7 +99,7 @@ card_type: now        # now, today, kids, scene_now, scene_today
 
 ## Persyaratan
 
-- Home Assistant 2023.1 atau lebih baru
+- Home Assistant 2024.11 atau lebih baru
 - Satu atau lebih entitas `media_player` untuk adzan
 - Integrasi TTS jika Anda ingin pengumuman lisan
 - Aplikasi Home Assistant Companion untuk notifikasi push dan Live Activity

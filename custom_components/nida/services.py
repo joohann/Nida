@@ -28,10 +28,10 @@ Changelog:
                        anyway, then media_play'd back onto the sound
                        itself.
   2.3.4 (2026-07-28): Sonos announcements + one shared playback path.
-                       Johann: "met Nasheed zou het fijn zijn als je
-                       muziek afspeelt dat hij daarna hervat met de juiste
-                       volume. Sonos heeft toch ook een announcement
-                       manier?" Both, yes.
+                       Johann: "with a nasheed it would be nice, when you
+                       are playing music, if it resumed afterwards at the
+                       right volume. Doesn't Sonos also have an
+                       announcement mode?" Both, yes.
                        (1) New _play_sound_on_speakers holds the whole
                        duck / snapshot / fade / play / restore sequence
                        that four handlers had been carrying separately.
@@ -55,9 +55,9 @@ Changelog:
                        enters a pollable "playing" state), so ducked
                        players are held for the file's real length via
                        mutagen instead of resuming over the sound.
-  2.3.2 (2026-07-28): Fade instead of a hard cut. Johann: "de muziek
-                       wordt gepauzeerd en dat abrupt, er achteraan
-                       begint de adhan — zou die overgang beter kunnen."
+  2.3.2 (2026-07-28): Fade instead of a hard cut. Johann: "the music
+                       is paused, abruptly, and right after it the
+                       adhan starts — could that transition be better."
                        New _fade_players / _fade_out_before_playback:
                        when something is genuinely playing on the target
                        speakers, its volume ramps to zero over
@@ -80,8 +80,8 @@ Changelog:
                        and the 2.3.0 preview).
   2.3.0 (2026-07-28): New nida.play_preview — one service that plays any
                        of Nida's configured sounds on the REAL speakers at
-                       its REAL volume (Johann: "elke vorm dat je geluid
-                       afspeelt moet kunnen testen wat het volume is").
+                       its REAL volume (Johann: "every way of playing a sound
+                       must let you test what the volume is").
                        Fills a genuine gap: the adhan was the one sound
                        with no speaker route at all, since the panel's
                        adhan ▶ was an in-browser preview and
@@ -96,11 +96,11 @@ Changelog:
                        panel passes a REAL prayer name to get the real
                        volume, so it needs its own guest-mode exemption
                        rather than riding on prayer=="test".
-  2.2.4 (2026-07-28): Pre-adhan dip. Johann, on 2.2.3: "volume wordt
-                       verhoogd terwijl de muziek nog speelt. Misschien is
-                       het rustiger als die iets verlaagd [wordt voor] de
-                       jingle en tts en daarna weer hersteld op de waarde
-                       voordat de pre-adhan ging." Setting the configured
+  2.2.4 (2026-07-28): Pre-adhan dip. Johann, on 2.2.3: "the volume is
+                       raised while the music is still playing. Maybe it
+                       is calmer if it is lowered a little [for] the
+                       jingle and TTS and then restored to the value
+                       from before the pre-adhan." Setting the configured
                        pre-adhan volume before play_media meant the MUSIC
                        audibly jumped to that level first, which is the
                        opposite of a gentle heads-up. New
@@ -120,9 +120,9 @@ Changelog:
                        `volumes` map (Sonos included, which the restore
                        path itself doesn't need) for the dip maths.
   2.2.3 (2026-07-28): Restore playback on the ADHAN speakers themselves.
-                       Johann: "ik heb als ik muziek luister dan de
-                       mediaplayer daarna niet hersteld ... het zou fijn
-                       zijn als muziek erna hersteld". Duck-media (2.1.26)
+                       Johann: "when I listen to music the media
+                       player is not restored afterwards ... it would be
+                       nice if the music came back". Duck-media (2.1.26)
                        only ever touched OTHER players — the adhan
                        speakers were deliberately excluded, so music
                        playing on the speaker the adhan itself uses was
@@ -198,9 +198,9 @@ Changelog:
                        the full per-method breakdown.
   2.1.30 (2026-07-09): Duck-media now also covers the pre-adhan TTS
                        announcement (_async_handle_speak_pre_adhan), not
-                       just the jingle — Johann: "de pauze van de media
-                       player is met pre-adhan alleen de jingle en niet
-                       de tts". Anyone with only TTS enabled (no jingle)
+                       just the jingle — Johann: "the media player pause
+                       with the pre-adhan covers only the jingle and not
+                       the TTS". Anyone with only TTS enabled (no jingle)
                        previously got no ducking at all; anyone with both
                        had the ducked player resumed again before TTS
                        even spoke. Same pattern as the jingle/adhan
@@ -339,19 +339,19 @@ Changelog:
                        overrides night quiet. All five play_* handlers
                        route through the new function; the open state is
                        read live from hass.states at fire time.
-  2.0.35 (2026-06-29): Fix in nida.speak_pre_adhan — taal-code wordt
-                       genormaliseerd naar 2-letter ISO. Google
-                       Translate TTS + OpenAI TTS weigerden BCP-47
-                       regio-codes ("en-GB", "nl-NL") met "Language X
-                       not supported". Cloud TTS accepteert ze maar
-                       werkt ook met "en". 2-letter is universeel
-                       veilig.
-  2.0.33 (2026-06-29): Fix in nida.speak_pre_adhan — `language` is een
-                       top-level parameter van tts.speak, niet een
-                       sleutel in `options`. Cloud TTS (en anderen)
-                       wezen het stilletjes af met "Invalid options
-                       found: ['language']". options dict nu helemaal
-                       weggelaten (geen engine-specifieke knobs).
+  2.0.35 (2026-06-29): Fix in nida.speak_pre_adhan — the language code is
+                       normalised to 2-letter ISO. Google
+                       Translate TTS + OpenAI TTS rejected BCP-47
+                       region codes ("en-GB", "nl-NL") with "Language X
+                       not supported". Cloud TTS accepts them but
+                       also works with "en". 2-letter is universally
+                       safe.
+  2.0.33 (2026-06-29): Fix in nida.speak_pre_adhan — `language` is a
+                       top-level parameter of tts.speak, not a
+                       key in `options`. Cloud TTS (and others)
+                       silently rejected it with "Invalid options
+                       found: ['language']". The options dict is now
+                       left out entirely (no engine-specific knobs).
   2.0.23 (2026-06-28): New service nida.play_pre_adhan_test — plays
                        the configured pre-adhan jingle on the adhan
                        speakers with volume_pre_adhan_test (separate
@@ -372,8 +372,8 @@ Changelog:
                        _apply_night_factor, which checks the
                        night-mode window and reduces the volume by
                        the configured factor when active.
-  2.0.18 (2026-06-28): nida.play_test_sound service toegevoegd voor de
-                       Speakers-test-knop in het paneel.
+  2.0.18 (2026-06-28): nida.play_test_sound service added for the
+                       Speakers test button in the panel.
   2.0.12 (2026-06-28): Per-category volume support.
   2.0.1 (2026-06-28): New file — initial play_adhan service.
 """
@@ -410,7 +410,6 @@ from .const import (
     DEFAULT_SOUNDS,
     DEFAULT_TTS_MESSAGES,
     DEFAULT_TTS_PRE_ADHAN_DELAY,
-    DEFAULT_TTS_PRE_ADHAN_MESSAGE_FALLBACK,
     DEFAULT_VOLUME_PRE_ADHAN_TEST,
     DEFAULT_VOLUME_TEST,
     DEFAULT_DUA_VOLUME,
@@ -472,7 +471,7 @@ SERVICE_TEST_PRE_ADHAN = "test_pre_adhan"
 
 # 2.3.0 — one preview service covering every sound Nida can play, so each
 # one is auditionable ON THE REAL SPEAKERS at its REAL configured volume.
-# Johann: "elke vorm dat je geluid afspeelt moet kunnen testen wat het
+# Johann: "every way of playing a sound must let you test what the
 # volume is." Before this the adhan was the ONE sound with no speaker
 # route at all — the panel's adhan ▶ was an in-browser `new Audio()`
 # (fine for "which muezzin is this", useless for "how loud will the house
@@ -1474,8 +1473,8 @@ async def _restore_adhan_players(
     at adhan volume before volume_set lands.
 
     2.5.0 — the music now fades back IN over the configured fade length
-    instead of arriving at full level in one step (Johann: "de muziek komt
-    in een keer hard terug"). Generic players: volume 0, play, ramp. Sonos:
+    instead of arriving at full level in one step (Johann: "the music comes
+    back loud all at once"). Generic players: volume 0, play, ramp. Sonos:
     sonos.restore decides its own volume and exposes no fade, so it is
     awaited, the level is pulled straight back to 0 and ramped up — the
     stream needs a moment to buffer, which hides the instant. Off when the
@@ -1559,7 +1558,7 @@ async def _random_adhan_rel(
     two different reciters for the same prayer on the same day anymore,
     which was never really the point of the feature anyway.
     """
-    from .catalog import async_fetch_catalog, local_sound_exists
+    from .catalog import async_fetch_catalog, async_local_sounds_present
 
     category = PRAYER_SOUND_CATEGORY.get(prayer, SOUND_CATEGORY_ADHAN)
     try:
@@ -1567,13 +1566,13 @@ async def _random_adhan_rel(
     except Exception as err:  # noqa: BLE001
         _LOGGER.warning("Random adhan: catalog fetch failed (%s)", err)
         return fallback_rel
-    candidates = [
+    in_category = [
         s["rel_path"]
         for s in cat.get("sounds", [])
-        if s.get("category") == category
-        and s.get("rel_path")
-        and local_sound_exists(hass, s["rel_path"])
+        if s.get("category") == category and s.get("rel_path")
     ]
+    present = await async_local_sounds_present(hass, in_category)
+    candidates = [rel for rel in in_category if rel in present]
     if not candidates:
         _LOGGER.debug(
             "Random adhan: no downloaded candidates for %s; using configured sound",
@@ -1665,8 +1664,8 @@ async def _play_sound_on_speakers(
     copy-pasted across four handlers with small drifts between them —
     play_test_sound in particular never grew the duck/snapshot/restore
     the others got, so a speaker test simply killed whatever music was
-    on (Johann: "met Nasheed zou het fijn zijn als je muziek afspeelt dat
-    hij daarna hervat met de juiste volume").
+    on (Johann: "with a nasheed it would be nice if music that was playing
+    resumed afterwards at the right volume").
 
     Two routes, chosen per player: Sonos announcements where enabled and
     available (the speaker handles duck + restore itself), the manual
@@ -1726,8 +1725,8 @@ async def _play_and_wait(
     until it has actually finished (2.5.0).
 
     The wait now ALWAYS happens on the announce route, not just when
-    other players happened to be ducked. Johann: "de pre announcement
-    wordt afgebroken door de TTS" — with Sonos announcements on and
+    other players happened to be ducked. Johann: "the pre-announcement
+    is cut off by the TTS" — with Sonos announcements on and
     nothing in the house to duck, this returned the moment the clip was
     handed to the speaker, so the caller went straight on to the TTS and
     cut the jingle off mid-note.
@@ -2063,8 +2062,8 @@ async def _async_handle_speak_pre_adhan(
         return
 
     # 2.1.30 — duck/restore around the TTS announcement too, not just the
-    # jingle. Johann: "de pauze van de media player is met pre-adhan
-    # alleen de jingle en niet de tts" — someone with only TTS enabled
+    # jingle. Johann: "the media player pause with the pre-adhan
+    # covers only the jingle and not the TTS" — someone with only TTS enabled
     # (no jingle) got no ducking at all, and someone with both got the
     # ducked player resumed again before the TTS spoke over it. The
     # restore happens in a finally so it still runs if tts.speak errors.
@@ -2250,7 +2249,7 @@ async def async_run_pre_adhan_sequence(
     """The scheduled pre-adhan heads-up: jingle, then the spoken line, as
     ONE take-over of the speakers (2.5.0).
 
-    Johann: "de pre announcement wordt afgebroken door de TTS". The
+    Johann: "the pre-announcement is cut off by the TTS". The
     scheduler used to fire nida.play_pre_adhan_jingle and
     nida.speak_pre_adhan as two independent non-blocking service calls
     with a fixed delay (5s) in between, and two things went wrong with
@@ -2338,7 +2337,7 @@ async def _async_handle_test_pre_adhan(hass: HomeAssistant, call: ServiceCall) -
     """Run the WHOLE pre-adhan (jingle, gap, spoken line) on the real
     speakers, the way the scheduler would (2.5.0).
 
-    Johann: a button to test "hele pre-adhan inclusief de jingle". Until
+    Johann: a button to test "the whole pre-adhan including the jingle". Until
     now the jingle and the TTS could only be tried one at a time, which
     never showed the thing that matters: how they sound back to back.
     Follows the configured toggles (a switched-off half is skipped, as it
