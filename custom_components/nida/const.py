@@ -1,6 +1,9 @@
 """Nida constanten — domain, sound-categorieën, gebedsnamen, sensor entity_ids.
 
 Changelog:
+  2.5.4 (2026-11-15): VOICED_JINGLE_PREFIX / VOICED_JINGLE_FALLBACK_LANG and
+                       OPT_PRE_ADHAN_JINGLE_FOLLOW_LANGUAGE for the voiced
+                       pre-adhan jingles (jingle + spoken line in one file).
   2.5.0 (2026-10-10): dua trigger_state ("on"/"off") picks the state the trigger
                        entity must change to. Live Activity for the next prayer. New OPT_LIVE_ACTIVITY_ENABLED,
                        OPT_LIVE_ACTIVITY_MINUTES (lead time, 15-360, default
@@ -548,8 +551,6 @@ NOTIFY_ICON_DEFAULT = "mdi:mosque"
 OPT_NOTIFY_ICON = "notify_icon"            # mdi:* name, Android only
 OPT_NOTIFY_ICON_COLOR = "notify_icon_color"
 DEFAULT_NOTIFY_ICON_COLOR = "#1F7A4D"      # Nida green
-OPT_NOTIFY_IOS_IMAGE_ENABLED = "notify_ios_image_enabled"
-DEFAULT_NOTIFY_IOS_IMAGE_ENABLED = False
 # 2.3.13 — the thing Johann actually wants: "they [should] not stack
 # under Home Assistant, you simply see no difference." Both platforms
 # bundle notifications per APP, so everything Nida sends lands on the
@@ -576,12 +577,6 @@ NOTIFY_GROUP = "nida"
 # alarm stream (see _critical_notify_data); overwriting it with a display
 # name would silently undo the whole silent-mode bypass.
 NOTIFY_CHANNEL = "Nida"
-# Mirrored out of the integration's brand/ folder by helpers.py so the
-# Companion app can actually fetch it over the HA connection.
-# 2.3.15 — points at the 192px copy, not the 1024px brand icon: iOS
-# renders this as a thumbnail, so the big one was ~200 kB fetched per
-# notification for no visible gain.
-NOTIFY_ICON_IMAGE_PATH = "/local/nida/brand/icon_notify.png"
 
 # 2.3.15 — the big round image on an Android notification. Johann, on a
 # screenshot of a live adhan notification: "can we now change that
@@ -726,7 +721,7 @@ DEFAULT_RANDOM_ADHAN_ENABLED = False
 OPT_NOTIFY_ENABLED = "notify_enabled"
 OPT_NOTIFY_TARGETS = "notify_targets"            # list of "notify.<x>" service paths
 OPT_NOTIFY_TITLE = "notify_title"                 # string, supports no placeholders
-OPT_NOTIFY_MESSAGE = "notify_message"             # string, supports [prayer]
+OPT_NOTIFY_MESSAGE = "notify_message"             # string, supports [prayer] and [time]
 OPT_NOTIFY_ENABLED_PREFIX = "notify_enabled_"     # per-prayer toggle, e.g. notify_enabled_fajr
 # 2.0.90 — critical notifications, PER PRAYER (2.0.89 shipped this as one
 # master switch; corrected before backend release since "critical" is a
@@ -765,7 +760,29 @@ OPT_NOTIFY_TTS_WORKAROUND_TARGETS = "notify_tts_workaround_targets"
 # actually typed is left alone.
 DEFAULT_NOTIFY_TITLE_FALLBACK = "Nida"
 LEGACY_NOTIFY_TITLES = ("🕌 Nida",)
-DEFAULT_NOTIFY_MESSAGE_FALLBACK = "It's time for [prayer] prayer"
+DEFAULT_NOTIFY_MESSAGE_FALLBACK = "It's [time] time for [prayer] prayer"
+
+# 2.5.4 — the notify message gained a [time] placeholder so it can read
+# "It's 16:45 time for Asr prayer". The panel seeds a per-language default
+# into options.notify_message at first init, so most installs have the old
+# time-less default sitting there as a stored value, where changing the
+# panel default alone would never reach them. Map each former per-language
+# default to its new "...with [time]..." form; __init__.py rewrites a
+# stored message that still matches one of these exactly (same "untouched
+# equals a known former default" rule as LEGACY_NOTIFY_TITLES). A message
+# the user typed themselves matches nothing here and is left as it is.
+LEGACY_NOTIFY_MESSAGES = {
+    "It's time for [prayer] prayer": "It's [time] time for [prayer] prayer",
+    "Het is tijd voor het [prayer]-gebed": "Het is [time] tijd voor het [prayer]-gebed",
+    "حان وقت صلاة [prayer]": "الساعة [time]، حان وقت صلاة [prayer]",
+    "[prayer] namazı vakti geldi": "Saat [time], [prayer] namazı vakti geldi",
+    "Es ist Zeit für das [prayer]-Gebet": "Es ist [time] Uhr, Zeit für das [prayer]-Gebet",
+    "C'est l'heure de la prière du [prayer]": "Il est [time], c'est l'heure de la prière du [prayer]",
+    "Sudah tiba waktu solat [prayer]": "Pukul [time], sudah tiba waktu solat [prayer]",
+    "Sudah waktunya salat [prayer]": "Pukul [time], sudah waktunya salat [prayer]",
+    "[prayer] کی نماز کا وقت ہو گیا ہے": "[time] بجے، [prayer] کی نماز کا وقت ہو گیا ہے",
+    "وقت نماز [prayer] فرا رسیده است": "ساعت [time]، وقت نماز [prayer] فرا رسیده است",
+}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Jumu'ah (Friday prayer) — congregational Dhuhr on Friday. The prayer
@@ -817,6 +834,16 @@ DEFAULT_THEME = THEME_DARK
 # ─────────────────────────────────────────────────────────────────────────────
 # Default mp3 files shipped in sounds/<category>/.
 # ─────────────────────────────────────────────────────────────────────────────
+# 2.5.4 — voiced jingles: a pre-adhan jingle whose file name starts with this
+# prefix already carries the spoken announcement (jingle + voice in one file,
+# one per language: jingle_nida_<lang>.mp3). While one is the active jingle
+# the separate pre-adhan TTS is skipped. Mirrored in the panel
+# (VOICED_JINGLE_PREFIX / VOICED_JINGLE_FALLBACK_LANG in nida-panel.js).
+VOICED_JINGLE_PREFIX = "jingle_nida_"
+VOICED_JINGLE_FALLBACK_LANG = "en"
+# Panel-written flag: the active voiced jingle follows the panel language.
+OPT_PRE_ADHAN_JINGLE_FOLLOW_LANGUAGE = "pre_adhan_jingle_follow_language"
+
 DEFAULT_SOUNDS = {
     SOUND_CATEGORY_FAJR_ADHAN: "adhan/adhan_fajr_ahmed_saeed_al-omrany.mp3",
     SOUND_CATEGORY_ADHAN: "adhan/adhan_day_ahmed_saeed_al-omrany.mp3",

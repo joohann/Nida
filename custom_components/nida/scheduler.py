@@ -12,6 +12,11 @@ scheduler fires `hass.services.async_call('notify', <target>, ...)`
 directly because the routing logic is purely scheduler-internal.
 
 Changelog:
+  2.5.4 (2026-11-12): The adhan notify message gained a [time] placeholder.
+                      _maybe_schedule_notify passes the planned adhan
+                      target through to _async_make_notify_handler, whose
+                      _fire now substitutes [time] with the prayer's clock
+                      time (local, 24h) alongside the existing [prayer].
   2.1.35 (2026-07-11): Fajr wake-up alarm, Ramadan only (Johann: "do we
                        have a Fajr alarm for Ramadan?", confirmed
                        Ramadan-scoped via AskUserQuestion). New
@@ -288,7 +293,6 @@ from .const import (
     DEFAULT_JUMUAH_MESSAGE_FALLBACK,
     DEFAULT_JUMUAH_MINUTES,
     DEFAULT_NOTIFY_ICON_COLOR,
-    DEFAULT_NOTIFY_IOS_IMAGE_ENABLED,
     DEFAULT_NOTIFY_LARGE_ICON_ENABLED,
     DEFAULT_NOTIFY_MESSAGE_FALLBACK,
     DEFAULT_NOTIFY_TITLE_FALLBACK,
@@ -347,12 +351,10 @@ from .const import (
     NOTIFY_CHANNEL,
     NOTIFY_GROUP,
     NOTIFY_ICON_DEFAULT,
-    NOTIFY_ICON_IMAGE_PATH,
     NOTIFY_LARGE_ICON_PATH,
     NOTIFY_THREAD_ID,
     OPT_NOTIFY_ICON,
     OPT_NOTIFY_ICON_COLOR,
-    OPT_NOTIFY_IOS_IMAGE_ENABLED,
     OPT_NOTIFY_LARGE_ICON_ENABLED,
     OPT_NOTIFY_MESSAGE,
     OPT_NOTIFY_TARGETS,
@@ -726,7 +728,7 @@ class NidaScheduler:
             self.hass,
             self._async_make_notify_handler(
                 prayer, targets, title, message_tpl, critical,
-                tts_workaround_targets,
+                tts_workaround_targets, prayer_time=adhan_target,
             ),
             adhan_target,
         )
@@ -962,9 +964,17 @@ class NidaScheduler:
         message_tpl: str,
         critical: bool = False,
         tts_workaround_targets: set[str] | None = None,
+        prayer_time: datetime | None = None,
     ):
         async def _fire(_now) -> None:
             message = message_tpl.replace("[prayer]", prayer.capitalize())
+            # [time] — the prayer's scheduled clock time (e.g. "16:45"), so
+            # a message like "It's [time] time for [prayer] prayer" reads as
+            # "It's 16:45 time for Asr prayer". Uses the planned adhan target
+            # (local time, 24h); falls back to the fire time if unset.
+            clock = (prayer_time or _now)
+            if clock is not None:
+                message = message.replace("[time]", clock.strftime("%H:%M"))
             # 2.1.29 — only bother resolving the adhan sound + its real
             # duration if an Android TV target is actually present; the
             # file read (even cached) and catalog lookup are wasted work
@@ -1482,12 +1492,32 @@ def _notify_service_data_for_target(
         # An Android TV overlay has no icon or notification stack, so the
         # branding keys below would just be noise there.
         return service_data
-    _apply_notify_branding(service_data, options, critical)
+    _apply_notify_branding(
+        service_data, options, critical, brand_rev=_brand_rev(hass)
+    )
     return service_data
 
 
+def _brand_rev(hass: HomeAssistant) -> str:
+    """Cache-bust token for the notify icon URL (see helpers.async_brand_rev)."""
+    return str((hass.data.get(DOMAIN) or {}).get("brand_rev") or "")
+
+
+def brand_image_url(path: str, brand_rev: str) -> str:
+    """Versioned icon path, icon_notify-<rev>.png, so a changed icon gets a new URL (2.5.4)."""
+    # The version goes into the file name, never a query string: the iOS
+    # app turns "?" into "%3F" when it resolves a relative attachment URL
+    # (see helpers.async_brand_rev), which made the image a 404.
+    if not brand_rev or not path.endswith(".png"):
+        return path
+    return f"{path[:-4]}-{brand_rev}.png"
+
+
 def _apply_notify_branding(
-    service_data: dict, options: dict | None, critical: bool = False
+    service_data: dict,
+    options: dict | None,
+    critical: bool = False,
+    brand_rev: str = "",
 ) -> None:
     """Split Nida's notifications out of the Home Assistant pile, and
     label them as Nida's (2.3.12/2.3.13).
@@ -1552,17 +1582,21 @@ def _apply_notify_branding(
     #   BESIDE the app icon rather than instead of it. On by default,
     #   since iOS has nothing else to offer here.
     #
+    # 2.5.4 update: recent iOS Companion apps also read icon_url and show
+    # it as the sender avatar on the LEFT of the notification (an
+    # INSendMessageIntent "communication notification", with the small HA
+    # badge on it). So icon_url is now the real icon on iOS too, and the
+    # old image attachment (a thumbnail on the right) is gone: it only
+    # duplicated the logo. A stored notify_ios_image_enabled is ignored.
+    # The app caches that avatar by URL, hence the versioned file name.
+    #
     # Both use a relative path: the Companion app resolves it against the
     # connection it is already authenticated on, so this works on the
     # internal and external URL without hardcoding either.
     if bool(options.get(
         OPT_NOTIFY_LARGE_ICON_ENABLED, DEFAULT_NOTIFY_LARGE_ICON_ENABLED
     )):
-        data["icon_url"] = NOTIFY_LARGE_ICON_PATH
-    if bool(options.get(
-        OPT_NOTIFY_IOS_IMAGE_ENABLED, DEFAULT_NOTIFY_IOS_IMAGE_ENABLED
-    )):
-        data["attachment"] = {"url": NOTIFY_ICON_IMAGE_PATH, "content-type": "png"}
+        data["icon_url"] = brand_image_url(NOTIFY_LARGE_ICON_PATH, brand_rev)
 
 
 def _is_enabled(options: dict, prayer: str) -> bool:

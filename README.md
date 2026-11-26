@@ -97,6 +97,10 @@ card_type: now        # now, today, kids, scene_now, scene_today
 | `collapsed` | `today` card only: start folded down to the next prayer |
 | `grid_options.rows` | In a Sections view the card fills the given height |
 
+## Nida Connect for macOS
+
+[Nida Connect](https://github.com/joohann/Nida-Connect-OSX) puts the next prayer in your Mac's menu bar, with a live countdown, today's prayer times, the hijri date and notifications at the pre-adhan and the adhan. It reads Nida's sensors from your Home Assistant. Requires macOS 13 or later.
+
 ## Requirements
 
 - Home Assistant 2024.11 or newer

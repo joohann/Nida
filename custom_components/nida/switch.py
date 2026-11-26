@@ -13,6 +13,9 @@ scheduler so the change takes effect immediately (instead of waiting
 for the next coordinator refresh, which could be up to 12 hours).
 
 Changelog:
+  2.5.4 (2026-11-21): switch.nida_visitors_mode added: on starts visitors
+                      mode with the last chosen duration, off ends it.
+                      Shares its state logic with select.py (visitors.py).
   2.0.17 (2026-06-28): New file — first switch platform. Per-prayer
                        enabled-toggles as HA entities. icon = mdi:mosque
                        to match the prayer-times sensors. unique_id =
@@ -30,6 +33,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import OPT_ENABLED_PREFIX, PRAYERS, SENSOR_ENTITY_PREFIX
+from .sensor import _device_info
+from .visitors import VisitorsMode
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,6 +47,7 @@ async def async_setup_entry(
     """Register one enabled-switch per prayer."""
     async_add_entities(
         [NidaPrayerEnabledSwitch(hass, entry, prayer) for prayer in PRAYERS]
+        + [NidaVisitorsModeSwitch(hass, entry)]
     )
 
 
@@ -106,4 +112,43 @@ class NidaPrayerEnabledSwitch(SwitchEntity):
 
     async def _on_options_change(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         # Just refresh — is_on reads straight from options.
+        self.async_write_ha_state()
+
+
+class NidaVisitorsModeSwitch(SwitchEntity):
+    """Visitors mode on/off (2.5.4); on uses the last chosen duration."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "visitors_mode"
+    _attr_icon = "mdi:account-group"
+
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+        self.hass = hass
+        self._entry = entry
+        self._mode = VisitorsMode(hass, entry)
+        self._attr_unique_id = f"{entry.entry_id}_visitors_mode_switch"
+        self._attr_device_info = _device_info(entry)
+        self.entity_id = "switch.nida_visitors_mode"
+
+    @property
+    def is_on(self) -> bool:
+        return self._mode.is_active
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        until = self._mode.until if self._mode.is_active else None
+        return {"until": until.isoformat() if until else None}
+
+    async def async_turn_on(self, **kwargs) -> None:
+        self._mode.async_turn_on()
+        self.async_write_ha_state()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        self._mode.async_turn_off()
+        self.async_write_ha_state()
+
+    async def async_added_to_hass(self) -> None:
+        self.async_on_remove(self._entry.add_update_listener(self._on_options_change))
+
+    async def _on_options_change(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.async_write_ha_state()

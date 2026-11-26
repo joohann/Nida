@@ -6,3 +6,7 @@ nida.zip
 
 # Local version scratch/staging folders — never part of a release
 /[0-9].[0-9]*/
+
+# Third-party mockup sources (license forbids redistributing the PSD)
+*.psd
+*.psb

@@ -20,5 +20,45 @@
         }
       }
     }
+  },
+  "issues": {
+    "api_unreachable": {
+      "title": "Nida kan de gebedstijden-API niet bereiken",
+      "description": "Nida kon de Aladhan gebedstijden-API (`api.aladhan.com`) niet bereiken en toont de laatst opgeslagen tijden.\n\nDit komt meestal door een DNS-blokker in je netwerk ({blocker}) die het domein van de API blokkeert.\n\n**Oplossing:** sta deze twee domeinen toe in je blokker en laad daarna Nida opnieuw:\n\n- `api.aladhan.com`\n- `bahriya.app`\n\n**In AdGuard Home:** ga naar Filters → Aangepaste filterregels en voeg toe:\n```\n@@||api.aladhan.com^\n@@||bahriya.app^\n```\nLeeg daarna de DNS-cache. Deze melding verdwijnt zodra Nida de API weer kan bereiken."
+    }
+  },
+  "entity": {
+    "select": {
+      "visitors_mode": {
+        "name": "Bezoekersmodus",
+        "state": {
+          "off": "Uit",
+          "1h": "1 uur",
+          "2h": "2 uur",
+          "3h": "3 uur",
+          "4h": "4 uur",
+          "6h": "6 uur",
+          "8h": "8 uur",
+          "12h": "12 uur",
+          "24h": "24 uur",
+          "until_off": "Tot ik het uitzet"
+        },
+        "state_attributes": {
+          "until": {
+            "name": "Tot"
+          }
+        }
+      }
+    },
+    "switch": {
+      "visitors_mode": {
+        "name": "Bezoekersmodus",
+        "state_attributes": {
+          "until": {
+            "name": "Tot"
+          }
+        }
+      }
+    }
   }
 }

@@ -41,6 +41,7 @@ from homeassistant.util import dt as dt_util
 from .const import (
     DEFAULT_LIVE_ACTIVITY_MINUTES,
     DEFAULT_NOTIFY_LARGE_ICON_ENABLED,
+    DOMAIN,
     LIVE_ACTIVITY_DAY,
     LIVE_ACTIVITY_DAY_PRAYERS,
     LIVE_ACTIVITY_ICON_DAY,
@@ -62,7 +63,7 @@ from .const import (
     PRAYERS,
 )
 from .coordinator import PrayerTimesCoordinator
-from .scheduler import _parse_today_time
+from .scheduler import _parse_today_time, brand_image_url
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -382,7 +383,10 @@ class NidaLiveActivity:
                 OPT_NOTIFY_LARGE_ICON_ENABLED, DEFAULT_NOTIFY_LARGE_ICON_ENABLED
             )
         ):
-            data["icon_url"] = NOTIFY_LARGE_ICON_PATH
+            data["icon_url"] = brand_image_url(
+                NOTIFY_LARGE_ICON_PATH,
+                str((self.hass.data.get(DOMAIN) or {}).get("brand_rev") or ""),
+            )
         if silent:
             data["silent"] = True
         return {"title": text["next"], "message": message, "data": data}

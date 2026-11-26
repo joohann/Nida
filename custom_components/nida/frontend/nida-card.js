@@ -31,6 +31,9 @@
  * card should look at home next to the rest of the user's dashboard.
  *
  * Changelog:
+ *   2.5.4  (2026-11-26): The Hijri date (sensor states from the AlAdhan API)
+ *                        is escaped with escapeHtml() before it goes into the
+ *                        innerHTML templates of every card type.
  *   2.7.8  (2026-10-07): Moon rocks around the point where it rests on the cloud, so
  *                        the moon/cloud seam hardly moves (a 15%-larger cloud was
  *                        tried first and dropped: its box edges showed).
@@ -246,9 +249,20 @@
  *                        the dashboard UI, not just YAML.
  */
 
-const NIDA_CARD_VERSION = "2.5.3";
+const NIDA_CARD_VERSION = "2.5.4";
 
 const PRAYERS = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+
+// 2.5.4 — escape anything taken from entity states or other outside
+// data before it goes into an innerHTML template.
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 /* ── Kids-card artwork (2.4.0) ───────────────────────────────────────────
    Inline SVG so the card ships self-contained: no files to mirror into
    www/, nothing that can 404, and it scales to any card width. The scene
@@ -1075,11 +1089,13 @@ class NidaCard extends HTMLElement {
   }
 
   _hijriText() {
+    // 2.5.4 — escaped: these states come straight from the AlAdhan API
+    // response and end up in innerHTML templates.
     const day = this._sensorState("hijri_day")?.state;
     const month = this._sensorState("hijri_month")?.state;
     const year = this._sensorState("hijri_year")?.state;
     if (!day || !month || !year || day === "unknown" || day === "unavailable") return "";
-    return `${day} ${month} ${year}`;
+    return escapeHtml(`${day} ${month} ${year}`);
   }
 
   _lastUpdatedText() {

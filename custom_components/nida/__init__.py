@@ -22,6 +22,9 @@ Present from 2.0.2:
   - scheduler.py        → plans adhan triggers per prayer time
 
 Changelog:
+  2.5.4 (2026-11-21): "select" added to PLATFORMS (visitors mode list);
+                       the visitors-mode expiry timer (visitors.py) is
+                       armed at setup and on every options update.
   2.5.0 (2026-10-10): Sets up NidaLiveActivity (live_activity.py) next to the
                        scheduler and re-plans it on every options update.
   2.1.20 (2026-07-08): async_setup_entry now also calls
@@ -301,12 +304,15 @@ from .const import (
     DEFAULT_NOTIFY_TITLE_FALLBACK,
     DOMAIN,
     DUA_TRIGGER_COOLDOWN_SECONDS,
+    LEGACY_NOTIFY_MESSAGES,
     LEGACY_NOTIFY_TITLES,
     OPT_DUAS,
+    OPT_NOTIFY_MESSAGE,
     OPT_NOTIFY_TITLE,
 )
 from .coordinator import PrayerTimesCoordinator
-from .helpers import async_copy_brand, async_copy_sounds
+from .visitors import async_cancel_visitors_expiry, async_schedule_visitors_expiry
+from .helpers import async_brand_rev, async_copy_brand, async_copy_sounds
 from .live_activity import NidaLiveActivity
 from .panel import async_register_card, async_register_panel, async_remove_panel
 from .scheduler import NidaScheduler
@@ -316,7 +322,7 @@ from .websocket import async_register_websocket_commands
 _LOGGER = logging.getLogger(__name__)
 
 # 2.0.51 — "button" added: per-dua button entities (button.py).
-PLATFORMS = ["sensor", "switch", "binary_sensor", "button"]
+PLATFORMS = ["sensor", "switch", "binary_sensor", "button", "select"]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -376,6 +382,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             stored_title, DEFAULT_NOTIFY_TITLE_FALLBACK,
         )
 
+    # 2.5.4 — upgrade an untouched notify message to the [time]-aware
+    # default so existing installs start showing the prayer time without
+    # the user editing the field. A customised message matches nothing in
+    # the map and is left alone.
+    stored_message = entry.options.get(OPT_NOTIFY_MESSAGE)
+    new_message = LEGACY_NOTIFY_MESSAGES.get(stored_message)
+    if new_message and new_message != stored_message:
+        hass.config_entries.async_update_entry(
+            entry,
+            options={**entry.options, OPT_NOTIFY_MESSAGE: new_message},
+        )
+        _LOGGER.info(
+            "Nida: notify message migrated from %r to %r",
+            stored_message, new_message,
+        )
+
     coordinator = PrayerTimesCoordinator(hass, entry)
     await coordinator.async_config_entry_first_refresh()
 
@@ -387,6 +409,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     integration = await async_get_integration(hass, DOMAIN)
     hass.data[DOMAIN]["version"] = integration.version or ""
+    # 2.5.4 — content hash of the notify icon, appended as ?v= to its URL so
+    # Companion apps refetch it after it changes instead of serving a cache.
+    hass.data[DOMAIN]["brand_rev"] = await async_brand_rev(hass)
     hass.data[DOMAIN][f"_sidebar_state_{entry.entry_id}"] = entry.options.get(
         OPT_SHOW_IN_SIDEBAR, True
     )
@@ -406,6 +431,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    # 2.5.4 — end visitors mode at its end time instead of only at the
+    # next adhan, so the select/switch entities and the panel fall back
+    # to "off" by themselves.
+    async_schedule_visitors_expiry(hass, entry)
+    entry.async_on_unload(lambda: async_cancel_visitors_expiry(hass, entry))
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     async_register_websocket_commands(hass)
@@ -611,6 +641,8 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
     # 2.0.68 — persist a backup of the full options dict so a
     # remove-and-reinstall restores everything automatically.
     await hass.async_add_executor_job(_save_settings_backup, hass, entry.options)
+    # 2.5.4 — re-arm the visitors-mode expiry timer for the new options.
+    async_schedule_visitors_expiry(hass, entry)
     key = f"_sidebar_state_{entry.entry_id}"
     prev = nida_data.get(key)
     curr = entry.options.get(OPT_SHOW_IN_SIDEBAR, True)

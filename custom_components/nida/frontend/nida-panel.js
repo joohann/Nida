@@ -25,6 +25,22 @@
  *   catalog wiring is built.
  *
  * Changelog:
+ *   2.5.4  (2026-11-26): Entity states and server text are escaped before they
+ *                        reach innerHTML: the Hijri date in the Today card, the
+ *                        error screen and the calculation-method name; the Hijri
+ *                        year is parsed as a number. _escape() also covers single
+ *                        quotes now.
+ *   2.5.4  (2026-11-15): Voiced pre-adhan jingles (jingle_nida_<lang>.mp3,
+ *                        jingle + spoken line in one file). The library
+ *                        lists only the one in the panel language, the
+ *                        rest under "Other languages"; while one is the
+ *                        active jingle the TTS row and the full-test row
+ *                        are hidden; the full test now sits under the TTS.
+ *                        A pick of the panel-language row follows later
+ *                        language changes (pre_adhan_jingle_follow_language).
+ *                        The setup wizard starts on the voiced jingle in the
+ *                        user's language when the bundled default is still
+ *                        selected.
  *   2.3.0  (2026-07-28): Menu regroup + speaker previews. Johann: "every way
  *                        of playing a sound must let you test what the
  *                        volume is", and "I think it is starting to get
@@ -2449,17 +2465,15 @@ const TRANSLATIONS = {
     notify_tts_workaround_label: "Spoken alert (Samsung silent-mode workaround): critical notifications to this device are read aloud instead of played as a normal notification sound — some Samsung phones block apps from overriding regular notification sound, so this is the one thing that reliably rings through silent mode / Do Not Disturb.",
     notify_title_label: "Title",
     notify_message_label: "Message",
-    notify_message_hint: "Use [prayer] for the prayer name",
+    notify_message_hint: "Use [prayer] for the prayer name and [time] for the time",
     notify_per_prayer_label: "Per-prayer notifications",
     notify_branding_head: "Appearance",
-    notify_branding_hint: "Android shows this icon instead of the Home Assistant logo. On iOS the app icon can't be changed — Nida's notifications are grouped separately there instead.",
-    notify_icon_label: "Notification icon (Android)",
-    notify_large_icon_label: "Nida logo on Android",
-    notify_large_icon_sub: "Replaces the big circle on the notification with Nida's logo. Android only.",
-    notify_ios_image_label: "Nida logo on iOS",
-    notify_ios_image_sub: "Adds the logo as a thumbnail. iOS can't replace the app icon itself.",
+    notify_branding_hint: "Nida's notifications get their own icon and are grouped separately from Home Assistant, on Android and iOS. The icon below is used when the Nida logo is off, and on Android also in the status bar.",
+    notify_icon_label: "Notification icon",
+    notify_large_icon_label: "Nida logo as notification icon",
+    notify_large_icon_sub: "Shows Nida's logo as the notification icon, on Android and on iOS (on the left).",
     notify_default_title: "🕌 Nida²",
-    notify_default_message: "It's time for [prayer] prayer",
+    notify_default_message: "It's [time] time for [prayer] prayer",
     test_notify_btn: "Send test notification",
     test_jumuah_btn: "Send test reminder",
     test_sending: "Sending…",
@@ -2666,6 +2680,7 @@ const TRANSLATIONS = {
     sl_error_detail_label: "Technical detail",
     sl_report_link: "Keeps happening? Report it",
     tts_label: "TTS announcement",
+    voiced_jingle_other_languages: "Other languages",
     tts_sub_empty: "Tap › to pick a TTS engine and message",
     tts_agent: "agent",
     tts_agents: "agents",
@@ -2860,17 +2875,15 @@ const TRANSLATIONS = {
     notify_tts_workaround_label: "Gesproken melding (Samsung stille-standworkaround): kritieke meldingen naar dit toestel worden hardop voorgelezen in plaats van als gewone meldingstoon afgespeeld — sommige Samsung-telefoons blokkeren apps in het overschrijven van het gewone meldingsgeluid, dus dit is het enige dat betrouwbaar doorbreekt bij stille stand / niet storen.",
     notify_title_label: "Titel",
     notify_message_label: "Bericht",
-    notify_message_hint: "Gebruik [prayer] voor de naam van het gebed",
+    notify_message_hint: "Gebruik [prayer] voor de naam van het gebed en [time] voor de tijd",
     notify_per_prayer_label: "Notificaties per gebed",
     notify_branding_head: "Weergave",
-    notify_branding_hint: "Android toont dit icoon in plaats van het Home Assistant-logo. Op iOS kan het app-icoon niet worden aangepast — daar worden Nida's meldingen apart gegroepeerd.",
-    notify_icon_label: "Meldingsicoon (Android)",
-    notify_large_icon_label: "Nida-logo op Android",
-    notify_large_icon_sub: "Vervangt de grote cirkel op de melding door Nida's logo. Alleen Android.",
-    notify_ios_image_label: "Nida-logo op iOS",
-    notify_ios_image_sub: "Voegt het logo toe als miniatuur. iOS kan het app-icoon zelf niet vervangen.",
+    notify_branding_hint: "Meldingen van Nida krijgen een eigen icoon en worden apart van Home Assistant gegroepeerd, op Android en iOS. Het icoon hieronder wordt gebruikt als het Nida-logo uit staat, en op Android ook in de statusbalk.",
+    notify_icon_label: "Meldingsicoon",
+    notify_large_icon_label: "Nida-logo als meldingsicoon",
+    notify_large_icon_sub: "Toont het logo van Nida als icoon van de melding, op Android en op iOS (links).",
     notify_default_title: "🕌 Nida²",
-    notify_default_message: "Het is tijd voor het [prayer]-gebed",
+    notify_default_message: "Het is [time] tijd voor het [prayer]-gebed",
     test_notify_btn: "Test-notificatie versturen",
     test_jumuah_btn: "Test-herinnering versturen",
     test_sending: "Versturen…",
@@ -3075,6 +3088,7 @@ const TRANSLATIONS = {
     sl_error_detail_label: "Technisch detail",
     sl_report_link: "Blijft dit gebeuren? Meld het",
     tts_label: "TTS-melding",
+    voiced_jingle_other_languages: "Andere talen",
     tts_sub_empty: "Tik op › om een TTS-engine en bericht te kiezen",
     tts_agent: "engine",
     tts_agents: "engines",
@@ -3272,17 +3286,15 @@ const TRANSLATIONS = {
     notify_tts_workaround_label: "تنبيه صوتي (حل بديل لوضع الصامت في هواتف Samsung): الإشعارات الحرجة لهذا الجهاز تُقرأ بصوت عالٍ بدلاً من تشغيلها كصوت إشعار عادي — بعض هواتف Samsung تمنع التطبيقات من تجاوز صوت الإشعار العادي، لذا هذا هو الشيء الوحيد الذي يضمن الرنين عبر الوضع الصامت / عدم الإزعاج.",
     notify_title_label: "العنوان",
     notify_message_label: "الرسالة",
-    notify_message_hint: "استخدم [prayer] لاسم الصلاة",
+    notify_message_hint: "استخدم [prayer] لاسم الصلاة و[time] للوقت",
     notify_per_prayer_label: "إشعارات لكل صلاة",
     notify_branding_head: "المظهر",
-    notify_branding_hint: "يعرض أندرويد هذه الأيقونة بدلاً من شعار Home Assistant. على iOS لا يمكن تغيير أيقونة التطبيق — تُجمَّع إشعارات Nida هناك بشكل منفصل بدلاً من ذلك.",
-    notify_icon_label: "أيقونة الإشعار (أندرويد)",
-    notify_large_icon_label: "شعار Nida على أندرويد",
-    notify_large_icon_sub: "يستبدل الدائرة الكبيرة في الإشعار بشعار Nida. أندرويد فقط.",
-    notify_ios_image_label: "شعار Nida على iOS",
-    notify_ios_image_sub: "يضيف الشعار كصورة مصغّرة. لا يمكن لـ iOS استبدال أيقونة التطبيق نفسها.",
+    notify_branding_hint: "تحصل إشعارات Nida على أيقونة خاصة بها وتُجمَّع بشكل منفصل عن Home Assistant، على أندرويد وiOS. تُستخدم الأيقونة أدناه عندما يكون شعار Nida متوقفًا، وعلى أندرويد أيضًا في شريط الحالة.",
+    notify_icon_label: "أيقونة الإشعار",
+    notify_large_icon_label: "شعار Nida كأيقونة الإشعار",
+    notify_large_icon_sub: "يعرض شعار Nida كأيقونة للإشعار على أندرويد وعلى iOS (على اليسار).",
     notify_default_title: "🕌 Nida²",
-    notify_default_message: "حان وقت صلاة [prayer]",
+    notify_default_message: "الساعة [time]، حان وقت صلاة [prayer]",
     test_notify_btn: "إرسال إشعار تجريبي",
     test_jumuah_btn: "إرسال تذكير تجريبي",
     test_sending: "جارٍ الإرسال…",
@@ -3487,6 +3499,7 @@ const TRANSLATIONS = {
     sl_error_detail_label: "التفاصيل التقنية",
     sl_report_link: "يستمر حدوثه؟ أبلغ عنه",
     tts_label: "إعلان صوتي (TTS)",
+    voiced_jingle_other_languages: "لغات أخرى",
     tts_sub_empty: "اضغط على › لاختيار محرك TTS ورسالة",
     tts_agent: "محرك",
     tts_agents: "محركات",
@@ -3681,17 +3694,15 @@ const TRANSLATIONS = {
     notify_tts_workaround_label: "Sesli uyarı (Samsung sessiz mod çözümü): bu cihaza gönderilen kritik bildirimler normal bir bildirim sesi olarak çalınmak yerine sesli okunur — bazı Samsung telefonlar uygulamaların normal bildirim sesini geçersiz kılmasını engeller, bu yüzden sessiz mod / Rahatsız Etmeyin'i güvenilir şekilde aşan tek şey budur.",
     notify_title_label: "Başlık",
     notify_message_label: "Mesaj",
-    notify_message_hint: "Namaz adı için [prayer] kullanın",
+    notify_message_hint: "Namaz adı için [prayer], saat için [time] kullanın",
     notify_per_prayer_label: "Namaz bazında bildirimler",
     notify_branding_head: "Görünüm",
-    notify_branding_hint: "Android, Home Assistant logosu yerine bu simgeyi gösterir. iOS'ta uygulama simgesi değiştirilemez — orada Nida bildirimleri bunun yerine ayrı gruplanır.",
-    notify_icon_label: "Bildirim simgesi (Android)",
-    notify_large_icon_label: "Nida logosu Android'de",
-    notify_large_icon_sub: "Bildirimdeki büyük daireyi Nida'nın logosuyla değiştirir. Yalnızca Android.",
-    notify_ios_image_label: "Nida logosu iOS'ta",
-    notify_ios_image_sub: "Logoyu küçük resim olarak ekler. iOS uygulama simgesinin kendisini değiştiremez.",
+    notify_branding_hint: "Nida bildirimleri kendi simgesini alır ve Android ile iOS'ta Home Assistant'tan ayrı gruplanır. Aşağıdaki simge Nida logosu kapalıyken, Android'de ayrıca durum çubuğunda kullanılır.",
+    notify_icon_label: "Bildirim simgesi",
+    notify_large_icon_label: "Bildirim simgesi olarak Nida logosu",
+    notify_large_icon_sub: "Nida'nın logosunu Android'de ve iOS'ta (solda) bildirim simgesi olarak gösterir.",
     notify_default_title: "🕌 Nida²",
-    notify_default_message: "[prayer] namazı vakti geldi",
+    notify_default_message: "Saat [time], [prayer] namazı vakti geldi",
     test_notify_btn: "Test bildirimi gönder",
     test_jumuah_btn: "Test hatırlatması gönder",
     test_sending: "Gönderiliyor…",
@@ -3896,6 +3907,7 @@ const TRANSLATIONS = {
     sl_error_detail_label: "Teknik ayrıntı",
     sl_report_link: "Devam mı ediyor? Bildirin",
     tts_label: "Sesli anons (TTS)",
+    voiced_jingle_other_languages: "Diğer diller",
     tts_sub_empty: "Bir TTS motoru ve mesaj seçmek için › dokunun",
     tts_agent: "motor",
     tts_agents: "motor",
@@ -4090,17 +4102,15 @@ const TRANSLATIONS = {
     notify_tts_workaround_label: "Gesprochener Alarm (Samsung-Stiller-Modus-Umgehung): Kritische Benachrichtigungen an dieses Gerät werden vorgelesen statt als normaler Benachrichtigungston abgespielt — manche Samsung-Telefone verhindern, dass Apps den normalen Benachrichtigungston überschreiben, daher ist dies das einzige, was zuverlässig durch den stillen Modus / Nicht stören dringt.",
     notify_title_label: "Titel",
     notify_message_label: "Nachricht",
-    notify_message_hint: "Verwende [prayer] für den Gebetsnamen",
+    notify_message_hint: "Verwende [prayer] für den Gebetsnamen und [time] für die Uhrzeit",
     notify_per_prayer_label: "Benachrichtigungen pro Gebet",
     notify_branding_head: "Darstellung",
-    notify_branding_hint: "Android zeigt dieses Symbol statt des Home-Assistant-Logos. Unter iOS lässt sich das App-Symbol nicht ändern — dort werden Nidas Mitteilungen stattdessen separat gruppiert.",
-    notify_icon_label: "Mitteilungssymbol (Android)",
-    notify_large_icon_label: "Nida-Logo unter Android",
-    notify_large_icon_sub: "Ersetzt den großen Kreis der Mitteilung durch Nidas Logo. Nur Android.",
-    notify_ios_image_label: "Nida-Logo unter iOS",
-    notify_ios_image_sub: "Fügt das Logo als Vorschaubild hinzu. iOS kann das App-Symbol selbst nicht ersetzen.",
+    notify_branding_hint: "Nidas Mitteilungen erhalten ein eigenes Symbol und werden unter Android und iOS getrennt von Home Assistant gruppiert. Das Symbol unten wird verwendet, wenn das Nida-Logo aus ist, und unter Android auch in der Statusleiste.",
+    notify_icon_label: "Mitteilungssymbol",
+    notify_large_icon_label: "Nida-Logo als Mitteilungssymbol",
+    notify_large_icon_sub: "Zeigt Nidas Logo als Symbol der Mitteilung, unter Android und unter iOS (links).",
     notify_default_title: "🕌 Nida²",
-    notify_default_message: "Es ist Zeit für das [prayer]-Gebet",
+    notify_default_message: "Es ist [time] Uhr, Zeit für das [prayer]-Gebet",
     test_notify_btn: "Testbenachrichtigung senden",
     test_jumuah_btn: "Testerinnerung senden",
     test_sending: "Wird gesendet…",
@@ -4305,6 +4315,7 @@ const TRANSLATIONS = {
     sl_error_detail_label: "Technisches Detail",
     sl_report_link: "Passiert das weiterhin? Melden",
     tts_label: "TTS-Ansage",
+    voiced_jingle_other_languages: "Andere Sprachen",
     tts_sub_empty: "Tippe auf ›, um eine TTS-Engine und Nachricht zu wählen",
     tts_agent: "Engine",
     tts_agents: "Engines",
@@ -4499,17 +4510,15 @@ const TRANSLATIONS = {
     notify_tts_workaround_label: "Alerte vocale (contournement du mode silencieux Samsung) : les notifications critiques vers cet appareil sont lues à voix haute au lieu d'être jouées comme un son de notification normal — certains téléphones Samsung empêchent les applications de remplacer le son de notification habituel, c'est donc le seul moyen fiable de percer le mode silencieux / Ne pas déranger.",
     notify_title_label: "Titre",
     notify_message_label: "Message",
-    notify_message_hint: "Utilisez [prayer] pour le nom de la prière",
+    notify_message_hint: "Utilisez [prayer] pour le nom de la prière et [time] pour l'heure",
     notify_per_prayer_label: "Notifications par prière",
     notify_branding_head: "Apparence",
-    notify_branding_hint: "Android affiche cette icône à la place du logo Home Assistant. Sur iOS, l'icône de l'app ne peut pas être modifiée — les notifications Nida y sont regroupées séparément à la place.",
-    notify_icon_label: "Icône de notification (Android)",
-    notify_large_icon_label: "Logo Nida sur Android",
-    notify_large_icon_sub: "Remplace le grand cercle de la notification par le logo de Nida. Android uniquement.",
-    notify_ios_image_label: "Logo Nida sur iOS",
-    notify_ios_image_sub: "Ajoute le logo en miniature. iOS ne peut pas remplacer l'icône de l'app elle-même.",
+    notify_branding_hint: "Les notifications de Nida ont leur propre icône et sont regroupées à part de Home Assistant, sur Android et iOS. L'icône ci-dessous sert quand le logo Nida est désactivé, et sur Android aussi dans la barre d'état.",
+    notify_icon_label: "Icône de notification",
+    notify_large_icon_label: "Logo Nida comme icône de notification",
+    notify_large_icon_sub: "Affiche le logo de Nida comme icône de la notification, sur Android et sur iOS (à gauche).",
     notify_default_title: "🕌 Nida²",
-    notify_default_message: "C'est l'heure de la prière du [prayer]",
+    notify_default_message: "Il est [time], c'est l'heure de la prière du [prayer]",
     test_notify_btn: "Envoyer une notification de test",
     test_jumuah_btn: "Envoyer un rappel de test",
     test_sending: "Envoi…",
@@ -4714,6 +4723,7 @@ const TRANSLATIONS = {
     sl_error_detail_label: "Détail technique",
     sl_report_link: "Ça persiste ? Signalez-le",
     tts_label: "Annonce TTS",
+    voiced_jingle_other_languages: "Autres langues",
     tts_sub_empty: "Appuyez sur › pour choisir un moteur TTS et un message",
     tts_agent: "moteur",
     tts_agents: "moteurs",
@@ -4908,17 +4918,15 @@ const TRANSLATIONS = {
     notify_tts_workaround_label: "Amaran suara (penyelesaian mod senyap Samsung): pemberitahuan kritikal ke peranti ini dibacakan dengan kuat dan bukannya dimainkan sebagai bunyi pemberitahuan biasa — sesetengah telefon Samsung menghalang apl daripada mengatasi bunyi pemberitahuan biasa, jadi ini satu-satunya cara yang boleh dipercayai untuk menembusi mod senyap / Jangan Ganggu.",
     notify_title_label: "Tajuk",
     notify_message_label: "Mesej",
-    notify_message_hint: "Guna [prayer] untuk nama solat",
+    notify_message_hint: "Guna [prayer] untuk nama solat dan [time] untuk waktu",
     notify_per_prayer_label: "Pemberitahuan setiap solat",
     notify_branding_head: "Penampilan",
-    notify_branding_hint: "Android memaparkan ikon ini dan bukan logo Home Assistant. Pada iOS ikon apl tidak boleh diubah — pemberitahuan Nida dikumpulkan secara berasingan di sana.",
-    notify_icon_label: "Ikon pemberitahuan (Android)",
-    notify_large_icon_label: "Logo Nida pada Android",
-    notify_large_icon_sub: "Menggantikan bulatan besar pada pemberitahuan dengan logo Nida. Android sahaja.",
-    notify_ios_image_label: "Logo Nida pada iOS",
-    notify_ios_image_sub: "Menambah logo sebagai imej kecil. iOS tidak boleh menggantikan ikon apl itu sendiri.",
+    notify_branding_hint: "Pemberitahuan Nida mendapat ikon sendiri dan dikumpulkan berasingan daripada Home Assistant, pada Android dan iOS. Ikon di bawah digunakan apabila logo Nida dimatikan, dan pada Android juga di bar status.",
+    notify_icon_label: "Ikon pemberitahuan",
+    notify_large_icon_label: "Logo Nida sebagai ikon pemberitahuan",
+    notify_large_icon_sub: "Memaparkan logo Nida sebagai ikon pemberitahuan, pada Android dan iOS (di kiri).",
     notify_default_title: "🕌 Nida²",
-    notify_default_message: "Sudah tiba waktu solat [prayer]",
+    notify_default_message: "Pukul [time], sudah tiba waktu solat [prayer]",
     test_notify_btn: "Hantar pemberitahuan ujian",
     test_jumuah_btn: "Hantar peringatan ujian",
     test_sending: "Menghantar…",
@@ -5123,6 +5131,7 @@ const TRANSLATIONS = {
     sl_error_detail_label: "Butiran teknikal",
     sl_report_link: "Masih berlaku? Laporkan",
     tts_label: "Pengumuman TTS",
+    voiced_jingle_other_languages: "Bahasa lain",
     tts_sub_empty: "Ketik › untuk memilih enjin TTS dan mesej",
     tts_agent: "enjin",
     tts_agents: "enjin",
@@ -5317,17 +5326,15 @@ const TRANSLATIONS = {
     notify_tts_workaround_label: "Peringatan suara (solusi mode senyap Samsung): notifikasi kritis ke perangkat ini dibacakan alih-alih diputar sebagai suara notifikasi biasa — beberapa ponsel Samsung mencegah aplikasi menimpa suara notifikasi biasa, jadi inilah satu-satunya cara yang andal untuk menembus mode senyap / Jangan Ganggu.",
     notify_title_label: "Judul",
     notify_message_label: "Pesan",
-    notify_message_hint: "Gunakan [prayer] untuk nama salat",
+    notify_message_hint: "Gunakan [prayer] untuk nama salat dan [time] untuk waktu",
     notify_per_prayer_label: "Notifikasi per salat",
     notify_branding_head: "Tampilan",
-    notify_branding_hint: "Android menampilkan ikon ini alih-alih logo Home Assistant. Di iOS ikon aplikasi tidak bisa diubah — notifikasi Nida dikelompokkan terpisah di sana.",
-    notify_icon_label: "Ikon notifikasi (Android)",
-    notify_large_icon_label: "Logo Nida di Android",
-    notify_large_icon_sub: "Mengganti lingkaran besar pada notifikasi dengan logo Nida. Hanya Android.",
-    notify_ios_image_label: "Logo Nida di iOS",
-    notify_ios_image_sub: "Menambahkan logo sebagai gambar kecil. iOS tidak bisa mengganti ikon aplikasinya sendiri.",
+    notify_branding_hint: "Notifikasi Nida mendapat ikon sendiri dan dikelompokkan terpisah dari Home Assistant, di Android dan iOS. Ikon di bawah dipakai saat logo Nida mati, dan di Android juga di bilah status.",
+    notify_icon_label: "Ikon notifikasi",
+    notify_large_icon_label: "Logo Nida sebagai ikon notifikasi",
+    notify_large_icon_sub: "Menampilkan logo Nida sebagai ikon notifikasi, di Android dan iOS (di kiri).",
     notify_default_title: "🕌 Nida²",
-    notify_default_message: "Sudah waktunya salat [prayer]",
+    notify_default_message: "Pukul [time], sudah waktunya salat [prayer]",
     test_notify_btn: "Kirim notifikasi uji",
     test_jumuah_btn: "Kirim pengingat uji",
     test_sending: "Mengirim…",
@@ -5532,6 +5539,7 @@ const TRANSLATIONS = {
     sl_error_detail_label: "Detail teknis",
     sl_report_link: "Masih terus terjadi? Laporkan",
     tts_label: "Pengumuman TTS",
+    voiced_jingle_other_languages: "Bahasa lain",
     tts_sub_empty: "Ketuk › untuk memilih mesin TTS dan pesan",
     tts_agent: "mesin",
     tts_agents: "mesin",
@@ -5726,17 +5734,15 @@ const TRANSLATIONS = {
     notify_tts_workaround_label: "بولا گیا انتباہ (Samsung خاموش موڈ کا حل): اس ڈیوائس کے لیے اہم اطلاعات عام اطلاعی آواز کے طور پر چلانے کے بجائے بلند آواز سے پڑھی جاتی ہیں — کچھ Samsung فون ایپس کو عام اطلاعی آواز کو اوور رائیڈ کرنے سے روکتے ہیں، اس لیے یہ واحد چیز ہے جو خاموش موڈ / ڈسٹرب نہ کریں کے ذریعے قابل اعتماد طریقے سے گونجتی ہے۔",
     notify_title_label: "عنوان",
     notify_message_label: "پیغام",
-    notify_message_hint: "نماز کے نام کے لیے [prayer] استعمال کریں",
+    notify_message_hint: "نماز کے نام کے لیے [prayer] اور وقت کے لیے [time] استعمال کریں",
     notify_per_prayer_label: "فی نماز اطلاعات",
     notify_branding_head: "ظاہری شکل",
-    notify_branding_hint: "اینڈرائیڈ Home Assistant لوگو کے بجائے یہ آئیکن دکھاتا ہے۔ iOS پر ایپ آئیکن تبدیل نہیں ہو سکتا — وہاں Nida کی اطلاعات الگ گروپ کی جاتی ہیں۔",
-    notify_icon_label: "اطلاع کا آئیکن (اینڈرائیڈ)",
-    notify_large_icon_label: "اینڈرائیڈ پر Nida لوگو",
-    notify_large_icon_sub: "اطلاع کے بڑے دائرے کو Nida کے لوگو سے بدل دیتا ہے۔ صرف اینڈرائیڈ۔",
-    notify_ios_image_label: "iOS پر Nida لوگو",
-    notify_ios_image_sub: "لوگو بطور تھمب نیل شامل کرتا ہے۔ iOS خود ایپ آئیکن تبدیل نہیں کر سکتا۔",
+    notify_branding_hint: "Nida کی اطلاعات کو اپنا آئیکن ملتا ہے اور وہ اینڈرائیڈ اور iOS پر Home Assistant سے الگ گروپ ہوتی ہیں۔ نیچے والا آئیکن تب استعمال ہوتا ہے جب Nida لوگو بند ہو، اور اینڈرائیڈ پر اسٹیٹس بار میں بھی۔",
+    notify_icon_label: "اطلاع کا آئیکن",
+    notify_large_icon_label: "اطلاع کے آئیکن کے طور پر Nida لوگو",
+    notify_large_icon_sub: "Nida کا لوگو اینڈرائیڈ اور iOS (بائیں جانب) پر اطلاع کے آئیکن کے طور پر دکھاتا ہے۔",
     notify_default_title: "🕌 Nida²",
-    notify_default_message: "[prayer] کی نماز کا وقت ہو گیا ہے",
+    notify_default_message: "[time] بجے، [prayer] کی نماز کا وقت ہو گیا ہے",
     test_notify_btn: "آزمائشی اطلاع بھیجیں",
     test_jumuah_btn: "آزمائشی یاد دہانی بھیجیں",
     test_sending: "بھیجا جا رہا ہے…",
@@ -5941,6 +5947,7 @@ const TRANSLATIONS = {
     sl_error_detail_label: "تکنیکی تفصیل",
     sl_report_link: "مسلسل ہو رہا ہے؟ اس کی اطلاع دیں",
     tts_label: "TTS اعلان",
+    voiced_jingle_other_languages: "دیگر زبانیں",
     tts_sub_empty: "TTS انجن اور پیغام منتخب کرنے کے لیے › دبائیں",
     tts_agent: "انجن",
     tts_agents: "انجنز",
@@ -6135,17 +6142,15 @@ const TRANSLATIONS = {
     notify_tts_workaround_label: "هشدار گفتاری (راه‌حل حالت بی‌صدای سامسونگ): اعلان‌های بحرانی برای این دستگاه به‌جای پخش به‌عنوان صدای اعلان معمولی، با صدای بلند خوانده می‌شوند — برخی گوشی‌های سامسونگ مانع از این می‌شوند که برنامه‌ها صدای اعلان معمولی را لغو کنند، بنابراین این تنها راهی است که به‌طور قابل‌اعتماد از حالت بی‌صدا / مزاحم نشوید عبور می‌کند.",
     notify_title_label: "عنوان",
     notify_message_label: "پیام",
-    notify_message_hint: "برای نام نماز از [prayer] استفاده کنید",
+    notify_message_hint: "برای نام نماز از [prayer] و برای زمان از [time] استفاده کنید",
     notify_per_prayer_label: "اعلان‌ها به تفکیک هر نماز",
     notify_branding_head: "ظاهر",
-    notify_branding_hint: "اندروید این نماد را به‌جای نشان Home Assistant نمایش می‌دهد. در iOS نماد برنامه قابل تغییر نیست — در عوض اعلان‌های Nida آنجا جداگانه گروه‌بندی می‌شوند.",
-    notify_icon_label: "نماد اعلان (اندروید)",
-    notify_large_icon_label: "نشان Nida در اندروید",
-    notify_large_icon_sub: "دایرهٔ بزرگ اعلان را با نشان Nida جایگزین می‌کند. فقط اندروید.",
-    notify_ios_image_label: "نشان Nida در iOS",
-    notify_ios_image_sub: "نشان را به‌عنوان تصویر بندانگشتی اضافه می‌کند. iOS نمی‌تواند خود نماد برنامه را عوض کند.",
+    notify_branding_hint: "اعلان‌های Nida نماد خودشان را دارند و در اندروید و iOS جدا از Home Assistant گروه‌بندی می‌شوند. نماد زیر وقتی نشان Nida خاموش است به کار می‌رود، و در اندروید در نوار وضعیت هم.",
+    notify_icon_label: "نماد اعلان",
+    notify_large_icon_label: "نشان Nida به‌عنوان نماد اعلان",
+    notify_large_icon_sub: "نشان Nida را به‌عنوان نماد اعلان در اندروید و iOS (سمت چپ) نشان می‌دهد.",
     notify_default_title: "🕌 Nida²",
-    notify_default_message: "وقت نماز [prayer] فرا رسیده است",
+    notify_default_message: "ساعت [time]، وقت نماز [prayer] فرا رسیده است",
     test_notify_btn: "ارسال اعلان آزمایشی",
     test_jumuah_btn: "ارسال یادآوری آزمایشی",
     test_sending: "در حال ارسال…",
@@ -6350,6 +6355,7 @@ const TRANSLATIONS = {
     sl_error_detail_label: "جزئیات فنی",
     sl_report_link: "همچنان ادامه دارد؟ گزارش دهید",
     tts_label: "اعلان گفتاری (TTS)",
+    voiced_jingle_other_languages: "زبان\u200cهای دیگر",
     tts_sub_empty: "برای انتخاب موتور TTS و پیام روی › ضربه بزنید",
     tts_agent: "موتور",
     tts_agents: "موتورها",
@@ -6393,6 +6399,13 @@ const DEFAULT_SOUND_PATHS = {
   pre_adhan_jingle: "pre_adhan_jingle/announcement.mp3",
 };
 
+// 2.5.4 — voiced jingles: a pre-adhan jingle whose file name starts with
+// this prefix already carries the spoken announcement (jingle + voice in
+// one file), one file per language: jingle_nida_<lang>.mp3. Mirror of
+// VOICED_JINGLE_PREFIX / VOICED_JINGLE_FALLBACK_LANG in const.py.
+const VOICED_JINGLE_PREFIX = "jingle_nida_";
+const VOICED_JINGLE_FALLBACK_LANG = "en";
+
 // Where the Sound Library "report it" link points on a connection error.
 // Public issues on the repo — a shared, searchable channel beats a private
 // inbox for a HACS integration, and links to the list (not /new) so people
@@ -6404,7 +6417,7 @@ const NIDA_ISSUES_URL = "https://github.com/joohann/Nida/issues";
 // Used in the footer and tagged onto backup exports (so a future restore
 // can tell how old a backup file is). Bump this alongside manifest.json
 // at release time — see the "Versiebump" changelog task.
-const NIDA_PANEL_VERSION = "2.5.0";
+const NIDA_PANEL_VERSION = "2.5.4";
 
 // 2.2.0 — watercolor mosque brand icon (from Johann's approved ornament
 // sheet), shown in the header tile in ALL themes. WebP with alpha,
@@ -7005,6 +7018,25 @@ nida-welcome-content {
   height: 12px;
   stroke: var(--nida-bg);
   stroke-width: 3;
+}
+/* 2.5.4 — "Other languages" expander row for voiced jingles */
+.nida-overlay-portal .sl-more .sl-name {
+  color: var(--nida-text-dim, inherit);
+  font-size: 0.92em;
+}
+.nida-overlay-portal .sl-children .sl-row {
+  padding-inline-start: 40px;
+}
+.nida-overlay-portal .sl-more-chevron {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.nida-overlay-portal .sl-more-chevron svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
 }
 .nida-overlay-portal .sl-btn {
   width: 34px;
@@ -7733,6 +7765,8 @@ class NidaPanel extends HTMLElement {
         // if they haven't been set yet. Run AFTER _loadSettings so we
         // don't clobber a user-chosen string from a prior session.
         this._seedLanguageDefaults();
+        // 2.5.4 — not awaited: a slow catalog must not hold up the panel.
+        this._syncVoicedJingleLanguage();
         // 2.1.0 — reset panel_welcome_seen on a real version upgrade
         // (major.minor only) before the welcome check below, so an
         // upgrade re-triggers welcome the same tick it's detected.
@@ -8379,6 +8413,8 @@ class NidaPanel extends HTMLElement {
   _onPickLanguage(code) {
     this._saveSettings({ language: code });
     this._closeOverlay();
+    // 2.5.4 — a voiced jingle picked as "my language" follows along.
+    this._syncVoicedJingleLanguage();
   }
 
   _openOverlay(which) {
@@ -8812,7 +8848,7 @@ class NidaPanel extends HTMLElement {
     return `
       <style>${this._cssBase()}</style>
       <div class="app">
-        <div class="loading-state ${this._errorIsConnection ? "" : "error"}">${this._error}</div>
+        <div class="loading-state ${this._errorIsConnection ? "" : "error"}">${this._escape(this._error)}</div>
       </div>
     `;
   }
@@ -9470,7 +9506,7 @@ class NidaPanel extends HTMLElement {
       ` : ""}
       <div class="select-field" data-action="open-method">
         <span>${this.t("calculation_method")}</span>
-        <span class="select-value">${methodName} ${ICONS.chevronRight}</span>
+        <span class="select-value">${this._escape(methodName)} ${ICONS.chevronRight}</span>
       </div>
     `;
     return this._sectionWrapper(
@@ -9691,21 +9727,26 @@ class NidaPanel extends HTMLElement {
     // The "Play pre-adhan audio" row is gone — its toggle moved INTO
     // the jingle row as the right-most control before the chevron.
     const jingleCat = SOUND_CATEGORIES.find((c) => c.key === "pre_adhan_jingle");
-    const jingleEnabled = !!this._settings?.pre_adhan_audio_enabled;
+    // 2.5.4 — same "unset = on" reading as the toggle in the jingle row.
+    const jingleEnabled = this._preAdhanAudioEnabled();
     const ttsEnabled = !!this._settings?.tts_pre_adhan_enabled;
     // 2.0.70 — if BOTH jingle and TTS are off, the timing/active/test
     // rows serve no purpose (nothing will fire). Hide them so the
     // section stays clean when the user only wants the adhan itself.
     const anythingFires = jingleEnabled || ttsEnabled;
+    // 2.5.4 — a voiced jingle already speaks: no TTS row, and no full test
+    // (it would only play the jingle, which the jingle row's own speaker
+    // button already does). The full test sits right under what it tests.
+    const voiced = this._voicedJingleActive();
     return `
       <div class="sounds-group-head">${this.t("sounds_group_pre_adhan")}</div>
       ${jingleCat ? this._htmlSoundRow(jingleCat, { audioToggle: true }) : ""}
-      ${this._htmlTtsRow()}
+      ${voiced ? "" : this._htmlTtsRow()}
+      ${anythingFires && !voiced ? this._htmlPreAdhanFullTestRow() : ""}
       ${anythingFires ? `
         <div class="pre-adhan-subhead">${this.t("pre_adhan_timing_head")}</div>
         ${this._htmlPreAdhanTimingBlock()}
         ${this._htmlPreAdhanActiveForRow()}
-        ${this._htmlPreAdhanFullTestRow()}
       ` : ""}
     `;
   }
@@ -10499,6 +10540,10 @@ class NidaPanel extends HTMLElement {
     // them is fragile and would diverge from the picker name. Falls back
     // to the raw path if nothing sensible remains.
     if (!relPath) return "";
+    if (category === "pre_adhan_jingle") {
+      const voiced = this._voicedJingleDisplayName(relPath);
+      if (voiced) return voiced;
+    }
     const PREFIXES = {
       fajr_adhan: ["adhan_fajr_", "fajr_"],
       adhan: ["adhan_day_", "adhan_", "day_"],
@@ -10515,6 +10560,104 @@ class NidaPanel extends HTMLElement {
       .split(" ")
       .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
       .join(" ");
+  }
+
+  // ───── Voiced jingles (2.5.4) ───────────────────────────────────────────
+  // A voiced jingle (VOICED_JINGLE_PREFIX) is jingle + spoken line in one
+  // file, so while one is the active pre-adhan jingle the separate TTS is
+  // hidden here and skipped by services.py. The library shows only the one
+  // in the panel language (others behind "Other languages"), and a pick of
+  // that panel-language row follows later language changes.
+
+  _voicedJingleLang(relPath) {
+    const base = String(relPath || "").split("/").pop().toLowerCase();
+    if (!base.startsWith(VOICED_JINGLE_PREFIX)) return null;
+    const lang = base.slice(VOICED_JINGLE_PREFIX.length).replace(/\.[a-z0-9]+$/, "");
+    return lang || null;
+  }
+
+  _currentPreAdhanJingle() {
+    return this._settings?.sound_pre_adhan_jingle || DEFAULT_SOUND_PATHS.pre_adhan_jingle;
+  }
+
+  // True when the jingle that will actually play already speaks: the
+  // jingle toggle is on AND the selected file is a voiced jingle.
+  _voicedJingleActive() {
+    return this._preAdhanAudioEnabled() &&
+      !!this._voicedJingleLang(this._currentPreAdhanJingle());
+  }
+
+  // Panel language if the catalog has a voiced jingle for it, else the
+  // fallback language. `sounds` = catalog sound list.
+  _wantedVoicedLang(sounds) {
+    const lang = this._effectiveLanguage();
+    const has = (l) => (sounds || []).some((s) => s.id === `${VOICED_JINGLE_PREFIX}${l}`);
+    return has(lang) ? lang : VOICED_JINGLE_FALLBACK_LANG;
+  }
+
+  _voicedJingleDisplayName(relPath) {
+    const lang = this._voicedJingleLang(relPath);
+    if (!lang) return null;
+    // Brand word comes from the prefix itself ("jingle_nida_" → "Nida"),
+    // so the product name is not repeated here.
+    const brand = VOICED_JINGLE_PREFIX.replace(/^jingle_/, "").replace(/_+$/, "");
+    const title = brand ? brand[0].toUpperCase() + brand.slice(1) : "";
+    const langLabel = LANGUAGES.find((l) => l.code === lang)?.label || lang.toUpperCase();
+    return `${title} · ${langLabel}`;
+  }
+
+  // Make a voiced jingle in `lang` the active pre-adhan jingle, downloading
+  // it first when needed. Used by the setup wizard (default choice) and by
+  // the language follow. Returns true on success; on failure nothing
+  // changes, so the previous jingle (and the TTS) keep working.
+  async _applyVoicedJingle(lang, follow) {
+    if (!this._maySeeSettings()) return false;
+    try {
+      if (!this._catalog?.sounds?.length) {
+        const res = await this._hass.callWS({ type: "nida/get_catalog", force_refresh: false });
+        if (res && !res.error) this._catalog = res;
+      }
+    } catch (e) {
+      return false;
+    }
+    const sounds = this._catalog?.sounds || [];
+    const want = lang || this._wantedVoicedLang(sounds);
+    const sound = sounds.find((s) => s.id === `${VOICED_JINGLE_PREFIX}${want}`);
+    if (!sound) return false;
+    this._ensureSoundLibraryState();
+    if (!sound.downloaded) await this._downloadSound(sound);
+    if (!sound.downloaded) return false;
+    await this._saveSettings({
+      sound_pre_adhan_jingle: sound.rel_path,
+      pre_adhan_jingle_follow_language: !!follow,
+    });
+    return true;
+  }
+
+  // Language follow: when the active voiced jingle was picked as "the one
+  // in my language", swap it when the panel language changes.
+  async _syncVoicedJingleLanguage() {
+    if (this._voicedSyncBusy) return;
+    if (!this._settings?.pre_adhan_jingle_follow_language) return;
+    const cur = this._voicedJingleLang(this._currentPreAdhanJingle());
+    if (!cur) return;
+    const lang = this._effectiveLanguage();
+    if (cur === lang) return;
+    // Already on the fallback because the panel language has no file of
+    // its own: only act once the catalog says otherwise.
+    this._voicedSyncBusy = true;
+    try {
+      if (!this._catalog?.sounds?.length) {
+        try {
+          const res = await this._hass.callWS({ type: "nida/get_catalog", force_refresh: false });
+          if (res && !res.error) this._catalog = res;
+        } catch (e) { return; }
+      }
+      const want = this._wantedVoicedLang(this._catalog?.sounds);
+      if (want !== cur) await this._applyVoicedJingle(want, true);
+    } finally {
+      this._voicedSyncBusy = false;
+    }
   }
 
   // 2.3.0 — RETIRED, no longer rendered. This row played the jingle on
@@ -10741,15 +10884,6 @@ class NidaPanel extends HTMLElement {
             <span class="row-sub">${this.t("notify_large_icon_sub")}</span>
           </div>
           <div class="toggle ${this._notifyLargeIcon() ? "on" : ""}" data-action="toggle-notify-large-icon">
-            <div class="toggle-knob"></div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="row-info">
-            <span class="row-label">${this.t("notify_ios_image_label")}</span>
-            <span class="row-sub">${this.t("notify_ios_image_sub")}</span>
-          </div>
-          <div class="toggle ${this._notifyIosImage() ? "on" : ""}" data-action="toggle-notify-ios-image">
             <div class="toggle-knob"></div>
           </div>
         </div>
@@ -11827,6 +11961,14 @@ class NidaPanel extends HTMLElement {
     this._setupWizardActive = true;
     this._activeOverlay = null;
     if (mode === "auto") this._applySetupAutoDefaults();
+    // 2.5.4 — a setup starts on the voiced jingle in the user's language
+    // (jingle + spoken line in one). Only replaces the bundled default, never
+    // a jingle the user picked; if the download fails the bundled jingle and
+    // the TTS stay as they were. Not awaited: the wizard opens at once.
+    const curJingle = this._settings?.sound_pre_adhan_jingle;
+    if (!curJingle || curJingle === DEFAULT_SOUND_PATHS.pre_adhan_jingle) {
+      this._applyVoicedJingle(null, true);
+    }
     this._render();
   }
 
@@ -11935,7 +12077,7 @@ class NidaPanel extends HTMLElement {
         ${this._htmlResolvedLocation()}
         <div class="select-field" data-action="open-method">
           <span>${this.t("calculation_method")}</span>
-          <span class="select-value">${methodName} ${ICONS.chevronRight}</span>
+          <span class="select-value">${this._escape(methodName)} ${ICONS.chevronRight}</span>
         </div>
       </div>
     `;
@@ -11956,7 +12098,7 @@ class NidaPanel extends HTMLElement {
             <div class="toggle-knob"></div>
           </div>
         </div>
-        ${enabled ? `
+        ${enabled && !this._voicedJingleActive() ? `
           <div class="row clickable" data-action="open-tts-settings">
             <div class="row-info">
               <span class="row-label">${this.t("tts_pick_agents")}</span>
@@ -12181,20 +12323,11 @@ class NidaPanel extends HTMLElement {
     this._saveSettings({ notify_large_icon_enabled: !this._notifyLargeIcon() });
   }
 
-  _notifyIosImage() {
-    // 2.3.18 — back to OFF by default, mirroring const.py.
-    return !!this._settings?.notify_ios_image_enabled;
-  }
-
   _onNotifyIconChange(value) {
     const v = String(value || "").trim();
     // Only mdi: names mean anything to the Companion app; an empty field
     // resets to the default rather than sending a broken icon name.
     this._saveSettings({ notify_icon: v.startsWith("mdi:") ? v : "" });
-  }
-
-  _onToggleNotifyIosImage() {
-    this._saveSettings({ notify_ios_image_enabled: !this._notifyIosImage() });
   }
 
   _isNotifyEnabledFor(prayer) {
@@ -13166,7 +13299,7 @@ class NidaPanel extends HTMLElement {
       <div class="today-card">
         <div class="today-head">
           <span class="today-title">${this.t("today_card_title")}</span>
-          <span class="today-hijri" data-live="hijri-date">${this._hijriDateText()}</span>
+          <span class="today-hijri" data-live="hijri-date">${this._escape(this._hijriDateText())}</span>
         </div>
         ${ramadanDayRow}
         <div class="today-list">${wakeAlarmRow}${imsakRow}${rows || "—"}</div>
@@ -13488,8 +13621,11 @@ class NidaPanel extends HTMLElement {
     if (!monthName || !dayRaw || !yearRaw) return null;
     const monthNum = this._hijriMonthNumber(monthName);
     const day = parseInt(dayRaw, 10);
-    if (!monthNum || !Number.isFinite(day)) return null;
-    return { monthNum, day, year: yearRaw };
+    // 2.5.4 — the year is parsed too: it comes straight from the AlAdhan
+    // response and is shown in the calendar, so only a number may pass.
+    const year = parseInt(yearRaw, 10);
+    if (!monthNum || !Number.isFinite(day) || !Number.isFinite(year)) return null;
+    return { monthNum, day, year: String(year) };
   }
 
   _normaliseHijri(s) {
@@ -13991,7 +14127,7 @@ class NidaPanel extends HTMLElement {
           </div>
         </div>
       ` : "";
-      const rows = items.map((s) => {
+      const renderRow = (s) => {
         const isActive = activeRel === s.rel_path;
         const isPending = this._catalogPending.has(s.id);
         const isPreviewing = this._previewingId === s.id;
@@ -14004,7 +14140,7 @@ class NidaPanel extends HTMLElement {
                data-action="sl-select" data-sound-id="${this._escape(s.id)}">
             <div class="sl-name">
               ${isActive ? `<span class="sl-active-dot">${ICONS.check}</span>` : ""}
-              ${this._escape(s.name)}
+              ${this._escape(this._voicedJingleDisplayName(s.rel_path) || s.name)}
               ${isDefault ? `<span class="sl-default-chip">${this.t("sound_default")}</span>` : ""}
             </div>
             ${s.category === "dua" && s.downloaded && !isActive ? `
@@ -14038,7 +14174,32 @@ class NidaPanel extends HTMLElement {
             `}
           </div>
         `;
-      }).join("");
+      };
+      // 2.5.4 — voiced jingles (one per language) form one parent row with
+      // the other languages as collapsed children. The parent is the active
+      // voiced jingle, or the one in the panel language when none is active.
+      let rows;
+      if (cat.key === "pre_adhan_jingle") {
+        const voiced = items.filter((s) => this._voicedJingleLang(s.rel_path));
+        const plain = items.filter((s) => !this._voicedJingleLang(s.rel_path));
+        const wantId = `${VOICED_JINGLE_PREFIX}${this._wantedVoicedLang(items)}`;
+        const primary = voiced.find((s) => s.rel_path === activeRel) ||
+          voiced.find((s) => s.id === wantId);
+        const others = voiced.filter((s) => s !== primary);
+        const openOthers = !!this._voicedOthersOpen;
+        const othersBlock = others.length ? `
+          <div class="sl-row sl-more" data-action="sl-toggle-voiced-others">
+            <div class="sl-name">
+              <span class="sl-more-chevron">${openOthers ? ICONS.chevronDown : ICONS.chevronRight}</span>
+              ${this.t("voiced_jingle_other_languages")} (${others.length})
+            </div>
+          </div>
+          ${openOthers ? `<div class="sl-children">${others.map(renderRow).join("")}</div>` : ""}
+        ` : "";
+        rows = (primary ? renderRow(primary) : "") + othersBlock + plain.map(renderRow).join("");
+      } else {
+        rows = items.map(renderRow).join("");
+      }
       return `
         ${scoped ? "" : `<div class="sl-cat-head">${this.t(cat.label_key)}</div>`}
         <div class="sl-list">${randomRow}${rows}</div>
@@ -14077,6 +14238,9 @@ class NidaPanel extends HTMLElement {
       if (sound) this._downloadSound(sound);
     } else if (action === "sl-delete") {
       if (sound) this._deleteSound(sound);
+    } else if (action === "sl-toggle-voiced-others") {
+      this._voicedOthersOpen = !this._voicedOthersOpen;
+      this._renderPortal();
     } else if (action === "sl-select-random") {
       // 2.0.69 — pick the random pseudo-entry: enable random mode,
       // close the library, re-render the sound rows.
@@ -14089,6 +14253,17 @@ class NidaPanel extends HTMLElement {
         if (this._settings?.random_adhan_enabled &&
             (sound.category === "fajr_adhan" || sound.category === "adhan")) {
           this._saveSettings({ random_adhan_enabled: false });
+        }
+        // 2.5.4 — picking the voiced jingle in the panel language means
+        // "my language": it follows later language changes. A pick from
+        // "Other languages" is a deliberate fixed choice.
+        if (sound.category === "pre_adhan_jingle" && !this._fajrAlarmSoundPicking &&
+            this._voicedJingleLang(sound.rel_path)) {
+          const follow = this._voicedJingleLang(sound.rel_path) ===
+            this._wantedVoicedLang(this._catalog?.sounds);
+          this._settings = { ...(this._settings || {}), pre_adhan_jingle_follow_language: follow };
+          // The pick becomes the parent row; fold the children away again.
+          this._voicedOthersOpen = false;
         }
         this._selectSound(sound);
       }
@@ -14801,7 +14976,8 @@ class NidaPanel extends HTMLElement {
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;");
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
   }
 
   // ───── Event wiring ───────────────────────────────────────────────────────
@@ -14868,8 +15044,6 @@ class NidaPanel extends HTMLElement {
       this._onToggleSonosAnnounce();
     } else if (action === "toggle-notify-large-icon") {
       this._onToggleNotifyLargeIcon();
-    } else if (action === "toggle-notify-ios-image") {
-      this._onToggleNotifyIosImage();
     } else if (action === "toggle-fade") {
       this._onToggleFade();
     } else if (action === "toggle-restore-playback") {

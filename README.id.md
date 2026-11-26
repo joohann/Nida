@@ -97,6 +97,10 @@ card_type: now        # now, today, kids, scene_now, scene_today
 | `collapsed` | Hanya kartu `today`: mulai terlipat hingga salat berikutnya |
 | `grid_options.rows` | Di tampilan Sections, kartu mengisi tinggi yang ditentukan |
 
+## Nida Connect untuk macOS
+
+[Nida Connect](https://github.com/joohann/Nida-Connect-OSX) menampilkan salat berikutnya di bilah menu Mac Anda, dengan hitung mundur langsung, jadwal salat hari ini, tanggal hijriah, dan notifikasi saat pra-azan dan azan. Aplikasi ini membaca sensor Nida dari Home Assistant Anda. Membutuhkan macOS 13 atau lebih baru.
+
 ## Persyaratan
 
 - Home Assistant 2024.11 atau lebih baru

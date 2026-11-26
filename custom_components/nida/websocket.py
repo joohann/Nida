@@ -709,6 +709,23 @@ async def ws_test_notify(hass: HomeAssistant, connection, msg) -> None:
     else:
         message = message_tpl.replace("[prayer]", "Test")
 
+    # [time] — preview the prayer's real clock time when a prayer is given
+    # and the coordinator has today's timings; otherwise fall back to the
+    # current time so the test still shows a plausible "HH:MM".
+    if "[time]" in message:
+        from homeassistant.util import dt as dt_util
+
+        time_text = dt_util.now().strftime("%H:%M")
+        if prayer:
+            coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+            timings = (
+                getattr(coordinator, "data", None) or {}
+            ).get("data", {}).get("timings", {})
+            raw = timings.get(prayer.capitalize())
+            if isinstance(raw, str) and ":" in raw:
+                time_text = raw.split(" ")[0]
+        message = message.replace("[time]", time_text)
+
     # 2.0.95 — targets flagged for the Samsung TTS/alarm-stream
     # workaround; _dispatch_notify forks per target via the same
     # _notify_service_data_for_target the scheduler uses for real, so a

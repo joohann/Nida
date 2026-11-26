@@ -10,6 +10,16 @@ placed at the destination path — that lets advanced users override a
 shipped default by dropping their own file in www/nida/sounds/<rel>.
 
 Changelog:
+  2.5.4 (2026-11-12): async_copy_brand now refreshes a shipped brand image
+                      that changed between versions instead of skipping any
+                      existing file. A .nida_shipped.json fingerprint plus a
+                      bootstrap set of former shipped hashes tells a stale
+                      shipped copy (safe to refresh) from a real user
+                      override (left untouched). Fixes the borderless
+                      notification icon never reaching installs that still
+                      had the previous one. async_brand_rev publishes
+                      icon_notify-<rev>.png so the notify URL changes
+                      whenever the icon does (phones cache by URL).
   2.0.1 (2026-06-28): New file — async_copy_sounds() runs at every setup,
                       mirrors custom_components/nida/sounds/** into
                       <config>/www/nida/sounds/**.
@@ -23,6 +33,48 @@ from pathlib import Path
 from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
+
+
+async def async_brand_rev(hass: HomeAssistant) -> str:
+    """Publish a versioned copy of the notification icon (2.5.4).
+
+    The icon URL used to be fixed, so the iOS/Android Companion app cached
+    the image indefinitely and kept showing an old icon (e.g. the bordered
+    2.4.5 one) after the file was replaced. The version therefore has to
+    be part of the URL.
+
+    It must be in the FILE NAME, not in a query string: the iOS app
+    resolves a relative attachment URL with
+    activeURL.appendingPathComponent(url), which percent-encodes "?" to
+    "%3F". "icon_notify.png?v=x" then becomes a 404 and iOS silently drops
+    the image. So this writes www/nida/brand/icon_notify-<rev>.png next to
+    the plain file and removes stale versioned copies.
+
+    <rev> is a short hash of the icon actually served from www/ (not the
+    shipped source), so a custom icon the user placed there is versioned
+    and shown as well. Must run after async_copy_brand. Returns "" when
+    anything fails; callers then fall back to the plain, unversioned URL.
+    """
+    brand_dir = Path(hass.config.path("www")) / "nida" / "brand"
+    base = brand_dir / "icon_notify.png"
+
+    def _publish() -> str:
+        import hashlib
+
+        try:
+            data = base.read_bytes()
+            rev = hashlib.sha256(data).hexdigest()[:8]
+            versioned = brand_dir / f"icon_notify-{rev}.png"
+            if not versioned.exists() or versioned.read_bytes() != data:
+                versioned.write_bytes(data)
+            for old in brand_dir.glob("icon_notify-*.png"):
+                if old != versioned:
+                    old.unlink(missing_ok=True)
+            return rev
+        except Exception:  # noqa: BLE001 — cache-busting is best-effort
+            return ""
+
+    return await hass.async_add_executor_job(_publish)
 
 
 async def async_copy_sounds(hass: HomeAssistant) -> None:
@@ -81,23 +133,78 @@ async def async_copy_brand(hass: HomeAssistant) -> None:
     warning (nothing will play), no brand icon is worth a debug line at
     most (notifications simply carry no image).
 
-    Like the sounds mirror this never overwrites, so dropping your own
-    icon.png in www/nida/brand/ replaces the shipped one.
+    Unlike the sounds mirror, a *shipped* icon that changes between
+    versions is refreshed in place (2.5.4): the old "never overwrite" rule
+    meant an updated brand image never reached installs that already had
+    the previous copy — e.g. the borderless notification icon in 2.5.4
+    would never replace the bordered 2.3.15 one. A fingerprint sidecar
+    (.nida_shipped.json, name -> sha256 of what Nida last wrote) keeps a
+    genuine user override working: a destination whose bytes still match
+    what Nida wrote is ours to update, while one the user has edited no
+    longer matches and is left exactly as it is.
     """
     src_root = Path(__file__).parent / "brand"
     dst_root = Path(hass.config.path("www")) / "nida" / "brand"
+    marker = dst_root / ".nida_shipped.json"
 
     def _do_copy() -> int:
         if not src_root.is_dir():
             return 0
+        import hashlib
+        import json
+
+        def _sha(path: Path) -> str:
+            return hashlib.sha256(path.read_bytes()).hexdigest()
+
+        try:
+            shipped = json.loads(marker.read_text()) if marker.exists() else {}
+        except Exception:  # noqa: BLE001 — a corrupt marker must not block the copy
+            shipped = {}
+
+        # sha256 of every brand image Nida shipped BEFORE the marker existed
+        # (pre-2.5.4). An existing destination that still matches one of
+        # these is a stale shipped copy, not a user override, so it is safe
+        # to refresh on the first 2.5.4 run even without a marker. The
+        # marker takes over for every version after this one.
+        KNOWN_SHIPPED = {
+            # icon_notify.png — 2.4.5, then 2.4.9
+            "899087e843616c5fd57510c2cdf57ef69f88965f5a9be3fafa52d2602321578a",
+            "3c2101616fdd40d8eadf8dda0e144c2fb76a88e86c10621676e6a0d05f59d3a2",
+            # icon.png — the two shipped revisions
+            "aae7555bb6793ec2bd528180f6538efb9694e2433e53fe0f9dc342a45038a76a",
+            "b43d74ffb201f6092000fab2ad5eade8292cc2839045cbc25f9d13f3a1ff217a",
+        }
+
         copied = 0
         for src_file in sorted(src_root.glob("*.png")):
             dst_file = dst_root / src_file.name
+            src_hash = _sha(src_file)
             if dst_file.exists():
-                continue
+                dst_hash = _sha(dst_file)
+                if dst_hash == src_hash:
+                    # Already current; just make sure we claim ownership so
+                    # a later shipped change can refresh it.
+                    shipped[src_file.name] = src_hash
+                    continue
+                # Differs from the shipped source: only overwrite when the
+                # destination is a copy WE wrote — either the recorded
+                # fingerprint or a known former shipped revision. Anything
+                # else is a user override and is left exactly as it is.
+                if (
+                    dst_hash != shipped.get(src_file.name)
+                    and dst_hash not in KNOWN_SHIPPED
+                ):
+                    continue
             dst_file.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src_file, dst_file)
+            shipped[src_file.name] = src_hash
             copied += 1
+
+        try:
+            dst_root.mkdir(parents=True, exist_ok=True)
+            marker.write_text(json.dumps(shipped))
+        except Exception:  # noqa: BLE001 — the marker is best-effort
+            pass
         return copied
 
     try:

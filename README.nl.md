@@ -97,6 +97,10 @@ card_type: now        # now, today, kids, scene_now, scene_today
 | `collapsed` | Alleen kaart `today`: begin ingeklapt tot het volgende gebed |
 | `grid_options.rows` | In een Sections-weergave vult de kaart de opgegeven hoogte |
 
+## Nida Connect voor macOS
+
+[Nida Connect](https://github.com/joohann/Nida-Connect-OSX) zet het volgende gebed in de menubalk van je Mac, met een live aftelling, de gebedstijden van vandaag, de hijri-datum en meldingen bij de pre-adhan en de adhan. De app leest de sensoren van Nida uit je Home Assistant. Vereist macOS 13 of nieuwer.
+
 ## Vereisten
 
 - Home Assistant 2024.11 of nieuwer

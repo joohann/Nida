@@ -103,6 +103,10 @@ card_type: now        # now, today, kids, scene_now, scene_today
 | `collapsed` | بطاقة `today` فقط: تبدأ مطوية إلى الصلاة القادمة |
 | `grid_options.rows` | في عرض Sections تملأ البطاقة الارتفاع المحدد |
 
+## Nida Connect لنظام macOS
+
+يعرض [Nida Connect](https://github.com/joohann/Nida-Connect-OSX) الصلاة القادمة في شريط القوائم على جهاز Mac، مع عدّ تنازلي مباشر ومواقيت صلاة اليوم والتاريخ الهجري وإشعارات عند التنبيه المسبق وعند الأذان. يقرأ التطبيق مستشعرات Nida من Home Assistant لديك. يتطلب macOS 13 أو أحدث.
+
 ## المتطلبات
 
 - Home Assistant 2024.11 أو أحدث

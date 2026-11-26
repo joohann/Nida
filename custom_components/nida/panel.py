@@ -99,7 +99,29 @@ async def _asset_version(hass: HomeAssistant) -> str:
     here, so there is nothing extra to keep in sync on a release.
     """
     integration = await async_get_integration(hass, DOMAIN)
-    return integration.version or "0"
+    version = integration.version or "0"
+
+    # 2.5.4 — append a short hash of the frontend scripts. With the
+    # version alone, a changed nida-panel.js / nida-card.js under the same
+    # version (local testing, a re-released build) kept its old URL and
+    # browsers and the Companion app served the cached copy. The hash
+    # changes the URL whenever the files do. Best-effort: on any error
+    # the plain version is used.
+    frontend_dir = os.path.join(os.path.dirname(__file__), "frontend")
+
+    def _digest() -> str:
+        import hashlib
+
+        h = hashlib.sha256()
+        for name in ("nida-panel.js", "nida-card.js"):
+            with open(os.path.join(frontend_dir, name), "rb") as fh:
+                h.update(fh.read())
+        return h.hexdigest()[:8]
+
+    try:
+        return f"{version}-{await hass.async_add_executor_job(_digest)}"
+    except Exception:  # noqa: BLE001 — cache-busting is best-effort
+        return version
 
 
 async def async_register_static_files(hass: HomeAssistant) -> None:

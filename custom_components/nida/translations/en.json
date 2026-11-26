@@ -20,5 +20,45 @@
         }
       }
     }
+  },
+  "issues": {
+    "api_unreachable": {
+      "title": "Nida cannot reach the prayer-times API",
+      "description": "Nida could not reach the Aladhan prayer-times API (`api.aladhan.com`) and is showing the last saved times.\n\nThis is most often caused by a network DNS blocker ({blocker}) that blocks the API's domain.\n\n**Fix:** allow these two domains in your blocker and then reload Nida:\n\n- `api.aladhan.com`\n- `bahriya.app`\n\n**In AdGuard Home:** open Filters → Custom filtering rules and add:\n```\n@@||api.aladhan.com^\n@@||bahriya.app^\n```\nThen clear the DNS cache. This message disappears once Nida can reach the API again."
+    }
+  },
+  "entity": {
+    "select": {
+      "visitors_mode": {
+        "name": "Visitors mode",
+        "state": {
+          "off": "Off",
+          "1h": "1 hour",
+          "2h": "2 hours",
+          "3h": "3 hours",
+          "4h": "4 hours",
+          "6h": "6 hours",
+          "8h": "8 hours",
+          "12h": "12 hours",
+          "24h": "24 hours",
+          "until_off": "Until I turn it off"
+        },
+        "state_attributes": {
+          "until": {
+            "name": "Until"
+          }
+        }
+      }
+    },
+    "switch": {
+      "visitors_mode": {
+        "name": "Visitors mode",
+        "state_attributes": {
+          "until": {
+            "name": "Until"
+          }
+        }
+      }
+    }
   }
 }

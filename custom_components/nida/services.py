@@ -1,6 +1,12 @@
 """Nida services — user-facing service calls.
 
 Changelog:
+  2.5.4 (2026-11-15): Voiced pre-adhan jingles. async_run_pre_adhan_sequence
+                       skips the spoken line when the active jingle is a
+                       voiced one (_is_voiced_jingle, VOICED_JINGLE_PREFIX):
+                       that file already speaks the announcement. The TTS
+                       option is not touched, so a plain jingle brings it
+                       back. Covers the scheduled run and the full test.
   2.3.5 (2026-07-30): Fixed music never coming back on Johann's setup —
                        the cause was upstream of everything 2.2.3/2.3.4
                        built. options.adhan_media_players held ONE entity,
@@ -455,6 +461,7 @@ from .const import (
     PRAYERS,
     SOUND_CATEGORY_ADHAN,
     SOUND_CATEGORY_PRE_ADHAN_JINGLE,
+    VOICED_JINGLE_PREFIX,
     TEST_SOUND_PATH,
 )
 
@@ -570,6 +577,16 @@ def _pre_adhan_jingle_path(options: dict) -> str:
     """Resolve the pre-adhan jingle file path (relative to sounds/)."""
     key = f"{OPT_SOUND_PREFIX}{SOUND_CATEGORY_PRE_ADHAN_JINGLE}"
     return options.get(key) or DEFAULT_SOUNDS[SOUND_CATEGORY_PRE_ADHAN_JINGLE]
+
+
+def _is_voiced_jingle(rel_path: str) -> bool:
+    """True when the jingle file already speaks the announcement (2.5.4).
+
+    Voiced jingles are named VOICED_JINGLE_PREFIX + language code
+    (jingle_nida_nl.mp3), so the file name alone tells them apart.
+    """
+    base = str(rel_path or "").rsplit("/", 1)[-1].lower()
+    return base.startswith(VOICED_JINGLE_PREFIX)
 
 
 def _volume_for_category(options: dict, category: str) -> float | None:
@@ -2282,6 +2299,11 @@ async def async_run_pre_adhan_sequence(
     if _guest_mode_active(options) and not preview:
         _LOGGER.info("Guest mode active — skipping pre-adhan for %s", prayer)
         return
+    # 2.5.4 — a voiced jingle already speaks the announcement, so the
+    # separate TTS would say it twice. The TTS option itself is left alone:
+    # pick a plain jingle again and the spoken line comes back.
+    if audio and tts and _is_voiced_jingle(_pre_adhan_jingle_path(options)):
+        tts = False
     if not (audio or tts):
         return
 
