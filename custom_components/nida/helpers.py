@@ -10,6 +10,9 @@ placed at the destination path — that lets advanced users override a
 shipped default by dropping their own file in www/nida/sounds/<rel>.
 
 Changelog:
+  2.5.5 (2026-11-26): async_copy_brand also mirrors images/ (the
+                      notification icon moved there out of brand/, which
+                      Home Assistant reserves for its own brand images).
   2.5.4 (2026-11-12): async_copy_brand now refreshes a shipped brand image
                       that changed between versions instead of skipping any
                       existing file. A .nida_shipped.json fingerprint plus a
@@ -143,7 +146,12 @@ async def async_copy_brand(hass: HomeAssistant) -> None:
     what Nida wrote is ours to update, while one the user has edited no
     longer matches and is left exactly as it is.
     """
-    src_root = Path(__file__).parent / "brand"
+    # 2.5.5 — brand/ may only hold the images Home Assistant itself uses
+    # (icon.png, icon@2x.png, ...), so the notification icon moved to
+    # images/. Both folders are mirrored into the same www/nida/brand/,
+    # so the /local/nida/brand/... URLs are unchanged.
+    pkg_root = Path(__file__).parent
+    src_root = pkg_root / "brand"
     dst_root = Path(hass.config.path("www")) / "nida" / "brand"
     marker = dst_root / ".nida_shipped.json"
 
@@ -176,7 +184,10 @@ async def async_copy_brand(hass: HomeAssistant) -> None:
         }
 
         copied = 0
-        for src_file in sorted(src_root.glob("*.png")):
+        sources = sorted(src_root.glob("*.png")) + sorted(
+            (pkg_root / "images").glob("*.png")
+        )
+        for src_file in sources:
             dst_file = dst_root / src_file.name
             src_hash = _sha(src_file)
             if dst_file.exists():

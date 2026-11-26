@@ -10,6 +10,10 @@ release; newest entry on top.
   uses it, when available, to recognise an AdGuard Home or Pi-hole add-on for
   the DNS-blocker repair; Home Assistant's validation (hassfest) requires it to
   be declared. No change in behaviour.
+- **Brand images in line with Home Assistant.** `brand/icon.png` is now
+  256 x 256 with a 512 x 512 `icon@2x.png`, and the notification icon moved
+  out of `brand/` into `images/`. Its URL (`/local/nida/brand/...`) stays the
+  same.
 
 ## 2.5.4 — 2026-11-26
 
