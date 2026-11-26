@@ -249,7 +249,7 @@
  *                        the dashboard UI, not just YAML.
  */
 
-const NIDA_CARD_VERSION = "2.5.4";
+const NIDA_CARD_VERSION = "2.5.5";
 
 const PRAYERS = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 

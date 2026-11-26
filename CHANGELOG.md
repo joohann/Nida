@@ -4,6 +4,13 @@ All notable changes to Nida are documented here. The `version` in
 `custom_components/nida/manifest.json` is the source of truth for the current
 release; newest entry on top.
 
+## 2.5.5 — 2026-11-26
+
+- **Manifest fix.** `hassio` is now listed under `after_dependencies`. Nida
+  uses it, when available, to recognise an AdGuard Home or Pi-hole add-on for
+  the DNS-blocker repair; Home Assistant's validation (hassfest) requires it to
+  be declared. No change in behaviour.
+
 ## 2.5.4 — 2026-11-26
 
 - **Nida jingles: jingle and announcement in one.** The Sound Library has a new
