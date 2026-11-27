@@ -16,6 +16,14 @@ each sensor so transitions land within a minute of the actual
 prayer time.
 
 Changelog:
+  2.5.7 (2026-11-27): Windows come from prayer_times.coordinator_datetimes(),
+                      so an Isha after midnight (high-latitude summer) starts
+                      on the coming night and Maghrib runs until it, instead
+                      of Isha being stitched onto the morning that passed.
+                      The five sensors belong to the Nida device now. Entity
+                      ids stay as they are; Home Assistant 2026.11 shows an
+                      entity on a device as device name plus name, so they
+                      read "Nida Fajr active", like the other Nida entities.
   2.0.23 (2026-06-28): Defensive rewrite — 2.0.21 broke integration
                        setup when binary_sensor was added to PLATFORMS.
                        Most likely cause was the CoordinatorEntity
@@ -55,6 +63,8 @@ from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, PRAYERS, SENSOR_ENTITY_PREFIX
+from .prayer_times import coordinator_datetimes
+from .sensor import _device_info
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -125,6 +135,7 @@ class NidaPrayerActiveSensor(BinarySensorEntity):
         # (see SKILL.md).
         self._attr_name = f"{prayer.capitalize()} active"
         self._attr_unique_id = f"{entry.entry_id}_active_{prayer}"
+        self._attr_device_info = _device_info(entry)
         self.entity_id = (
             f"binary_sensor.{SENSOR_ENTITY_PREFIX}{prayer}_active"
         )
@@ -150,63 +161,52 @@ class NidaPrayerActiveSensor(BinarySensorEntity):
                 self._prayer, err,
             )
 
-    def _coordinator_data(self) -> dict | None:
-        """Pull the latest coordinator data from hass.data, or None."""
+    def _coordinator(self):
+        """The Nida coordinator from hass.data, or None."""
         try:
-            coordinator = self.hass.data[DOMAIN][self._entry.entry_id]
+            return self.hass.data[DOMAIN][self._entry.entry_id]
         except (AttributeError, KeyError):
             return None
-        return getattr(coordinator, "data", None)
 
     @property
     def is_on(self) -> bool | None:
         """True if local time is inside this prayer's window."""
-        data = self._coordinator_data() or {}
+        coordinator = self._coordinator()
+        data = getattr(coordinator, "data", None) or {}
         timings = data.get("data", {}).get("timings", {})
         if not timings:
             return None
 
         now = dt_util.now()
-        start, end = self._resolve_window(timings, now)
+        start, end = self._resolve_window(coordinator_datetimes(coordinator), now)
         if start is None or end is None:
             return None
         return start <= now < end
 
     def _resolve_window(
-        self, timings: dict, now: datetime
+        self, stamps: dict[str, datetime], now: datetime
     ) -> tuple[datetime | None, datetime | None]:
-        """Compute [start, end) for this prayer at the current moment."""
-        start = _parse_today(timings.get(self._prayer.capitalize()), now)
+        """Compute [start, end) for this prayer at the current moment.
+
+        `stamps` are the real timestamps of the timings day (2.5.7), so an
+        Isha after midnight already sits on the coming night.
+        """
+        start = stamps.get(self._prayer.capitalize())
         if start is None:
             return None, None
 
-        next_name = _NEXT_PRAYER[self._prayer]
-        next_today = _parse_today(timings.get(next_name.capitalize()), now)
-
         if self._prayer == "isha":
-            # Isha straddles midnight; "next prayer" is tomorrow's Fajr.
-            fajr_today = _parse_today(timings.get("Fajr"), now)
-            if fajr_today is None:
+            # Isha runs until the next Fajr.
+            fajr = stamps.get("Fajr")
+            if fajr is None:
                 return None, None
-            if now < fajr_today:
-                # We're between midnight and today's Fajr → we're in
-                # YESTERDAY's Isha window. Approximate by shifting
-                # today's Isha start back 24h; end is today's Fajr.
-                return start - timedelta(days=1), fajr_today
-            # We're after Fajr → today's Isha window is start..(tomorrow's Fajr).
-            return start, fajr_today + timedelta(days=1)
+            if now < fajr:
+                # Before this day's Fajr: still the previous night's Isha,
+                # approximated with this day's Isha one day earlier.
+                return start - timedelta(days=1), fajr
+            return start, fajr + timedelta(days=1)
 
-        if next_today is None:
+        end = stamps.get(_NEXT_PRAYER[self._prayer].capitalize())
+        if end is None:
             return None, None
-        return start, next_today
-
-
-def _parse_today(time_str: str | None, ref: datetime) -> datetime | None:
-    """Combine an Aladhan 'HH:MM' string with today's date in HA's timezone."""
-    if not time_str:
-        return None
-    try:
-        hh, mm = (int(x) for x in time_str.split(" ")[0].split(":"))
-    except (ValueError, AttributeError):
-        return None
-    return ref.replace(hour=hh, minute=mm, second=0, microsecond=0)
+        return start, end

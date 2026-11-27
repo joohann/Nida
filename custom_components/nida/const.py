@@ -1,6 +1,16 @@
-"""Nida constanten — domain, sound-categorieën, gebedsnamen, sensor entity_ids.
+"""Nida constants: domain, sound categories, prayer names, sensor entity_ids.
 
 Changelog:
+  2.5.7 (2026-11-27): PRODUCT_NAME and PANEL_TITLE (moved here from
+                       panel.py) are the one place for the product's names;
+                       translations use {name} and {panel} instead.
+                       OPT_LANGUAGE and SUPPORTED_LANGUAGES for texts.py.
+                       DEFAULT_NOTIFY_TITLE_FALLBACK follows PRODUCT_NAME.
+                       LIVE_ACTIVITY_REFRESH_MINUTES 5 -> 15. The countdown
+                       runs on the phone (chronometer), so the interval only
+                       moves the progress bar; at 5 minutes a 120-minute lead
+                       time cost about 135 pushes per device per day, and iOS
+                       may delay or drop frequent Live Activity updates.
   2.5.4 (2026-11-15): VOICED_JINGLE_PREFIX / VOICED_JINGLE_FALLBACK_LANG and
                        OPT_PRE_ADHAN_JINGLE_FOLLOW_LANGUAGE for the voiced
                        pre-adhan jingles (jingle + spoken line in one file).
@@ -258,6 +268,19 @@ Changelog:
 from __future__ import annotations
 
 DOMAIN = "nida"
+
+# The product's names, in one place (2.5.7). Texts in translations/*.json
+# say {name} and {panel} instead, filled in from here, so a rename is a
+# change to these two lines plus the "name" in manifest.json, which Home
+# Assistant reads itself.
+PRODUCT_NAME = "Nida"
+PANEL_TITLE = "Nida²"  # sidebar label and panel header
+
+# Nida's language choice (the panel's setting); "auto" or nothing follows
+# Home Assistant's language. The ten languages of the panel, the card and
+# the server-side texts (texts.py); anything else falls back to English.
+OPT_LANGUAGE = "language"
+SUPPORTED_LANGUAGES = ("en", "nl", "ar", "tr", "de", "fr", "ms", "id", "ur", "fa")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Config flow / options keys (basic settings, not sound-related)
@@ -609,7 +632,9 @@ MAX_LIVE_ACTIVITY_MINUTES = 360
 LIVE_ACTIVITY_TAG = "nida_next_prayer"
 LIVE_ACTIVITY_SOON_MINUTES = 10      # "last stretch" colour switch + silent update
 LIVE_ACTIVITY_LINGER_MINUTES = 5     # how long "Now" stays up after the adhan
-LIVE_ACTIVITY_REFRESH_MINUTES = 5    # progress-bar refresh interval while active
+# Progress-bar refresh while a card is up. The countdown itself runs on the
+# phone; phase changes (start, last 10 minutes, adhan, end) push on their own.
+LIVE_ACTIVITY_REFRESH_MINUTES = 15
 # Night card (Fajr, Maghrib, Isha) and day card (Dhuhr, Asr); same emerald/gold
 # tokens as the panel.
 LIVE_ACTIVITY_NIGHT = {
@@ -758,7 +783,7 @@ OPT_NOTIFY_TTS_WORKAROUND_TARGETS = "notify_tts_workaround_targets"
 # exactly equals one of them as "never customised" and migrates it, the
 # same trick services.py's _resolve_tts_message uses. A title the user
 # actually typed is left alone.
-DEFAULT_NOTIFY_TITLE_FALLBACK = "Nida"
+DEFAULT_NOTIFY_TITLE_FALLBACK = PRODUCT_NAME
 LEGACY_NOTIFY_TITLES = ("🕌 Nida",)
 DEFAULT_NOTIFY_MESSAGE_FALLBACK = "It's [time] time for [prayer] prayer"
 

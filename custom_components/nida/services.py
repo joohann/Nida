@@ -1,6 +1,13 @@
 """Nida services — user-facing service calls.
 
 Changelog:
+  2.5.7 (2026-11-27): the TTS test reads its volume defensively: a stored
+                      value int() rejects falls back to the default test
+                      volume instead of failing the test.
+                      Docstrings brought up to date: _guest_mode_active
+                      (expiry has a timer since 2.5.4) and
+                      _restore_duck_media_players, which also loses its
+                      unused `options` parameter.
   2.5.4 (2026-11-15): Voiced pre-adhan jingles. async_run_pre_adhan_sequence
                        skips the spoken line when the active jingle is a
                        voiced one (_is_voiced_jingle, VOICED_JINGLE_PREFIX):
@@ -653,11 +660,12 @@ def _resolve_tts_message(options: dict, lang: str | None) -> str:
 def _guest_mode_active(options: dict) -> bool:
     """True while guest mode should mute scheduled adhan audio.
 
-    Active when the toggle is on AND the panel-written until-timestamp
-    has not passed. A missing/unparseable until means "on until manually
-    switched off" (also covers a 2.0.45 toggle-on that predates the
-    timer). Expiry is lazy: no background timer, just this comparison at
-    fire time — after the until-moment the next adhan simply plays again.
+    Active when the toggle is on AND the until-timestamp has not passed.
+    A missing/unparseable until means "on until manually switched off"
+    (also covers a 2.0.45 toggle-on that predates the timer). Since 2.5.4
+    the expiry timer in visitors.py switches the mode off at the
+    until-moment; this comparison at fire time stays as the safety net
+    for an adhan that fires before that timer has run.
     """
     if not bool(options.get(OPT_GUEST_MODE_ENABLED)):
         return False
@@ -1153,7 +1161,7 @@ async def _wait_until_idle(
 
 
 async def _restore_duck_media_players(
-    hass: HomeAssistant, snapshot: list[dict], options: dict
+    hass: HomeAssistant, snapshot: list[dict]
 ) -> None:
     """Undo whatever _duck_media_players did to each entity, per its
     snapshotted `method`.
@@ -1170,14 +1178,9 @@ async def _restore_duck_media_players(
     player was never actually paused for that method, so there's no
     media_play call to make.
 
-    2.2.2 — new `options` param, used only to fire the Mac-shortcut
-    restore notify (_notify_mac_shortcut). This happens unconditionally,
-    BEFORE the `if not snapshot: return` below, since the Mac-shortcut
-    duck notify in _duck_media_players is never reflected in `snapshot`
-    (it's not a media_player entity) — callers now always call this
-    function (no more `if duck_snapshot:` guard at the call sites) so the
-    restore notify still fires even on a run where zero media_player
-    entities got ducked.
+    2.5.7: the `options` parameter is gone. It only fed the Mac-shortcut
+    restore notify of 2.2.2, which no longer exists. Callers still call
+    this unconditionally; an empty snapshot simply returns.
     """
     if not snapshot:
         return
@@ -1705,7 +1708,7 @@ async def _play_sound_on_speakers(
             label, dip=dip, play_snapshot=play_snapshot,
         )
     finally:
-        await _restore_duck_media_players(hass, duck_snapshot, options)
+        await _restore_duck_media_players(hass, duck_snapshot)
         await _restore_adhan_players(hass, play_snapshot, options)
 
 
@@ -2092,7 +2095,7 @@ async def _async_handle_speak_pre_adhan(
             hass, options, players, dict(call.data), play_snapshot
         )
     finally:
-        await _restore_duck_media_players(hass, duck_snapshot, options)
+        await _restore_duck_media_players(hass, duck_snapshot)
         await _restore_adhan_players(hass, play_snapshot, options)
 
 
@@ -2120,10 +2123,14 @@ async def _speak_pre_adhan_on(
         # accidentally blast at full power.
         is_test = call_data.get("prayer") == "test"
         if is_test:
-            volume = (
-                int(options.get(f"{OPT_VOLUME_PREFIX}pre_adhan_test",
-                                DEFAULT_VOLUME_PRE_ADHAN_TEST)) / 100.0
-            )
+            # 2.5.7: a bad stored value falls back to the default instead
+            # of raising out of the TTS test.
+            try:
+                test_volume = int(options.get(f"{OPT_VOLUME_PREFIX}pre_adhan_test",
+                                              DEFAULT_VOLUME_PRE_ADHAN_TEST))
+            except (TypeError, ValueError):
+                test_volume = DEFAULT_VOLUME_PRE_ADHAN_TEST
+            volume = max(0, min(100, test_volume)) / 100.0
         else:
             # Night mode / open-contact scale the spoken line exactly like
             # the jingle, so the two stay at the same level.
@@ -2351,7 +2358,7 @@ async def async_run_pre_adhan_sequence(
                 hass, options, players, {"prayer": prayer}, play_snapshot
             )
     finally:
-        await _restore_duck_media_players(hass, duck_snapshot, options)
+        await _restore_duck_media_players(hass, duck_snapshot)
         await _restore_adhan_players(hass, play_snapshot, options)
 
 

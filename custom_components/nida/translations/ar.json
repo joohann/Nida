@@ -3,74 +3,100 @@
     "step": {
       "user": {
         "title": "ندا",
-        "description": "Voeg de Nida-integratie toe. Alle instellingen kunnen worden beheerd via het Nida-paneel in de zijbalk."
+        "description": "يُعدّ Nida بنقرة واحدة. بعد ذلك افتح Nida في الشريط الجانبي لجميع الإعدادات."
       }
     },
     "abort": {
-      "single_instance_allowed": "Er kan slechts één Nida-integratie worden geconfigureerd."
+      "single_instance_allowed": "يمكن إعداد نسخة واحدة فقط من Nida."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "خيارات نداء",
-        "description": "افتح [لوحة المسجد](/nida) لإدارة أوقات الصلاة والأصوات واللغة ومشغلات الوسائط.\n\nيتحكم المفتاح أدناه في إظهار المسجد في الشريط الجانبي أيضًا.",
+        "title": "خيارات {name}",
+        "description": "افتح [لوحة {panel}](/nida) لإدارة أوقات الصلاة والأصوات واللغة ومشغلات الوسائط.\n\nيتحكم المفتاح أدناه في إظهار {panel} في الشريط الجانبي أيضًا.",
         "data": {
-          "show_in_sidebar": "إظهار المسجد في الشريط الجانبي"
+          "show_in_sidebar": "إظهار {panel} في الشريط الجانبي"
         }
       }
     }
   },
+  "issues": {
+    "api_unreachable": {
+      "title": "لا يستطيع Nida الوصول إلى واجهة أوقات الصلاة",
+      "description": "تعذّر على Nida الوصول إلى واجهة أوقات الصلاة من Aladhan (`api.aladhan.com`)، ويعرض آخر الأوقات المحفوظة.\n\nغالبًا ما يكون السبب أداة حظر DNS في شبكتك ({blocker}) تحظر نطاق الواجهة.\n\n**الحل:** اسمح بهذين النطاقين في أداة الحظر، ثم أعد تحميل Nida:\n\n- `api.aladhan.com`\n- `bahriya.app`\n\n**في AdGuard Home:** افتح الفلاتر ← قواعد التصفية المخصصة وأضف:\n```\n@@||api.aladhan.com^\n@@||bahriya.app^\n```\nثم امسح ذاكرة DNS المؤقتة. تختفي هذه الرسالة عندما يتمكن Nida من الوصول إلى الواجهة مجددًا."
+    }
+  },
   "entity": {
-    "sensor": {
-      "fajr": {
-        "name": "الفجر"
-      },
-      "dhuhr": {
-        "name": "الظهر"
-      },
-      "asr": {
-        "name": "العصر"
-      },
-      "maghrib": {
-        "name": "المغرب"
-      },
-      "isha": {
-        "name": "العشاء"
-      },
-      "fajr_readable": {
-        "name": "الفجر (مقروء)"
-      },
-      "dhuhr_readable": {
-        "name": "الظهر (مقروء)"
-      },
-      "asr_readable": {
-        "name": "العصر (مقروء)"
-      },
-      "maghrib_readable": {
-        "name": "المغرب (مقروء)"
-      },
-      "isha_readable": {
-        "name": "العشاء (مقروء)"
-      },
-      "hijri_date": {
-        "name": "التاريخ الهجري"
-      },
-      "hijri_day": {
-        "name": "اليوم الهجري"
-      },
-      "hijri_month": {
-        "name": "الشهر الهجري"
-      },
-      "hijri_year": {
-        "name": "السنة الهجرية"
-      },
-      "hijri_holiday": {
-        "name": "المناسبة الهجرية"
-      },
-      "next_prayer": {
-        "name": "الصلاة القادمة"
+    "select": {
+      "visitors_mode": {
+        "name": "وضع الزوار",
+        "state": {
+          "off": "متوقف",
+          "1h": "ساعة واحدة",
+          "2h": "ساعتان",
+          "3h": "3 ساعات",
+          "4h": "4 ساعات",
+          "6h": "6 ساعات",
+          "8h": "8 ساعات",
+          "12h": "12 ساعة",
+          "24h": "24 ساعة",
+          "until_off": "حتى أوقفه"
+        },
+        "state_attributes": {
+          "until": {
+            "name": "حتى"
+          }
+        }
+      }
+    },
+    "switch": {
+      "visitors_mode": {
+        "name": "وضع الزوار",
+        "state_attributes": {
+          "until": {
+            "name": "حتى"
+          }
+        }
       }
     }
+  },
+  "common": {
+    "welcome_message": "**السلام عليكم.** {name} جاهز.\n\nستجد **{panel}** في الشريط الجانبي، أو افتح [لوحة {panel}](/nida) مباشرةً لضبط أوقات الصلاة والأصوات واللغة ومشغلات الوسائط للأذان التلقائي.",
+    "pre_adhan_message_zero": "**{prayer}** بعد {minutes} دقيقة.",
+    "pre_adhan_message_one": "**{prayer}** بعد دقيقة واحدة.",
+    "pre_adhan_message_two": "**{prayer}** بعد دقيقتين.",
+    "pre_adhan_message_few": "**{prayer}** بعد {minutes} دقائق.",
+    "pre_adhan_message_many": "**{prayer}** بعد {minutes} دقيقة.",
+    "pre_adhan_message_other": "**{prayer}** بعد {minutes} دقيقة.",
+    "calendar_title": "{name} · التقويم الإسلامي",
+    "calendar_holiday_today": "{occasion} اليوم",
+    "calendar_holiday_tomorrow": "{occasion} غدًا",
+    "calendar_holiday_in_days_zero": "{occasion} بعد {days} يوم",
+    "calendar_holiday_in_days_one": "{occasion} بعد يوم واحد",
+    "calendar_holiday_in_days_two": "{occasion} بعد يومين",
+    "calendar_holiday_in_days_few": "{occasion} بعد {days} أيام",
+    "calendar_holiday_in_days_many": "{occasion} بعد {days} يومًا",
+    "calendar_holiday_in_days_other": "{occasion} بعد {days} يوم",
+    "calendar_today": "اليوم: {occasion}",
+    "calendar_tonight": "الليلة: {occasion}",
+    "occasion_islamic_new_year": "رأس السنة الهجرية",
+    "occasion_mawlid": "المولد النبوي",
+    "occasion_eid_al_fitr": "عيد الفطر",
+    "occasion_eid_al_adha": "عيد الأضحى",
+    "occasion_ashura_pre": "صيام عاشوراء (9 محرم)",
+    "occasion_ashura": "صيام عاشوراء (10 محرم)",
+    "occasion_ashura_post": "صيام عاشوراء (11 محرم)",
+    "occasion_arafah": "يوم عرفة",
+    "occasion_white_days": "الأيام البيض",
+    "occasion_weekly_sunnah": "صيام السنة الأسبوعي",
+    "occasion_laylatul_qadr": "ليلة القدر (ليلة {night} من رمضان)",
+    "live_next": "الصلاة القادمة",
+    "live_now": "الآن",
+    "prayer_fajr": "الفجر",
+    "prayer_dhuhr": "الظهر",
+    "prayer_asr": "العصر",
+    "prayer_maghrib": "المغرب",
+    "prayer_isha": "العشاء"
   }
 }

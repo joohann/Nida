@@ -13,64 +13,82 @@
   "options": {
     "step": {
       "init": {
-        "title": "Nida seçenekleri",
-        "description": "Namaz vakitlerini, sesleri, dili ve medya oynatıcıları yönetmek için [Masjid panosunu](/nida) açın.\n\nAşağıdaki anahtar, Masjid'in kenar çubuğunda da gösterilip gösterilmeyeceğini belirler.",
+        "title": "{name} seçenekleri",
+        "description": "Namaz vakitlerini, sesleri, dili ve medya oynatıcıları yönetmek için [{panel} panosunu](/nida) açın.\n\nAşağıdaki anahtar, {panel} öğesinin kenar çubuğunda da gösterilip gösterilmeyeceğini belirler.",
         "data": {
-          "show_in_sidebar": "Masjid'i kenar çubuğunda göster"
+          "show_in_sidebar": "{panel} öğesini kenar çubuğunda göster"
         }
       }
     }
   },
+  "issues": {
+    "api_unreachable": {
+      "title": "Nida namaz vakitleri API'sine ulaşamıyor",
+      "description": "Nida, Aladhan namaz vakitleri API'sine (`api.aladhan.com`) ulaşamadı ve en son kaydedilen vakitleri gösteriyor.\n\nBunun en yaygın nedeni, ağınızda API'nin alan adını engelleyen bir DNS engelleyicidir ({blocker}).\n\n**Çözüm:** engelleyicinizde bu iki alan adına izin verin ve ardından Nida'yı yeniden yükleyin:\n\n- `api.aladhan.com`\n- `bahriya.app`\n\n**AdGuard Home'da:** Filtreler → Özel filtreleme kuralları bölümünü açın ve şunları ekleyin:\n```\n@@||api.aladhan.com^\n@@||bahriya.app^\n```\nArdından DNS önbelleğini temizleyin. Nida API'ye yeniden ulaşabildiğinde bu mesaj kaybolur."
+    }
+  },
   "entity": {
-    "sensor": {
-      "fajr": {
-        "name": "İmsak"
-      },
-      "dhuhr": {
-        "name": "Öğle"
-      },
-      "asr": {
-        "name": "İkindi"
-      },
-      "maghrib": {
-        "name": "Akşam"
-      },
-      "isha": {
-        "name": "Yatsı"
-      },
-      "fajr_readable": {
-        "name": "İmsak (okunabilir)"
-      },
-      "dhuhr_readable": {
-        "name": "Öğle (okunabilir)"
-      },
-      "asr_readable": {
-        "name": "İkindi (okunabilir)"
-      },
-      "maghrib_readable": {
-        "name": "Akşam (okunabilir)"
-      },
-      "isha_readable": {
-        "name": "Yatsı (okunabilir)"
-      },
-      "hijri_date": {
-        "name": "Hicri tarih"
-      },
-      "hijri_day": {
-        "name": "Hicri gün"
-      },
-      "hijri_month": {
-        "name": "Hicri ay"
-      },
-      "hijri_year": {
-        "name": "Hicri yıl"
-      },
-      "hijri_holiday": {
-        "name": "Hicri bayram"
-      },
-      "next_prayer": {
-        "name": "Sonraki namaz"
+    "select": {
+      "visitors_mode": {
+        "name": "Ziyaretçi modu",
+        "state": {
+          "off": "Kapalı",
+          "1h": "1 saat",
+          "2h": "2 saat",
+          "3h": "3 saat",
+          "4h": "4 saat",
+          "6h": "6 saat",
+          "8h": "8 saat",
+          "12h": "12 saat",
+          "24h": "24 saat",
+          "until_off": "Ben kapatana kadar"
+        },
+        "state_attributes": {
+          "until": {
+            "name": "Bitiş"
+          }
+        }
+      }
+    },
+    "switch": {
+      "visitors_mode": {
+        "name": "Ziyaretçi modu",
+        "state_attributes": {
+          "until": {
+            "name": "Bitiş"
+          }
+        }
       }
     }
+  },
+  "common": {
+    "welcome_message": "**Esselamu aleyküm.** {name} hazır.\n\n**{panel}** kenar çubuğunda yer alır. Otomatik ezan için namaz vakitlerini, sesleri, dili ve medya oynatıcıları ayarlamak üzere [{panel} panosunu](/nida) doğrudan da açabilirsiniz.",
+    "pre_adhan_message_one": "**{prayer}** vaktine {minutes} dakika kaldı.",
+    "pre_adhan_message_other": "**{prayer}** vaktine {minutes} dakika kaldı.",
+    "calendar_title": "{name} · İslami takvim",
+    "calendar_holiday_today": "{occasion} bugün",
+    "calendar_holiday_tomorrow": "{occasion} yarın",
+    "calendar_holiday_in_days_one": "{occasion} {days} gün sonra",
+    "calendar_holiday_in_days_other": "{occasion} {days} gün sonra",
+    "calendar_today": "Bugün: {occasion}",
+    "calendar_tonight": "Bu gece: {occasion}",
+    "occasion_islamic_new_year": "Hicri Yılbaşı",
+    "occasion_mawlid": "Mevlid Kandili",
+    "occasion_eid_al_fitr": "Ramazan Bayramı",
+    "occasion_eid_al_adha": "Kurban Bayramı",
+    "occasion_ashura_pre": "Aşure orucu (9 Muharrem)",
+    "occasion_ashura": "Aşure orucu (10 Muharrem)",
+    "occasion_ashura_post": "Aşure orucu (11 Muharrem)",
+    "occasion_arafah": "Arefe Günü",
+    "occasion_white_days": "Beyaz Günler",
+    "occasion_weekly_sunnah": "Haftalık sünnet orucu",
+    "occasion_laylatul_qadr": "Kadir Gecesi (Ramazan'ın {night}. gecesi)",
+    "live_next": "Sonraki namaz",
+    "live_now": "Şimdi",
+    "prayer_fajr": "Sabah",
+    "prayer_dhuhr": "Öğle",
+    "prayer_asr": "İkindi",
+    "prayer_maghrib": "Akşam",
+    "prayer_isha": "Yatsı"
   }
 }

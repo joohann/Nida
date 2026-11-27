@@ -6,6 +6,20 @@ to get the hijri data. sensor.py reads it straight from
 coordinator.data["data"]["date"]["hijri"].
 
 Changelog:
+  2.5.7 (2026-11-27): Isha after midnight (high-latitude summer). The
+                      coordinator now records which day its timings belong
+                      to (timings_day) and keeps that day until its last
+                      prayer has passed: _target_day() picks the day to
+                      fetch, the 00:01 refresh is skipped while yesterday's
+                      night is still running, and a one-shot refresh one
+                      minute after an after-midnight Isha switches to the
+                      new day. Consumers turn timings into timestamps with
+                      prayer_times.prayer_datetimes(timings, timings_day).
+  2.5.7 (2026-11-27): _build_url takes "today" from Home Assistant's own
+                      time zone (dt_util.now()) instead of date.today(),
+                      which follows the container clock. In a UTC container
+                      with HA set to Amsterdam, the 00:01 refresh used to
+                      fetch yesterday's timings until the next refresh.
   2.5.6 (2026-11-26): _build_url now URL-encodes the city/country text in
                       the /timingsByCity fallback. An unencoded value with
                       a space, "&" or non-ASCII character would break the
@@ -38,7 +52,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 from urllib.parse import quote_plus
 
@@ -48,14 +62,20 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.event import async_call_later, async_track_time_change
+from homeassistant.helpers.event import (
+    async_call_later,
+    async_track_point_in_time,
+    async_track_time_change,
+)
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
 )
 
 from .const import DOMAIN, CONF_CITY, CONF_COUNTRY, CONF_METHOD
+from .prayer_times import prayer_datetimes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -111,7 +131,7 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
     """Coordinator that fetches the daily prayer timings.
 
     Besides the standard 12-hour polling this coordinator also triggers an
-    extra refresh at 00:01 local time — _build_url() uses date.today(), so
+    extra refresh at 00:01 local time: _build_url() uses today's date, so
     otherwise yesterday's timings would still be served after midnight
     until the next regular refresh.
 
@@ -129,6 +149,10 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
         self.entry = entry
         self._unsub_midnight = None
         self._unsub_stale_retry = None
+        self._unsub_night_end = None
+        # 2.5.7: the day the current timings belong to (see the changelog).
+        self.timings_day: date | None = None
+        self._requested_day: date | None = None
         self._store: Store = Store(
             hass, _STORE_VERSION, f"nida_timings_{entry.entry_id}"
         )
@@ -146,7 +170,7 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
             self._disk_cache = None
 
         await super().async_config_entry_first_refresh()
-        # Schedule an extra refresh just after midnight so date.today() in
+        # Schedule an extra refresh just after midnight so today's date in
         # _build_url() picks up the new day without waiting for the
         # 12-hour interval.
         self._unsub_midnight = async_track_time_change(
@@ -156,10 +180,60 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
         )
         self.entry.async_on_unload(self._unsub_midnight)
         self.entry.async_on_unload(self._cancel_stale_retry)
+        self.entry.async_on_unload(self._cancel_night_end_refresh)
 
     async def _async_midnight_refresh(self, _now) -> None:
-        _LOGGER.debug("Midnight refresh — fetching timings for new date")
+        # 2.5.7: while yesterday's night is still running (an Isha after
+        # midnight is still ahead) the day does not switch yet; the
+        # one-shot refresh after that Isha does it instead. The date comes
+        # from dt_util.now(), so it is always HA's own time zone.
+        now = dt_util.now()
+        if self.data and self._target_day(now) == self.timings_day:
+            _LOGGER.debug("Midnight refresh skipped: yesterday's night is not over")
+            return
+        _LOGGER.debug("Midnight refresh: fetching timings for the new date")
         await self.async_request_refresh()
+
+    def _target_day(self, now: datetime) -> date:
+        """The day whose timings should be in use at `now` (2.5.7).
+
+        Normally today. Right after midnight it stays yesterday for as long
+        as one of yesterday's prayers is still ahead (an Isha after
+        midnight), so the switch never drops that Isha from the schedule.
+        """
+        today = now.date()
+        day = self.timings_day
+        if self.data and day is not None and day == today - timedelta(days=1):
+            timings = self.data.get("data", {}).get("timings", {})
+            if any(stamp > now for stamp in prayer_datetimes(timings, day).values()):
+                return day
+        return today
+
+    def _cancel_night_end_refresh(self) -> None:
+        if self._unsub_night_end is not None:
+            self._unsub_night_end()
+            self._unsub_night_end = None
+
+    def _arm_night_end_refresh(self, data: dict | None, day: date | None) -> None:
+        """Refresh one minute after an Isha that falls after midnight (2.5.7)."""
+        self._cancel_night_end_refresh()
+        if not data or day is None:
+            return
+        stamps = prayer_datetimes(data.get("data", {}).get("timings", {}), day)
+        if not stamps:
+            return
+        last = max(stamps.values())
+        if last.date() <= day or last <= dt_util.now():
+            return
+
+        async def _night_end(_now) -> None:
+            self._unsub_night_end = None
+            _LOGGER.debug("Night over: fetching timings for the new date")
+            await self.async_request_refresh()
+
+        self._unsub_night_end = async_track_point_in_time(
+            self.hass, _night_end, last + timedelta(minutes=1)
+        )
 
     def _cancel_stale_retry(self) -> None:
         if self._unsub_stale_retry is not None:
@@ -212,7 +286,10 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
                 CONF_METHOD, self.entry.data.get(CONF_METHOD, 3)
             )
         )
-        today = date.today().strftime("%d-%m-%Y")
+        # 2.5.7: HA's time zone, not the container clock, and yesterday for
+        # as long as its night is still running (see _target_day).
+        self._requested_day = self._target_day(dt_util.now())
+        today = self._requested_day.strftime("%d-%m-%Y")
 
         opt_lat = self.entry.options.get("latitude")
         opt_lon = self.entry.options.get("longitude")
@@ -268,6 +345,8 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
                     _LOGGER.debug("API timings: %s", list(timings.keys()))
             # Fetch succeeded — refresh the on-disk cache, drop any pending
             # stale-retry and clear the repair issue.
+            self.timings_day = self._requested_day or dt_util.now().date()
+            self._arm_night_end_refresh(data, self.timings_day)
             self._disk_cache = data
             self._cancel_stale_retry()
             self._clear_api_issue()
@@ -287,6 +366,10 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
                     err, STALE_RETRY_SECONDS // 60,
                 )
                 self._schedule_stale_retry()
+                # 2.5.7: cached timings stand in for the day in use now, so
+                # an outage still plans the adhans at (nearly) the right time.
+                self.timings_day = self._target_day(dt_util.now())
+                self._arm_night_end_refresh(fallback, self.timings_day)
                 return fallback
             # Nothing cached yet — let HA retry setup/update as before.
             raise UpdateFailed(f"API error: {err}") from err

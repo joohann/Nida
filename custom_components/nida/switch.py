@@ -13,6 +13,11 @@ scheduler so the change takes effect immediately (instead of waiting
 for the next coordinator refresh, which could be up to 12 hours).
 
 Changelog:
+  2.5.7 (2026-11-27): The five per-prayer adhan switches belong to the Nida
+                      device, like the visitors-mode switch. Entity ids stay
+                      as they are; Home Assistant 2026.11 shows them as
+                      device name plus name ("Nida Fajr adhan"), like the
+                      other Nida entities.
   2.5.4 (2026-11-21): switch.nida_visitors_mode added: on starts visitors
                       mode with the last chosen duration, off ends it.
                       Shares its state logic with select.py (visitors.py).
@@ -68,6 +73,7 @@ class NidaPrayerEnabledSwitch(SwitchEntity):
         # Dhuhr, ...) are not translated per language.
         self._attr_name = f"{prayer.capitalize()} adhan"
         self._attr_unique_id = f"{entry.entry_id}_enabled_{prayer}"
+        self._attr_device_info = _device_info(entry)
         # Match the sensor entity_id convention: sensor.nida_<prayer>
         # → switch.nida_<prayer>_enabled. The "_enabled" suffix
         # disambiguates from any future per-prayer switches we add

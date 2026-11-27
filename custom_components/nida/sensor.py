@@ -22,6 +22,14 @@ anymore; that explicit form was a hedge against the translation_key
 edge case which we've now bypassed entirely.
 
 Changelog:
+  2.5.7 (2026-11-27): Prayer, Imsak and next-prayer values come from
+                      prayer_times.coordinator_datetimes(): an Isha after
+                      midnight (high-latitude summer) shows the coming night
+                      instead of the morning that already passed, and
+                      next_prayer counts it as still ahead. next_prayer also
+                      writes its state at every prayer time (a point-in-time
+                      timer), not only when the coordinator updates, which
+                      was about twice a day.
   2.1.34 (2026-07-11): New ImsakSensor — sensor.nida_imsak. The panel's
                        Today-card Imsak row (and now the new suhoor
                        reminder in scheduler.py) already referenced this
@@ -53,18 +61,20 @@ Changelog:
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_track_point_in_time
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, HIJRI_FIELDS, PRAYERS
 from .coordinator import PrayerTimesCoordinator
+from .prayer_times import coordinator_datetimes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -144,37 +154,15 @@ class PrayerTimeSensor(_NidaSensorBase):
 
     @property
     def native_value(self) -> datetime | None:
-        """Return the prayer time as a timezone-aware datetime.
+        """The prayer time as a timezone-aware datetime.
 
-        The Aladhan response only gives "HH:MM" (no date), so we combine
-        it with today's date in HA's local timezone to produce a valid
-        timestamp instead of a bare time string.
+        Aladhan gives only "HH:MM"; prayer_times stitches it onto the day
+        the timings belong to (2.5.7), so an Isha after midnight shows the
+        coming night rather than the morning that already passed.
         """
-        time_str = self._raw_time()
-        if time_str is None:
-            return None
-        return self._combine_with_today(time_str)
-
-    def _raw_time(self) -> str | None:
         if not self.coordinator.data:
             return None
-        timings = self.coordinator.data.get("data", {}).get("timings", {})
-        return timings.get(self._prayer.capitalize())
-
-    def _combine_with_today(self, time_str: str) -> datetime | None:
-        """Stitch 'HH:MM' onto today's date in HA's configured timezone.
-
-        dt_util.now() returns a tz-aware datetime in HA's configured zone
-        with no blocking I/O — no manual ZoneInfo construction needed.
-        """
-        try:
-            hour, minute = (int(p) for p in time_str.split(" ")[0].split(":"))
-        except (ValueError, AttributeError):
-            _LOGGER.debug("Unexpected time format from Aladhan: %s", time_str)
-            return None
-
-        now = dt_util.now()
-        return now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        return coordinator_datetimes(self.coordinator).get(self._prayer.capitalize())
 
 
 class ImsakSensor(_NidaSensorBase):
@@ -202,17 +190,7 @@ class ImsakSensor(_NidaSensorBase):
     def native_value(self) -> datetime | None:
         if not self.coordinator.data:
             return None
-        timings = self.coordinator.data.get("data", {}).get("timings", {})
-        time_str = timings.get("Imsak")
-        if time_str is None:
-            return None
-        try:
-            hour, minute = (int(p) for p in time_str.split(" ")[0].split(":"))
-        except (ValueError, AttributeError):
-            _LOGGER.debug("Unexpected Imsak time format from Aladhan: %s", time_str)
-            return None
-        now = dt_util.now()
-        return now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        return coordinator_datetimes(self.coordinator).get("Imsak")
 
 
 class HijriSensor(_NidaSensorBase):
@@ -267,25 +245,61 @@ class NextPrayerSensor(_NidaSensorBase):
     ) -> None:
         super().__init__(coordinator, entry, device_info, "next_prayer")
         self._attr_name = "Next prayer"
+        self._unsub_next = None
 
     @property
     def native_value(self) -> str | None:
         if not self.coordinator.data:
             return None
-        timings = self.coordinator.data.get("data", {}).get("timings", {})
-        now = dt_util.now()
+        prayer, _stamp = self._next(dt_util.now())
+        return prayer
 
-        for prayer in PRAYERS:
-            raw = timings.get(prayer.capitalize())
-            if raw is None:
-                continue
-            try:
-                hour, minute = (int(p) for p in raw.split(" ")[0].split(":"))
-            except (ValueError, AttributeError):
-                continue
-            prayer_dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-            if prayer_dt > now:
-                return prayer
+    def _next(self, now: datetime) -> tuple[str, datetime | None]:
+        """(prayer, start) of the first prayer after `now`.
 
-        # All 5 prayers are already past today — next is tomorrow's Fajr.
-        return "fajr"
+        All five passed: tomorrow's Fajr, with no start yet (tomorrow's
+        timings arrive with the next coordinator update).
+        """
+        stamps = coordinator_datetimes(self.coordinator)
+        upcoming = sorted(
+            (stamp, prayer)
+            for prayer in PRAYERS
+            if (stamp := stamps.get(prayer.capitalize())) is not None and stamp > now
+        )
+        if upcoming:
+            return upcoming[0][1], upcoming[0][0]
+        return "fajr", None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self._arm_next()
+        self.async_on_remove(self._cancel_next)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        self._arm_next()
+        super()._handle_coordinator_update()
+
+    def _cancel_next(self) -> None:
+        if self._unsub_next is not None:
+            self._unsub_next()
+            self._unsub_next = None
+
+    @callback
+    def _arm_next(self) -> None:
+        """2.5.7: write the state again the moment the next prayer starts."""
+        self._cancel_next()
+        if not self.coordinator.data:
+            return
+        _prayer, stamp = self._next(dt_util.now())
+        if stamp is None:
+            return
+        self._unsub_next = async_track_point_in_time(
+            self.hass, self._async_prayer_started, stamp + timedelta(seconds=1)
+        )
+
+    @callback
+    def _async_prayer_started(self, _now) -> None:
+        self._unsub_next = None
+        self.async_write_ha_state()
+        self._arm_next()

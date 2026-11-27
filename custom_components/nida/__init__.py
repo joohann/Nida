@@ -14,7 +14,7 @@ NOT back yet at the time (came later):
 Present from 2.0.2:
   - coordinator.py  → unchanged, fetches prayer timings + hijri
   - sensor.py        → 16 sensors: 5 prayers (timestamp+readable), 5 hijri, next_prayer
-  - panel.py          → Masjid sidebar entry (toggleable via options flow)
+  - panel.py          → sidebar entry (const.PANEL_TITLE; toggleable via options flow)
   - websocket.py       → get_settings/update_settings commands for the panel
   - config_flow.py     → auto-create entry + options flow
   - helpers.py        → copies bundled sounds to <config>/www/nida/sounds/
@@ -22,6 +22,17 @@ Present from 2.0.2:
   - scheduler.py        → plans adhan triggers per prayer time
 
 Changelog:
+  2.5.7 (2026-11-27): Changing "hide the panel from non-admins"
+                      (sidebar_admin_only) re-registers the panel, so it
+                      takes effect on save instead of after a restart. A
+                      change to the dua list no longer skips the scheduler
+                      and Live Activity re-plan of the same update. The
+                      settings backup is written atomically (temp file +
+                      os.replace). A deleted dua takes its button out of
+                      the entity registry (button.async_remove_dua_buttons).
+                      The welcome notification comes from the translation
+                      files (texts.py) and names the sidebar entry by its
+                      real name instead of "Masjid".
   2.5.4 (2026-11-21): "select" added to PLATFORMS (visitors mode list);
                        the visitors-mode expiry timer (visitors.py) is
                        armed at setup and on every options update.
@@ -302,6 +313,7 @@ from .const import (
     OPT_DUA_CATALOG_URL,
     OPT_JINGLE_CATALOG_URL,
     DEFAULT_NOTIFY_TITLE_FALLBACK,
+    DEFAULT_SIDEBAR_ADMIN_ONLY,
     DOMAIN,
     DUA_TRIGGER_COOLDOWN_SECONDS,
     LEGACY_NOTIFY_MESSAGES,
@@ -309,11 +321,15 @@ from .const import (
     OPT_DUAS,
     OPT_NOTIFY_MESSAGE,
     OPT_NOTIFY_TITLE,
+    OPT_SIDEBAR_ADMIN_ONLY,
+    PRODUCT_NAME,
 )
+from .button import async_remove_dua_buttons
 from .coordinator import PrayerTimesCoordinator
 from .visitors import async_cancel_visitors_expiry, async_schedule_visitors_expiry
 from .helpers import async_brand_rev, async_copy_brand, async_copy_sounds
 from .live_activity import NidaLiveActivity
+from .texts import async_get_texts
 from .panel import async_register_card, async_register_panel, async_remove_panel
 from .scheduler import NidaScheduler
 from .services import async_register_services, async_unregister_services
@@ -415,6 +431,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][f"_sidebar_state_{entry.entry_id}"] = entry.options.get(
         OPT_SHOW_IN_SIDEBAR, True
     )
+    hass.data[DOMAIN][f"_sidebar_admin_{entry.entry_id}"] = bool(
+        entry.options.get(OPT_SIDEBAR_ADMIN_ONLY, DEFAULT_SIDEBAR_ADMIN_ONLY)
+    )
 
     # 2.0.67 — set configuration_url on the Nida device so the HA device
     # page shows a "Configure" button linking straight to the panel.
@@ -483,16 +502,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(lambda: _async_teardown_dua_triggers(hass, entry))
 
     if not entry.data.get("welcome_shown"):
+        # 2.5.7: text from the translation files (common.welcome_message),
+        # in Nida's language, with the sidebar's real name instead of the
+        # old "Masjid".
+        texts = await async_get_texts(hass, entry)
         persistent_notification.async_create(
             hass,
-            (
-                "**Assalamu Alaikum** — Nida is ready.\n\n"
-                "Look for **Masjid** in the sidebar (left), or open the "
-                "[Masjid dashboard](/nida) directly to configure prayer "
-                "times, sounds, language, and media players for "
-                "automatic adhan playback."
-            ),
-            title="Nida",
+            texts.get("welcome_message"),
+            title=PRODUCT_NAME,
             notification_id="nida_setup_complete",
         )
         hass.config_entries.async_update_entry(
@@ -533,8 +550,13 @@ def _save_settings_backup(hass: HomeAssistant, options: dict) -> None:
     """Write the current options to the backup file (sync, small dict)."""
     try:
         path = _backup_path(hass)
-        with open(path, "w", encoding="utf-8") as f:
+        # 2.5.7: write to a temporary file and swap it in, so a crash or a
+        # full disk halfway through never leaves a truncated backup behind
+        # (the restore after a reinstall would then find nothing usable).
+        tmp_path = f"{path}.tmp"
+        with open(tmp_path, "w", encoding="utf-8") as f:
             json.dump(dict(options), f, ensure_ascii=False, indent=2)
+        os.replace(tmp_path, path)
         _LOGGER.debug("Nida settings backed up to %s", path)
     except OSError as err:
         _LOGGER.warning("Nida settings backup failed: %s", err)
@@ -650,6 +672,18 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
     if prev != curr:
         await hass.config_entries.async_reload(entry.entry_id)
         return
+    # 2.5.7: "hide the panel from non-admins" is read when the panel is
+    # registered, so a change re-registers it (no entry reload). It used to
+    # do nothing until the next restart.
+    admin_key = f"_sidebar_admin_{entry.entry_id}"
+    prev_admin = nida_data.get(admin_key)
+    curr_admin = bool(
+        entry.options.get(OPT_SIDEBAR_ADMIN_ONLY, DEFAULT_SIDEBAR_ADMIN_ONLY)
+    )
+    nida_data[admin_key] = curr_admin
+    if curr and prev_admin is not None and prev_admin != curr_admin:
+        async_remove_panel(hass)
+        await async_register_panel(hass)
     # 2.0.51 — the button platform derives its entities from the duas
     # list, so adding/removing a dua needs a platform reload. Same
     # tracked-state pattern as the sidebar toggle above. Edits WITHIN a
@@ -678,8 +712,13 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
         # just the button platform recreates the dua button entities
         # without touching panel, scheduler or sensors.
         await hass.config_entries.async_unload_platforms(entry, ["button"])
+        # 2.5.7: a deleted dua takes its button out of the entity registry
+        # too, instead of leaving an "unavailable" entity behind.
+        async_remove_dua_buttons(hass, entry, set(prev_ids or ()) - set(curr_ids))
         await hass.config_entries.async_forward_entry_setups(entry, ["button"])
-        return
+        # 2.5.7: no return here any more; the same update can change other
+        # options too (a restored backup, for one), and those used to wait
+        # for the next refresh because the re-plan below was skipped.
     # Non-sidebar change — nudge the scheduler so the new options
     # (per-prayer toggles, notify config, jumuah window, ...) take
     # effect immediately instead of at the next 12-hour refresh.

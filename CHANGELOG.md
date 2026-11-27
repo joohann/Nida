@@ -4,6 +4,51 @@ All notable changes to Nida are documented here. The `version` in
 `custom_components/nida/manifest.json` is the source of truth for the current
 release; newest entry on top.
 
+## 2.5.7 — 2026-11-27
+
+- **Isha after midnight.** In the Dutch summer, and anywhere far enough north,
+  Isha can fall after midnight (00:16 in late June). Nida put that time on the
+  morning that had already passed, so the adhan and its pre-adhan reminder were
+  skipped, and the next prayer, the prayer windows and the Live Activity were
+  wrong for that night. Every prayer time now lands on the right day, and the
+  00:01 refresh waits until that night's Isha has passed.
+- **Next prayer on time.** `sensor.nida_next_prayer` now changes at every
+  prayer time instead of only at the twice-daily refresh.
+- **Notifications in your language.** The welcome note, the pre-adhan reminder
+  (shown when there is no jingle or spoken line), the Islamic calendar
+  notification and the Live Activity now follow Nida's language setting, in all
+  ten languages, with prayer and occasion names as the panel writes them. A
+  holiday one day away now says "tomorrow", and the calendar title no longer has
+  the mosque emoji. The options screen no longer calls the panel "Masjid".
+- **Visitors mode on the card.** The card follows `select.nida_visitors_mode`
+  live, so a change made in the panel, with the switch, by an automation or by
+  the timer shows at once. Its menu opens above the dashboard instead of being
+  cut off by the card and covered by the card below. Anyone who can use the
+  visitors mode select can use the button on the card.
+- **Complete translations.** The Home Assistant texts (visitors mode entities,
+  the DNS-blocker repair) are translated in all ten languages, and the texts of
+  long removed sensors are gone.
+- **One device for everything.** The prayer windows
+  (`binary_sensor.nida_*_active`), the adhan switches and the dua buttons now
+  belong to the Nida device like the other entities. Entity ids stay the same;
+  Home Assistant 2026.11 shows them with the device name in front, as in
+  "Nida Fajr active". Deleting a dua now also removes its button.
+- **Sturdier settings.** A number in the settings that cannot be read (from an
+  old backup, say) falls back to its default instead of stopping the whole day's
+  schedule. "Hide the panel from non-admins" takes effect right away instead of
+  after a restart. The settings backup is written in one step, so a crash can
+  no longer leave a broken backup.
+- **Smaller fixes.** The 00:01 refresh asks for the date in Home Assistant's
+  own time zone. Sounds are only downloaded from the catalog's own server. The
+  Live Activity moves its progress bar every 15 minutes instead of every 5,
+  which saves pushes to your phone. A dua change no longer holds back other
+  changes saved at the same time, and the panel no longer saves a dua change
+  twice after it was reopened.
+- **Maintenance.** The GitHub workflows use actions pinned to a commit with the
+  least permissions they need. `scripts/check_translations.py` reports missing,
+  outdated and mismatched translations and creates an empty file for a new
+  language.
+
 ## 2.5.6 — 2026-11-27
 
 - **Security fix: settings stay within Nida.** Nida's settings commands now

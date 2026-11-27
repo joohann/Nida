@@ -17,20 +17,32 @@
  * nida-panel.js's full i18n dictionary and CSS system.
  *
  * Data source: reads sensor.nida_<prayer> / sensor.nida_hijri_* states
- * directly off `hass.states` — no websocket calls needed for that part,
- * so both cards work immediately with just `hass` and no config entry
- * lookup. The mute button is the one interactive piece and DOES need the
- * Nida config entry (to read/write guest_mode_* via the same
- * nida/get_settings + nida/update_settings commands the panel uses) —
- * resolved once via config_entries/get on first hass set, cached after.
- * If that resolution fails for any reason the card still renders fine;
- * only the mute button becomes inert.
+ * directly off `hass.states`, so every card works with just `hass`. The
+ * visitors-mode button (the one interactive piece) reads and sets
+ * select.nida_visitors_mode, found through the entity registry by
+ * platform and translation key so a renamed entity id still works. Its
+ * state arrives live with every hass update, so a change made in the
+ * panel, through the switch, by an automation or by the expiry timer
+ * shows at once. Without that entity the button is disabled.
  *
  * Theme: follows the HA dashboard's own dark/light state
  * (hass.themes.darkMode), not the Nida panel's own theme setting — the
  * card should look at home next to the rest of the user's dashboard.
  *
  * Changelog:
+ *   2.5.7  (2026-11-27): Visitors mode comes from select.nida_visitors_mode
+ *                        instead of a copy of the settings loaded once, and
+ *                        the menu sets it with select.select_option. The card
+ *                        no longer calls config_entries/get, nida/get_settings
+ *                        or nida/update_settings. It follows changes made
+ *                        elsewhere at once, and works for every user who can
+ *                        use the select entity.
+ *                        The menu opens in a <dialog> (showModal, top layer)
+ *                        placed next to the button, so the card's own clipping
+ *                        and the next card on the dashboard no longer cover it.
+ *                        The card keeps a stable shell (style, root, dialog)
+ *                        and rewrites only the root on each tick, so an open
+ *                        menu stays open while the countdown runs.
  *   2.5.6  (2026-11-27): The visitors-mode menu sends only the change and takes
  *                        over the merged options the server returns; when the
  *                        server refuses or is unreachable, the card shows the
@@ -253,7 +265,7 @@
  *                        the dashboard UI, not just YAML.
  */
 
-const NIDA_CARD_VERSION = "2.5.6";
+const NIDA_CARD_VERSION = "2.5.7";
 
 const PRAYERS = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 
@@ -919,14 +931,10 @@ const STRINGS = {
   },
 };
 
-// 2.1.9-style "auto" — silent-mode-forever sentinel, matches
-// nida-panel.js's GUEST_HOURS_INF (guest_mode_hours=25 means "until
-// manually turned off", i.e. no guest_mode_until date at all).
-const GUEST_HOURS_INF = 25;
-
 // Same discrete duration set as nida-panel.js's silent-mode popup
-// (_htmlOverlaySilentMode's durationOptions) — kept identical so the
-// two surfaces offer the same choices.
+// (_htmlOverlaySilentMode's durationOptions) and the options of
+// select.nida_visitors_mode (visitors.py VISITORS_DURATIONS). The card
+// only offers what the select accepts.
 const SILENT_MODE_HOURS = [1, 2, 3, 4, 6, 8, 12, 24];
 
 class NidaCard extends HTMLElement {
@@ -935,14 +943,25 @@ class NidaCard extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._hass = null;
     this._config = { card_type: "now" };
-    this._entryId = null;
-    this._settings = null;
-    this._entryLookupStarted = false;
+    // Resolved select.nida_visitors_mode id, cached per hass.entities object.
+    this._visitorsId = null;
+    this._visitorsSrc = undefined;
     this._silentMenuOpen = false;
+    // Stable shell built by _ensureShell(); see _render().
+    this._styleEl = null;
+    this._rootEl = null;
+    this._silentDialog = null;
+    this._silentDialogHtml = null;
+    this._silentDialogShown = false;
+    this._placeRaf = 0;
+    // Outside clicks close the inline menu (the fallback without <dialog>).
+    // Clicks inside the dialog are not "outside"; its backdrop closes it.
     this._onDocClick = (e) => {
       if (!this._silentMenuOpen) return;
+      const path = e.composedPath();
+      if (this._silentDialog && path.includes(this._silentDialog)) return;
       const wrap = this.shadowRoot.querySelector(".mute-wrap");
-      if (wrap && !e.composedPath().includes(wrap)) {
+      if (wrap && !path.includes(wrap)) {
         this._silentMenuOpen = false;
         this._render();
       }
@@ -959,10 +978,6 @@ class NidaCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
-    if (!this._entryLookupStarted) {
-      this._entryLookupStarted = true;
-      this._resolveEntry();
-    }
     this._render();
   }
 
@@ -978,6 +993,8 @@ class NidaCard extends HTMLElement {
   disconnectedCallback() {
     this._stopTick();
     document.removeEventListener("click", this._onDocClick, true);
+    this._stopPlacing();
+    if (this._silentDialog?.open) this._silentDialog.close();
   }
 
   getCardSize() {
@@ -996,25 +1013,35 @@ class NidaCard extends HTMLElement {
 
   // ───── data ───────────────────────────────────────────────────────────
 
-  async _resolveEntry() {
-    // Only needed for the mute button (guest_mode_* lives in the config
-    // entry's options, not on any sensor). Failures here are swallowed —
-    // both card variants still render fully from sensor states either
-    // way; only the mute button silently becomes a no-op.
-    if (!this._hass) return;
-    try {
-      const entries = await this._hass.callWS({ type: "config_entries/get", domain: "nida" });
-      this._entryId = entries && entries.length ? entries[0].entry_id : null;
-      if (this._entryId) {
-        this._settings = await this._hass.callWS({
-          type: "nida/get_settings",
-          entry_id: this._entryId,
-        });
-        this._render();
+  _visitorsEntityId() {
+    // The registry entry (platform + translation key) finds the select even
+    // after the user renamed its entity id; the default id is the fallback
+    // for setups where hass.entities is not available.
+    const entities = this._hass?.entities;
+    if (entities !== this._visitorsSrc) {
+      this._visitorsSrc = entities;
+      this._visitorsId = null;
+      if (entities && typeof entities === "object") {
+        for (const [id, e] of Object.entries(entities)) {
+          if (
+            id.startsWith("select.") &&
+            e?.platform === "nida" &&
+            e?.translation_key === "visitors_mode"
+          ) {
+            this._visitorsId = id;
+            break;
+          }
+        }
       }
-    } catch (e) {
-      // Best-effort — see comment above.
     }
+    const id = this._visitorsId || "select.nida_visitors_mode";
+    const st = this._hass?.states?.[id];
+    return st && st.state !== "unavailable" ? id : null;
+  }
+
+  _visitorsState() {
+    const id = this._visitorsEntityId();
+    return id ? this._hass.states[id] : null;
   }
 
   _lang() {
@@ -1113,21 +1140,22 @@ class NidaCard extends HTMLElement {
   }
 
   _guestModeActive() {
-    if (!this._settings?.guest_mode_enabled) return false;
-    const raw = this._settings.guest_mode_until;
-    if (!raw) return true; // no expiry set = on until manually turned off
-    const d = new Date(raw);
-    return isNaN(d.getTime()) ? true : d.getTime() > Date.now();
+    const st = this._visitorsState();
+    if (!st || st.state === "off" || st.state === "unknown") return false;
+    // The server switches the select back to "off" at the end time; this
+    // covers the moment between that end time and the state arriving.
+    const until = this._guestModeUntilDate();
+    return until ? until.getTime() > Date.now() : true;
   }
 
   _toggleSilentMenu() {
-    if (!this._entryId) return;
+    if (!this._visitorsEntityId()) return;
     this._silentMenuOpen = !this._silentMenuOpen;
     this._render();
   }
 
   _guestModeUntilDate() {
-    const raw = this._settings?.guest_mode_until;
+    const raw = this._visitorsState()?.attributes?.until;
     if (!raw) return null;
     const d = new Date(raw);
     return isNaN(d.getTime()) ? null : d;
@@ -1135,38 +1163,31 @@ class NidaCard extends HTMLElement {
 
   async _setSilentMode(choice) {
     // choice: "0" = turn off, "inf" = on until manually turned off,
-    // otherwise a whole-hours duration string — same three shapes the
-    // panel's own silent-mode popup writes, kept identical so both
-    // surfaces agree on the resulting guest_mode_* settings.
-    if (!this._entryId || !this._hass) return;
+    // otherwise one of SILENT_MODE_HOURS. Each maps onto an option of
+    // select.nida_visitors_mode, which writes the same guest_mode_*
+    // settings as the panel's own popup (visitors.py).
+    const entityId = this._visitorsEntityId();
+    if (!entityId || !this._hass) return;
     this._silentMenuOpen = false;
-    let patch;
+    let option;
     if (choice === "0") {
-      patch = { guest_mode_enabled: false, guest_mode_until: null };
+      option = "off";
     } else if (choice === "inf") {
-      patch = { guest_mode_enabled: true, guest_mode_hours: GUEST_HOURS_INF, guest_mode_until: null };
+      option = "until_off";
     } else {
-      const hours = Math.max(1, Math.min(GUEST_HOURS_INF, parseInt(choice, 10) || 1));
-      const until = new Date(Date.now() + hours * 3600 * 1000).toISOString();
-      patch = { guest_mode_enabled: true, guest_mode_hours: hours, guest_mode_until: until };
+      const hours = parseInt(choice, 10);
+      if (!SILENT_MODE_HOURS.includes(hours)) return;
+      option = `${hours}h`;
     }
-    // 2.5.6: only the change goes to the server, which merges it and
-    // returns the merged options. Sending the whole copy loaded when the
-    // card first rendered used to undo every setting changed since.
-    const before = this._settings;
-    this._settings = { ...(this._settings || {}), ...patch };
     this._render();
     try {
-      const res = await this._hass.callWS({
-        type: "nida/update_settings",
-        entry_id: this._entryId,
-        options: patch,
+      await this._hass.callService("select", "select_option", {
+        entity_id: entityId,
+        option,
       });
-      if (res?.options && typeof res.options === "object") this._settings = res.options;
     } catch (e) {
-      // Refused (no settings access) or offline: show the stored state
-      // again instead of a visitors mode the server never saved.
-      this._settings = before;
+      // Refused or offline: the button keeps showing the entity's state,
+      // which did not change, so there is nothing to roll back.
     }
     this._render();
   }
@@ -1219,12 +1240,15 @@ class NidaCard extends HTMLElement {
         return;
       }
     }
-    this.shadowRoot.innerHTML = `
-      <style>${this._css(theme)}</style>
-      <div class="nida-card-root type-${type}${type.startsWith("scene") ? " type-scene" : ""}">
-        ${inner}
-      </div>
-    `;
+    // A stable shell (style, card root, menu dialog): only the root is
+    // rewritten here, so the visitors-mode menu in the dialog stays open
+    // while the countdown ticks.
+    this._ensureShell();
+    const css = this._css(theme);
+    if (this._styleEl.textContent !== css) this._styleEl.textContent = css;
+    const cls = `nida-card-root type-${type}${type.startsWith("scene") ? " type-scene" : ""}`;
+    if (this._rootEl.className !== cls) this._rootEl.className = cls;
+    this._rootEl.innerHTML = inner;
     const todayHead = this.shadowRoot.querySelector('[data-action="toggle-today"]');
     if (todayHead) {
       todayHead.addEventListener("click", () => this._toggleToday());
@@ -1242,12 +1266,141 @@ class NidaCard extends HTMLElement {
         this._toggleSilentMenu();
       });
     }
-    this.shadowRoot.querySelectorAll('[data-action="set-silent"]').forEach((btn) => {
+    this._rootEl.querySelectorAll('[data-action="set-silent"]').forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         this._setSilentMode(btn.dataset.choice);
       });
     });
+    this._syncSilentDialog();
+  }
+
+  _ensureShell() {
+    if (this._rootEl && this._rootEl.parentNode === this.shadowRoot) return;
+    this.shadowRoot.innerHTML =
+      `<style></style><div class="nida-card-root"></div><dialog class="silent-dialog"></dialog>`;
+    this._styleEl = this.shadowRoot.querySelector("style");
+    this._rootEl = this.shadowRoot.querySelector(".nida-card-root");
+    const dlg = this.shadowRoot.querySelector("dialog.silent-dialog");
+    this._silentDialog = dlg;
+    this._silentDialogHtml = null;
+    if (!dlg || typeof dlg.addEventListener !== "function") return;
+    // The card re-renders on every hass update, often several times a
+    // second. Each way of closing therefore drops the open flag right away,
+    // synchronously: the close event comes later, as a task, and a render
+    // in between would otherwise open the menu again.
+    dlg.addEventListener("cancel", () => {
+      // Escape (or the Android back gesture); the dialog closes itself next.
+      this._silentMenuOpen = false;
+    });
+    dlg.addEventListener("click", (e) => {
+      // A click on the backdrop lands on the dialog element itself.
+      if (e.target === dlg) {
+        this._silentMenuOpen = false;
+        dlg.close();
+      }
+    });
+    dlg.addEventListener("close", () => {
+      this._stopPlacing();
+      this._silentDialogHtml = null;
+      this._silentDialogShown = false;
+      if (this._silentMenuOpen) {
+        this._silentMenuOpen = false;
+        this._render();
+      }
+    });
+  }
+
+  _useDialog() {
+    // <dialog> with showModal() puts the menu in the browser's top layer,
+    // above every card and outside any overflow clipping. Without it the
+    // menu falls back to the inline dropdown inside the card.
+    return typeof HTMLDialogElement === "function" &&
+      typeof HTMLDialogElement.prototype.showModal === "function";
+  }
+
+  _syncSilentDialog() {
+    const dlg = this._silentDialog;
+    if (!dlg || !this._useDialog()) return;
+    if (!this._silentMenuOpen) {
+      if (dlg.open) dlg.close();
+      this._silentDialogShown = false;
+      return;
+    }
+    if (this._silentDialogShown && !dlg.open) {
+      // Closed by the browser in a way no handler above caught: it stays
+      // closed rather than being opened again by this render.
+      this._silentMenuOpen = false;
+      this._silentDialogShown = false;
+      this._stopPlacing();
+      return;
+    }
+    const html = this._htmlSilentMenu(this._guestModeActive());
+    if (html !== this._silentDialogHtml) {
+      this._silentDialogHtml = html;
+      dlg.innerHTML = html;
+      dlg.querySelectorAll('[data-action="set-silent"]').forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          this._setSilentMode(btn.dataset.choice);
+        });
+      });
+    }
+    if (dlg.open || !this.isConnected) return;
+    dlg.setAttribute("aria-label", this._t("visitors_mode"));
+    try {
+      dlg.showModal();
+    } catch (e) {
+      this._silentMenuOpen = false;
+      return;
+    }
+    this._silentDialogShown = true;
+    this._startPlacing();
+  }
+
+  _startPlacing() {
+    // Keep the dialog next to the button: below it, or above it when there
+    // is no room below, right edges aligned and kept inside the viewport.
+    // Runs per frame while open, so scrolling any container or a layout
+    // change moves it along; it only writes when something moved.
+    this._stopPlacing();
+    let last = "";
+    const step = () => {
+      const dlg = this._silentDialog;
+      if (!dlg || !dlg.open) {
+        this._placeRaf = 0;
+        return;
+      }
+      const btn = this._rootEl?.querySelector('[data-action="toggle-silent-menu"]');
+      if (!btn) {
+        dlg.close();
+        return;
+      }
+      const r = btn.getBoundingClientRect();
+      const d = dlg.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const key = `${r.top},${r.right},${r.bottom},${d.width},${d.height},${vw},${vh}`;
+      if (key !== last) {
+        last = key;
+        const gap = 8;
+        const edge = 8;
+        let top = r.bottom + gap;
+        if (top + d.height > vh - edge && r.top - gap - d.height >= edge) {
+          top = r.top - gap - d.height;
+        }
+        const left = Math.min(Math.max(edge, r.right - d.width), Math.max(edge, vw - edge - d.width));
+        dlg.style.top = `${Math.round(Math.max(edge, top))}px`;
+        dlg.style.left = `${Math.round(left)}px`;
+      }
+      this._placeRaf = requestAnimationFrame(step);
+    };
+    step();
+  }
+
+  _stopPlacing() {
+    if (this._placeRaf) cancelAnimationFrame(this._placeRaf);
+    this._placeRaf = 0;
   }
 
   _htmlNow(info) {
@@ -1283,10 +1436,10 @@ class NidaCard extends HTMLElement {
                     data-action="toggle-silent-menu"
                     title="${this._t("visitors_mode")}"
                     aria-label="${this._t("visitors_mode")}"
-                    ${this._entryId ? "" : "disabled"}>
+                    ${this._visitorsEntityId() ? "" : "disabled"}>
               ${this._t("visitors_mode")}
             </button>
-            ${this._silentMenuOpen ? this._htmlSilentMenu(active) : ""}
+            ${this._silentMenuOpen && !this._useDialog() ? this._htmlSilentMenu(active) : ""}
           </div>
         </div>
       </div>
@@ -1728,6 +1881,22 @@ class NidaCard extends HTMLElement {
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
         padding: 10px;
       }
+      /* The menu in its dialog (top layer, see _syncSilentDialog): placed by
+         _startPlacing(), so the dialog itself is only a transparent frame. */
+      dialog.silent-dialog {
+        position: fixed;
+        inset: auto;
+        margin: 0;
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: ${t.text};
+        font-family: 'Inter', sans-serif;
+        overflow: visible;
+        max-width: calc(100vw - 16px);
+      }
+      dialog.silent-dialog::backdrop { background: transparent; }
+      dialog.silent-dialog .silent-menu { position: static; }
       .silent-menu-status {
         font-size: 11px;
         color: ${t.textDim};

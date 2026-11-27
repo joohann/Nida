@@ -25,6 +25,10 @@
  *   catalog wiring is built.
  *
  * Changelog:
+ *   2.5.7  (2026-11-27): The delegated change handler on the shadow root is a
+ *                        named method that disconnectedCallback removes again;
+ *                        the anonymous one stacked up on every re-attach, so a
+ *                        dua edit was saved once per stacked copy.
  *   2.5.6  (2026-11-27): _saveSettings() sends only the change; the server
  *                        merges it and returns the merged options, which the
  *                        panel takes over once no other save is in flight.
@@ -6436,7 +6440,7 @@ const NIDA_ISSUES_URL = "https://github.com/joohann/Nida/issues";
 // Used in the footer and tagged onto backup exports (so a future restore
 // can tell how old a backup file is). Bump this alongside manifest.json
 // at release time — see the "Versiebump" changelog task.
-const NIDA_PANEL_VERSION = "2.5.6";
+const NIDA_PANEL_VERSION = "2.5.7";
 
 // 2.2.0 — watercolor mosque brand icon (from Johann's approved ornament
 // sheet), shown in the header tile in ALL themes. WebP with alpha,
@@ -7650,6 +7654,8 @@ class NidaPanel extends HTMLElement {
     this._cityJustPicked = false;         // suppress the deferred blur right after a pick
     // Stable bound reference so add/removeEventListener match the same fn.
     this._clickHandler = this._handleClick.bind(this);
+    // 2.5.7: bound once, so disconnectedCallback can remove it again.
+    this._changeHandler = this._handleDelegatedChange.bind(this);
   }
 
   // ───── Lifecycle ──────────────────────────────────────────────────────────
@@ -7712,30 +7718,36 @@ class NidaPanel extends HTMLElement {
     // media_player empty and play_dua silently refusing. Registered
     // once here (like the click delegator) so it survives every
     // innerHTML re-render.
-    this.shadowRoot.addEventListener("change", (e) => {
-      const which = e.target?.dataset?.input;
-      if (which === "dua-player") {
-        console.info(
-          "Nida: delegated change caught for dua-player:",
-          e.target.dataset.duaId, "→", e.target.value
-        );
-        this._onDuaPatch(e.target.dataset.duaId, { media_player: e.target.value });
-      } else if (which === "dua-trigger") {
-        console.info(
-          "Nida: delegated change caught for dua-trigger:",
-          e.target.dataset.duaId, "→", e.target.value
-        );
-        this._onDuaPatch(e.target.dataset.duaId, { trigger_entity: e.target.value });
-      } else if (which === "dua-trigger-state") {
-        this._onDuaPatch(e.target.dataset.duaId, { trigger_state: e.target.value });
-      }
-    });
+    this.shadowRoot.addEventListener("change", this._changeHandler);
     this._render();
     this._startCountdown();
   }
 
+  _handleDelegatedChange(e) {
+    // 2.5.7: a named handler. The anonymous arrow function used here was
+    // never removed in disconnectedCallback, so every re-attach of the same
+    // element stacked another copy and a dua edit was saved once per copy.
+    const which = e.target?.dataset?.input;
+    if (which === "dua-player") {
+      console.info(
+        "Nida: delegated change caught for dua-player:",
+        e.target.dataset.duaId, "→", e.target.value
+      );
+      this._onDuaPatch(e.target.dataset.duaId, { media_player: e.target.value });
+    } else if (which === "dua-trigger") {
+      console.info(
+        "Nida: delegated change caught for dua-trigger:",
+        e.target.dataset.duaId, "→", e.target.value
+      );
+      this._onDuaPatch(e.target.dataset.duaId, { trigger_entity: e.target.value });
+    } else if (which === "dua-trigger-state") {
+      this._onDuaPatch(e.target.dataset.duaId, { trigger_state: e.target.value });
+    }
+  }
+
   disconnectedCallback() {
     this.shadowRoot.removeEventListener("click", this._clickHandler);
+    this.shadowRoot.removeEventListener("change", this._changeHandler);
     this._removePortal();
     this._stopSoundPreview();
     this._stopCountdown();

@@ -109,6 +109,11 @@ async def async_copy_sounds(hass: HomeAssistant) -> None:
                 continue
             rel = src_file.relative_to(src_root)
             dst_file = dst_root / rel
+            # Never overwritten: none of the bundled sounds has changed since
+            # 2.x, so no install holds a stale copy. If a bundled sound is
+            # ever re-encoded or replaced, give this loop the fingerprint
+            # sidecar of async_copy_brand below, or existing installs keep
+            # the old file.
             if dst_file.exists():
                 continue
             dst_file.parent.mkdir(parents=True, exist_ok=True)

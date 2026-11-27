@@ -13,10 +13,10 @@
   "options": {
     "step": {
       "init": {
-        "title": "Nida options",
-        "description": "Open the [Masjid dashboard](/nida) to manage prayer times, sounds, language, and media players.\n\nThe toggle below controls whether Masjid is also shown in the sidebar.",
+        "title": "{name} options",
+        "description": "Open the [{panel} dashboard](/nida) to manage prayer times, sounds, language and media players.\n\nThe toggle below controls whether {panel} is also shown in the sidebar.",
         "data": {
-          "show_in_sidebar": "Show Masjid in the sidebar"
+          "show_in_sidebar": "Show {panel} in the sidebar"
         }
       }
     }
@@ -60,5 +60,35 @@
         }
       }
     }
+  },
+  "common": {
+    "welcome_message": "**Assalamu alaikum.** {name} is ready.\n\nLook for **{panel}** in the sidebar, or open the [{panel} dashboard](/nida) directly to set up prayer times, sounds, language and media players for automatic adhan playback.",
+    "pre_adhan_message_one": "**{prayer}** is in {minutes} minute.",
+    "pre_adhan_message_other": "**{prayer}** is in {minutes} minutes.",
+    "calendar_title": "{name} · Islamic calendar",
+    "calendar_holiday_today": "{occasion} is today",
+    "calendar_holiday_tomorrow": "{occasion} is tomorrow",
+    "calendar_holiday_in_days_one": "{occasion} is in {days} day",
+    "calendar_holiday_in_days_other": "{occasion} is in {days} days",
+    "calendar_today": "Today: {occasion}",
+    "calendar_tonight": "Tonight: {occasion}",
+    "occasion_islamic_new_year": "Islamic New Year",
+    "occasion_mawlid": "Mawlid an-Nabi",
+    "occasion_eid_al_fitr": "Eid al-Fitr",
+    "occasion_eid_al_adha": "Eid al-Adha",
+    "occasion_ashura_pre": "Ashura fasting (9 Muharram)",
+    "occasion_ashura": "Ashura fasting (10 Muharram)",
+    "occasion_ashura_post": "Ashura fasting (11 Muharram)",
+    "occasion_arafah": "Day of Arafah",
+    "occasion_white_days": "White Days",
+    "occasion_weekly_sunnah": "Weekly Sunnah fasting",
+    "occasion_laylatul_qadr": "Laylatul Qadr (night {night} of Ramadan)",
+    "live_next": "Next prayer",
+    "live_now": "Now",
+    "prayer_fajr": "Fajr",
+    "prayer_dhuhr": "Dhuhr",
+    "prayer_asr": "Asr",
+    "prayer_maghrib": "Maghrib",
+    "prayer_isha": "Isha"
   }
 }

@@ -12,6 +12,8 @@ ws_update_settings only stored the chosen value. The Sound Library
 (catalog.py) added the actual download later.
 
 Changelog:
+  2.5.7 (2026-11-27): The ws_test_jumuah docstring names the Jumu'ah target
+                      list it really uses.
   2.5.6 (2026-11-27): nida/update_settings merges the sent options into the
                       stored ones instead of replacing them, and returns the
                       merged options. Clients now send only what changed.
@@ -810,9 +812,9 @@ async def ws_test_live_activity(hass: HomeAssistant, connection, msg) -> None:
 async def ws_test_jumuah(hass: HomeAssistant, connection, msg) -> None:
     """Send a test Jumu'ah reminder to all configured targets right now.
 
-    Uses the current jumuah_message + jumuah_reminder_minutes options.
-    Same target list as the regular notifications (no separate Jumu'ah
-    targets field — by design).
+    Uses the current jumuah_message + jumuah_reminder_minutes options and
+    the Jumu'ah target list (jumuah_targets), which has been separate from
+    the prayer notification targets since 2.0.18.
 
     2.0.97 — same entry_id fix as ws_test_notify: resolves the SAME
     config entry the panel is editing instead of blindly grabbing

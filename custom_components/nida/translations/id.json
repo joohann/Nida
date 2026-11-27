@@ -13,64 +13,80 @@
   "options": {
     "step": {
       "init": {
-        "title": "Opsi Nida",
-        "description": "Buka [dasbor Masjid](/nida) untuk mengelola waktu salat, suara, bahasa, dan pemutar media.\n\nSakelar di bawah menentukan apakah Masjid juga ditampilkan di bilah sisi.",
+        "title": "Opsi {name}",
+        "description": "Buka [dasbor {panel}](/nida) untuk mengelola waktu salat, suara, bahasa, dan pemutar media.\n\nSakelar di bawah menentukan apakah {panel} juga ditampilkan di bilah sisi.",
         "data": {
-          "show_in_sidebar": "Tampilkan Masjid di bilah sisi"
+          "show_in_sidebar": "Tampilkan {panel} di bilah sisi"
         }
       }
     }
   },
+  "issues": {
+    "api_unreachable": {
+      "title": "Nida tidak dapat menjangkau API waktu salat",
+      "description": "Nida tidak dapat menjangkau API waktu salat Aladhan (`api.aladhan.com`) dan menampilkan waktu terakhir yang tersimpan.\n\nPenyebab paling umum adalah pemblokir DNS di jaringan Anda ({blocker}) yang memblokir domain API tersebut.\n\n**Solusi:** izinkan kedua domain ini di pemblokir Anda, lalu muat ulang Nida:\n\n- `api.aladhan.com`\n- `bahriya.app`\n\n**Di AdGuard Home:** buka Penyaring → Aturan penyaringan khusus, lalu tambahkan:\n```\n@@||api.aladhan.com^\n@@||bahriya.app^\n```\nSetelah itu kosongkan cache DNS. Pesan ini hilang setelah Nida dapat menjangkau API lagi."
+    }
+  },
   "entity": {
-    "sensor": {
-      "fajr": {
-        "name": "Subuh"
-      },
-      "dhuhr": {
-        "name": "Zuhur"
-      },
-      "asr": {
-        "name": "Asar"
-      },
-      "maghrib": {
-        "name": "Magrib"
-      },
-      "isha": {
-        "name": "Isya"
-      },
-      "fajr_readable": {
-        "name": "Subuh (mudah dibaca)"
-      },
-      "dhuhr_readable": {
-        "name": "Zuhur (mudah dibaca)"
-      },
-      "asr_readable": {
-        "name": "Asar (mudah dibaca)"
-      },
-      "maghrib_readable": {
-        "name": "Magrib (mudah dibaca)"
-      },
-      "isha_readable": {
-        "name": "Isya (mudah dibaca)"
-      },
-      "hijri_date": {
-        "name": "Tanggal Hijriah"
-      },
-      "hijri_day": {
-        "name": "Hari Hijriah"
-      },
-      "hijri_month": {
-        "name": "Bulan Hijriah"
-      },
-      "hijri_year": {
-        "name": "Tahun Hijriah"
-      },
-      "hijri_holiday": {
-        "name": "Hari besar Hijriah"
-      },
-      "next_prayer": {
-        "name": "Salat berikutnya"
+    "select": {
+      "visitors_mode": {
+        "name": "Mode pengunjung",
+        "state": {
+          "off": "Mati",
+          "1h": "1 jam",
+          "2h": "2 jam",
+          "3h": "3 jam",
+          "4h": "4 jam",
+          "6h": "6 jam",
+          "8h": "8 jam",
+          "12h": "12 jam",
+          "24h": "24 jam",
+          "until_off": "Sampai saya mematikannya"
+        },
+        "state_attributes": {
+          "until": {
+            "name": "Sampai"
+          }
+        }
+      }
+    },
+    "switch": {
+      "visitors_mode": {
+        "name": "Mode pengunjung",
+        "state_attributes": {
+          "until": {
+            "name": "Sampai"
+          }
+        }
       }
     }
+  },
+  "common": {
+    "welcome_message": "**Assalamualaikum.** {name} siap digunakan.\n\nTemukan **{panel}** di bilah sisi, atau buka [dasbor {panel}](/nida) langsung untuk mengatur waktu salat, suara, bahasa, dan pemutar media bagi azan otomatis.",
+    "pre_adhan_message_other": "Waktu **{prayer}** tinggal {minutes} menit lagi.",
+    "calendar_title": "{name} · Kalender Islam",
+    "calendar_holiday_today": "{occasion} hari ini",
+    "calendar_holiday_tomorrow": "{occasion} besok",
+    "calendar_holiday_in_days_other": "{occasion} {days} hari lagi",
+    "calendar_today": "Hari ini: {occasion}",
+    "calendar_tonight": "Malam ini: {occasion}",
+    "occasion_islamic_new_year": "Tahun Baru Islam",
+    "occasion_mawlid": "Maulid Nabi",
+    "occasion_eid_al_fitr": "Idulfitri",
+    "occasion_eid_al_adha": "Iduladha",
+    "occasion_ashura_pre": "Puasa Asyura (9 Muharam)",
+    "occasion_ashura": "Puasa Asyura (10 Muharam)",
+    "occasion_ashura_post": "Puasa Asyura (11 Muharam)",
+    "occasion_arafah": "Hari Arafah",
+    "occasion_white_days": "Hari Putih",
+    "occasion_weekly_sunnah": "Puasa sunnah mingguan",
+    "occasion_laylatul_qadr": "Lailatul Qadar (malam ke-{night} Ramadan)",
+    "live_next": "Salat berikutnya",
+    "live_now": "Sekarang",
+    "prayer_fajr": "Subuh",
+    "prayer_dhuhr": "Zuhur",
+    "prayer_asr": "Asar",
+    "prayer_maghrib": "Magrib",
+    "prayer_isha": "Isya"
   }
 }

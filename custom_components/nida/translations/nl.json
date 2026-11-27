@@ -13,10 +13,10 @@
   "options": {
     "step": {
       "init": {
-        "title": "Nida-opties",
-        "description": "Open het [Masjid-dashboard](/nida) om gebedstijden, geluiden, taal en speakers te beheren.\n\nDe schakelaar hieronder bepaalt of Masjid ook in de zijbalk verschijnt.",
+        "title": "{name}-opties",
+        "description": "Open het [{panel}-dashboard](/nida) om gebedstijden, geluiden, taal en speakers te beheren.\n\nDe schakelaar hieronder bepaalt of {panel} ook in de zijbalk verschijnt.",
         "data": {
-          "show_in_sidebar": "Masjid in zijbalk tonen"
+          "show_in_sidebar": "{panel} in zijbalk tonen"
         }
       }
     }
@@ -60,5 +60,35 @@
         }
       }
     }
+  },
+  "common": {
+    "welcome_message": "**Assalamu alaikum.** {name} is klaar.\n\nJe vindt **{panel}** in de zijbalk, of open het [{panel}-dashboard](/nida) direct om gebedstijden, geluiden, taal en speakers in te stellen voor de automatische adhan.",
+    "pre_adhan_message_one": "**{prayer}** begint over {minutes} minuut.",
+    "pre_adhan_message_other": "**{prayer}** begint over {minutes} minuten.",
+    "calendar_title": "{name} · Islamitische kalender",
+    "calendar_holiday_today": "{occasion} is vandaag",
+    "calendar_holiday_tomorrow": "{occasion} is morgen",
+    "calendar_holiday_in_days_one": "{occasion} is over {days} dag",
+    "calendar_holiday_in_days_other": "{occasion} is over {days} dagen",
+    "calendar_today": "Vandaag: {occasion}",
+    "calendar_tonight": "Vannacht: {occasion}",
+    "occasion_islamic_new_year": "Islamitisch Nieuwjaar",
+    "occasion_mawlid": "Mawlid an-Nabi",
+    "occasion_eid_al_fitr": "Eid al-Fitr",
+    "occasion_eid_al_adha": "Eid al-Adha",
+    "occasion_ashura_pre": "Ashura-vasten (9 Muharram)",
+    "occasion_ashura": "Ashura-vasten (10 Muharram)",
+    "occasion_ashura_post": "Ashura-vasten (11 Muharram)",
+    "occasion_arafah": "Dag van Arafah",
+    "occasion_white_days": "Witte Dagen",
+    "occasion_weekly_sunnah": "Wekelijks sunnah-vasten",
+    "occasion_laylatul_qadr": "Laylatul Qadr (nacht {night} van de Ramadan)",
+    "live_next": "Volgend gebed",
+    "live_now": "Nu",
+    "prayer_fajr": "Fajr",
+    "prayer_dhuhr": "Dhuhr",
+    "prayer_asr": "Asr",
+    "prayer_maghrib": "Maghrib",
+    "prayer_isha": "Isha"
   }
 }

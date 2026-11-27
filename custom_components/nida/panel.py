@@ -23,6 +23,9 @@ depend on the sidebar panel being enabled — a user with show_in_sidebar
 off should still be able to use the dashboard cards.
 
 Changelog:
+  2.5.7 (2026-11-27): PANEL_TITLE lives in const.py now (the one place for
+                      the product's names); the translations use it as the
+                      {panel} placeholder.
   2.1.22 (2026-07-09): Cache-busting query param (?v=<manifest version>)
                       appended to both FRONTEND_SCRIPT_URL and
                       CARD_SCRIPT_URL. Root cause of a recurring "already
@@ -78,12 +81,12 @@ from .const import (
     DEFAULT_SIDEBAR_ADMIN_ONLY,
     DOMAIN,
     OPT_SIDEBAR_ADMIN_ONLY,
+    PANEL_TITLE,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 PANEL_URL_PATH = "nida"           # URL stays /nida — don't rename
-PANEL_TITLE = "Nida²"             # User-facing sidebar label (matches panel header)
 PANEL_ICON = "mdi:mosque"
 FRONTEND_SCRIPT_URL = "/nida_panel_files/nida-panel.js"
 CARD_SCRIPT_URL = "/nida_panel_files/nida-card.js"
@@ -163,9 +166,9 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     version = await _asset_version(hass)
 
     # 2.3.18 — optional admin-only sidebar entry. Read at registration
-    # time; __init__.py already removes and re-registers the panel on
-    # every options update, so flipping the toggle takes effect on save
-    # rather than needing a restart.
+    # time; since 2.5.7 __init__.py's update listener removes and
+    # re-registers the panel when this option changes, so flipping the
+    # toggle takes effect on save rather than needing a restart.
     entries = hass.config_entries.async_entries(DOMAIN)
     options = dict(entries[0].options) if entries else {}
     admin_only = bool(

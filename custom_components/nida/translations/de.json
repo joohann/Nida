@@ -13,64 +13,82 @@
   "options": {
     "step": {
       "init": {
-        "title": "Nida-Optionen",
-        "description": "Öffnen Sie das [Masjid-Dashboard](/nida), um Gebetszeiten, Töne, Sprache und Mediaplayer zu verwalten.\n\nDer Schalter unten legt fest, ob Masjid auch in der Seitenleiste angezeigt wird.",
+        "title": "{name}-Optionen",
+        "description": "Öffnen Sie das [{panel}-Dashboard](/nida), um Gebetszeiten, Töne, Sprache und Mediaplayer zu verwalten.\n\nDer Schalter unten legt fest, ob {panel} auch in der Seitenleiste angezeigt wird.",
         "data": {
-          "show_in_sidebar": "Masjid in der Seitenleiste anzeigen"
+          "show_in_sidebar": "{panel} in der Seitenleiste anzeigen"
         }
       }
     }
   },
+  "issues": {
+    "api_unreachable": {
+      "title": "Nida kann die Gebetszeiten-API nicht erreichen",
+      "description": "Nida konnte die Aladhan-Gebetszeiten-API (`api.aladhan.com`) nicht erreichen und zeigt die zuletzt gespeicherten Zeiten.\n\nMeist liegt das an einem DNS-Blocker in Ihrem Netzwerk ({blocker}), der die Domain der API sperrt.\n\n**Lösung:** Erlauben Sie diese beiden Domains in Ihrem Blocker und laden Sie Nida danach neu:\n\n- `api.aladhan.com`\n- `bahriya.app`\n\n**In AdGuard Home:** Öffnen Sie Filter → Benutzerdefinierte Filterregeln und fügen Sie hinzu:\n```\n@@||api.aladhan.com^\n@@||bahriya.app^\n```\nLeeren Sie danach den DNS-Cache. Diese Meldung verschwindet, sobald Nida die API wieder erreichen kann."
+    }
+  },
   "entity": {
-    "sensor": {
-      "fajr": {
-        "name": "Fajr"
-      },
-      "dhuhr": {
-        "name": "Dhuhr"
-      },
-      "asr": {
-        "name": "Asr"
-      },
-      "maghrib": {
-        "name": "Maghrib"
-      },
-      "isha": {
-        "name": "Ischa"
-      },
-      "fajr_readable": {
-        "name": "Fajr (lesbar)"
-      },
-      "dhuhr_readable": {
-        "name": "Dhuhr (lesbar)"
-      },
-      "asr_readable": {
-        "name": "Asr (lesbar)"
-      },
-      "maghrib_readable": {
-        "name": "Maghrib (lesbar)"
-      },
-      "isha_readable": {
-        "name": "Ischa (lesbar)"
-      },
-      "hijri_date": {
-        "name": "Hidschri-Datum"
-      },
-      "hijri_day": {
-        "name": "Hidschri-Tag"
-      },
-      "hijri_month": {
-        "name": "Hidschri-Monat"
-      },
-      "hijri_year": {
-        "name": "Hidschri-Jahr"
-      },
-      "hijri_holiday": {
-        "name": "Hidschri-Feiertag"
-      },
-      "next_prayer": {
-        "name": "Nächstes Gebet"
+    "select": {
+      "visitors_mode": {
+        "name": "Besuchermodus",
+        "state": {
+          "off": "Aus",
+          "1h": "1 Stunde",
+          "2h": "2 Stunden",
+          "3h": "3 Stunden",
+          "4h": "4 Stunden",
+          "6h": "6 Stunden",
+          "8h": "8 Stunden",
+          "12h": "12 Stunden",
+          "24h": "24 Stunden",
+          "until_off": "Bis ich ihn ausschalte"
+        },
+        "state_attributes": {
+          "until": {
+            "name": "Bis"
+          }
+        }
+      }
+    },
+    "switch": {
+      "visitors_mode": {
+        "name": "Besuchermodus",
+        "state_attributes": {
+          "until": {
+            "name": "Bis"
+          }
+        }
       }
     }
+  },
+  "common": {
+    "welcome_message": "**Assalamu alaikum.** {name} ist bereit.\n\nSie finden **{panel}** in der Seitenleiste, oder öffnen Sie das [{panel}-Dashboard](/nida) direkt, um Gebetszeiten, Töne, Sprache und Mediaplayer für den automatischen Adhan einzurichten.",
+    "pre_adhan_message_one": "**{prayer}** beginnt in {minutes} Minute.",
+    "pre_adhan_message_other": "**{prayer}** beginnt in {minutes} Minuten.",
+    "calendar_title": "{name} · Islamischer Kalender",
+    "calendar_holiday_today": "{occasion} ist heute",
+    "calendar_holiday_tomorrow": "{occasion} ist morgen",
+    "calendar_holiday_in_days_one": "{occasion} ist in {days} Tag",
+    "calendar_holiday_in_days_other": "{occasion} ist in {days} Tagen",
+    "calendar_today": "Heute: {occasion}",
+    "calendar_tonight": "Heute Nacht: {occasion}",
+    "occasion_islamic_new_year": "Islamisches Neujahr",
+    "occasion_mawlid": "Mawlid an-Nabi",
+    "occasion_eid_al_fitr": "Eid al-Fitr",
+    "occasion_eid_al_adha": "Eid al-Adha",
+    "occasion_ashura_pre": "Ashura-Fasten (9. Muharram)",
+    "occasion_ashura": "Ashura-Fasten (10. Muharram)",
+    "occasion_ashura_post": "Ashura-Fasten (11. Muharram)",
+    "occasion_arafah": "Tag von Arafah",
+    "occasion_white_days": "Weiße Tage",
+    "occasion_weekly_sunnah": "Wöchentliches Sunnah-Fasten",
+    "occasion_laylatul_qadr": "Laylatul Qadr ({night}. Nacht des Ramadan)",
+    "live_next": "Nächstes Gebet",
+    "live_now": "Jetzt",
+    "prayer_fajr": "Fajr",
+    "prayer_dhuhr": "Dhuhr",
+    "prayer_asr": "Asr",
+    "prayer_maghrib": "Maghrib",
+    "prayer_isha": "Isha"
   }
 }

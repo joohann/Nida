@@ -19,6 +19,10 @@ Two flows live in this file:
     Markdown link to /nida + sidebar visibility toggle.
 
 Changelog:
+  2.5.7 (2026-11-27): The options step fills {name} and {panel} in its
+                      texts from const.py (PRODUCT_NAME, PANEL_TITLE), so it
+                      names the sidebar entry by its real name instead of
+                      the old "Masjid"; the entry title uses PRODUCT_NAME.
   2.0.8 (2026-06-28): Submit step removed — the entry is now created
                       directly without a form. The welcome text already
                       lived in the panel (WELCOME_CONTENT) and in the
@@ -51,7 +55,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 
-from .const import DOMAIN
+from .const import DOMAIN, PANEL_TITLE, PRODUCT_NAME
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -75,7 +79,7 @@ class NidaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
-        return self.async_create_entry(title="Nida", data={})
+        return self.async_create_entry(title=PRODUCT_NAME, data={})
 
 
 class NidaOptionsFlowHandler(config_entries.OptionsFlow):
@@ -96,4 +100,8 @@ class NidaOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(OPT_SHOW_IN_SIDEBAR, default=current): bool,
             }
         )
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=schema,
+            description_placeholders={"name": PRODUCT_NAME, "panel": PANEL_TITLE},
+        )

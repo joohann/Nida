@@ -13,64 +13,82 @@
   "options": {
     "step": {
       "init": {
-        "title": "گزینه‌های ندا",
-        "description": "برای مدیریت اوقات نماز، صداها، زبان و پخش‌کننده‌ها [داشبورد مسجد](/nida) را باز کنید.\n\nکلید زیر تعیین می‌کند که مسجد در نوار کناری هم نمایش داده شود یا نه.",
+        "title": "گزینه‌های {name}",
+        "description": "برای مدیریت اوقات نماز، صداها، زبان و پخش‌کننده‌ها [داشبورد {panel}](/nida) را باز کنید.\n\nکلید زیر تعیین می‌کند که {panel} در نوار کناری هم نمایش داده شود یا نه.",
         "data": {
-          "show_in_sidebar": "نمایش مسجد در نوار کناری"
+          "show_in_sidebar": "نمایش {panel} در نوار کناری"
         }
       }
     }
   },
+  "issues": {
+    "api_unreachable": {
+      "title": "Nida به API اوقات نماز دسترسی ندارد",
+      "description": "Nida نتوانست به API اوقات نماز Aladhan (`api.aladhan.com`) دسترسی پیدا کند و آخرین اوقات ذخیره‌شده را نشان می‌دهد.\n\nعلت معمولاً یک مسدودکننده DNS در شبکه شماست ({blocker}) که دامنه API را مسدود می‌کند.\n\n**راه‌حل:** این دو دامنه را در مسدودکننده خود مجاز کنید و سپس Nida را دوباره بارگذاری کنید:\n\n- `api.aladhan.com`\n- `bahriya.app`\n\n**در AdGuard Home:** بخش فيلترها ← دستورات فیلترینگ دستی را باز کنید و این‌ها را اضافه کنید:\n```\n@@||api.aladhan.com^\n@@||bahriya.app^\n```\nسپس حافظه پنهان DNS را پاک کنید. وقتی Nida دوباره به API دسترسی پیدا کند، این پیام ناپدید می‌شود."
+    }
+  },
   "entity": {
-    "sensor": {
-      "fajr": {
-        "name": "فجر"
-      },
-      "dhuhr": {
-        "name": "ظهر"
-      },
-      "asr": {
-        "name": "عصر"
-      },
-      "maghrib": {
-        "name": "مغرب"
-      },
-      "isha": {
-        "name": "عشاء"
-      },
-      "fajr_readable": {
-        "name": "فجر (خوانا)"
-      },
-      "dhuhr_readable": {
-        "name": "ظهر (خوانا)"
-      },
-      "asr_readable": {
-        "name": "عصر (خوانا)"
-      },
-      "maghrib_readable": {
-        "name": "مغرب (خوانا)"
-      },
-      "isha_readable": {
-        "name": "عشاء (خوانا)"
-      },
-      "hijri_date": {
-        "name": "تاریخ هجری"
-      },
-      "hijri_day": {
-        "name": "روز هجری"
-      },
-      "hijri_month": {
-        "name": "ماه هجری"
-      },
-      "hijri_year": {
-        "name": "سال هجری"
-      },
-      "hijri_holiday": {
-        "name": "مناسبت هجری"
-      },
-      "next_prayer": {
-        "name": "نماز بعدی"
+    "select": {
+      "visitors_mode": {
+        "name": "حالت بازدیدکنندگان",
+        "state": {
+          "off": "خاموش",
+          "1h": "1 ساعت",
+          "2h": "2 ساعت",
+          "3h": "3 ساعت",
+          "4h": "4 ساعت",
+          "6h": "6 ساعت",
+          "8h": "8 ساعت",
+          "12h": "12 ساعت",
+          "24h": "24 ساعت",
+          "until_off": "تا وقتی خاموشش کنم"
+        },
+        "state_attributes": {
+          "until": {
+            "name": "تا"
+          }
+        }
+      }
+    },
+    "switch": {
+      "visitors_mode": {
+        "name": "حالت بازدیدکنندگان",
+        "state_attributes": {
+          "until": {
+            "name": "تا"
+          }
+        }
       }
     }
+  },
+  "common": {
+    "welcome_message": "**سلام علیکم.** {name} آماده است.\n\n**{panel}** را در نوار کناری پیدا کنید، یا [داشبورد {panel}](/nida) را مستقیم باز کنید تا اوقات نماز، صداها، زبان و پخش‌کننده‌ها را برای اذان خودکار تنظیم کنید.",
+    "pre_adhan_message_one": "**{prayer}** تا {minutes} دقیقه دیگر.",
+    "pre_adhan_message_other": "**{prayer}** تا {minutes} دقیقه دیگر.",
+    "calendar_title": "{name} · تقویم اسلامی",
+    "calendar_holiday_today": "{occasion} امروز است",
+    "calendar_holiday_tomorrow": "{occasion} فردا است",
+    "calendar_holiday_in_days_one": "{occasion} {days} روز دیگر است",
+    "calendar_holiday_in_days_other": "{occasion} {days} روز دیگر است",
+    "calendar_today": "امروز: {occasion}",
+    "calendar_tonight": "امشب: {occasion}",
+    "occasion_islamic_new_year": "سال نو هجری",
+    "occasion_mawlid": "میلاد پیامبر",
+    "occasion_eid_al_fitr": "عید فطر",
+    "occasion_eid_al_adha": "عید قربان",
+    "occasion_ashura_pre": "روزه عاشورا (۹ محرم)",
+    "occasion_ashura": "روزه عاشورا (۱۰ محرم)",
+    "occasion_ashura_post": "روزه عاشورا (۱۱ محرم)",
+    "occasion_arafah": "روز عرفه",
+    "occasion_white_days": "ایام البیض",
+    "occasion_weekly_sunnah": "روزه هفتگی سنت",
+    "occasion_laylatul_qadr": "شب قدر (شب {night} رمضان)",
+    "live_next": "نماز بعدی",
+    "live_now": "اکنون",
+    "prayer_fajr": "فجر",
+    "prayer_dhuhr": "ظهر",
+    "prayer_asr": "عصر",
+    "prayer_maghrib": "مغرب",
+    "prayer_isha": "عشاء"
   }
 }

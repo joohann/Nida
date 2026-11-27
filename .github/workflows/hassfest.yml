@@ -1,12 +1,21 @@
+# Changelog:
+#   2.5.7 (2026-11-27): Read-only token, actions pinned to a commit SHA
+#     (the hassfest action pulls the latest hassfest image itself, so the
+#     pin does not freeze the validation), checkout v7 without stored
+#     credentials.
 name: Hassfest
 on:
   push:
   pull_request:
   schedule:
     - cron: "0 0 * * *"
+permissions:
+  contents: read
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: home-assistant/actions/hassfest@master
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: home-assistant/actions/hassfest@9e9565e68f5a70d874202871f4c4064d23814235 # master, 2026-11-23

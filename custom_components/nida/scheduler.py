@@ -12,6 +12,25 @@ scheduler fires `hass.services.async_call('notify', <target>, ...)`
 directly because the routing logic is purely scheduler-internal.
 
 Changelog:
+  2.5.7 (2026-11-27): The Islamic calendar notification and the pre-adhan
+                      fallback notification are written in Nida's language
+                      from the translation files (texts.py), with prayer and
+                      occasion names as the panel writes them. The calendar
+                      title drops the mosque emoji (as notify titles did in
+                      2.4.0) and says "tomorrow" for a lead of one day. The
+                      lines are built by _calendar_messages(), a plain
+                      function the tests can call.
+  2.5.7 (2026-11-27): prayer and Imsak targets come from
+                      prayer_times.coordinator_datetimes(), so an Isha after
+                      midnight (high-latitude summer) is planned for the
+                      coming night, together with its pre-adhan, instead of
+                      being stitched onto the morning that already passed.
+  2.5.7 (2026-11-27): whole-number options are read with _opt_int(): a value
+                      int() rejects (e.g. "1e2") falls back to the default
+                      with a warning instead of raising out of _reschedule,
+                      which left every later adhan and reminder of the day
+                      unplanned. _parse_today_time skips an out-of-range
+                      time ("24:00") instead of raising.
   2.5.6 (2026-11-27): notify targets are now parsed with
                       _parse_notify_target, which refuses any domain other
                       than notify. A stray or hand-edited target (e.g.
@@ -270,7 +289,7 @@ Changelog:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from homeassistant.components import persistent_notification
 from homeassistant.config_entries import ConfigEntry
@@ -377,10 +396,13 @@ from .const import (
     PRAYERS,
     SUHOOR_REMINDER_MINUTES_MAX,
     SUHOOR_REMINDER_MINUTES_MIN,
+    PRODUCT_NAME,
     WEEKLY_SUNNAH_WEEKDAYS,
     WHITE_DAYS,
 )
 from .catalog import async_sound_duration_seconds
+from .prayer_times import coordinator_datetimes
+from .texts import NidaTexts, async_get_texts
 from .coordinator import PrayerTimesCoordinator
 from .services import (
     SERVICE_PLAY_ADHAN,
@@ -442,11 +464,14 @@ class NidaScheduler:
 
         now = dt_util.now()
         options = self.entry.options
+        # 2.5.7: real timestamps for the coordinator's timings day, so an
+        # Isha after midnight lands on the coming night (prayer_times.py).
+        stamps = coordinator_datetimes(self.coordinator)
 
         planned = 0
-        pre_min_1 = int(options.get(OPT_PRE_ADHAN_MINUTES, DEFAULT_PRE_ADHAN_MINUTES) or 0)
+        pre_min_1 = _opt_int(options, OPT_PRE_ADHAN_MINUTES, DEFAULT_PRE_ADHAN_MINUTES)
         two_enabled = bool(options.get(OPT_PRE_ADHAN_TWO_ENABLED, False))
-        pre_min_2 = int(options.get(OPT_PRE_ADHAN_MINUTES_2, DEFAULT_PRE_ADHAN_MINUTES_2) or 0)
+        pre_min_2 = _opt_int(options, OPT_PRE_ADHAN_MINUTES_2, DEFAULT_PRE_ADHAN_MINUTES_2)
         notify_enabled = bool(options.get(OPT_NOTIFY_ENABLED, False))
 
         # 2.1.34 — Ramadan features are gated on the coordinator's own
@@ -466,8 +491,7 @@ class NidaScheduler:
                 _LOGGER.debug("Scheduler: %s is disabled, skipping", prayer)
                 continue
 
-            time_str = timings.get(prayer.capitalize())
-            target = _parse_today_time(time_str, now)
+            target = stamps.get(prayer.capitalize())
             if target is None:
                 continue
             if prayer == "dhuhr":
@@ -521,10 +545,9 @@ class NidaScheduler:
             self._maybe_schedule_jumuah(dhuhr_target_for_jumuah, now, options)
 
         if is_ramadan:
-            imsak_str = timings.get("Imsak")
-            imsak_target = _parse_today_time(imsak_str, now)
+            imsak_target = stamps.get("Imsak")
             if imsak_target is not None:
-                offset = int(options.get(OPT_IMSAK_OFFSET_MIN, DEFAULT_IMSAK_OFFSET_MIN) or 0)
+                offset = _opt_int(options, OPT_IMSAK_OFFSET_MIN, DEFAULT_IMSAK_OFFSET_MIN)
                 imsak_target = imsak_target - timedelta(minutes=max(0, offset))
                 self._maybe_schedule_suhoor(imsak_target, now, options)
             if maghrib_target_for_ramadan is not None:
@@ -545,9 +568,7 @@ class NidaScheduler:
         """
         if not bool(options.get(OPT_SUHOOR_REMINDER_ENABLED, False)):
             return
-        minutes = int(
-            options.get(OPT_SUHOOR_REMINDER_MINUTES, DEFAULT_SUHOOR_REMINDER_MINUTES) or 0
-        )
+        minutes = _opt_int(options, OPT_SUHOOR_REMINDER_MINUTES, DEFAULT_SUHOOR_REMINDER_MINUTES)
         minutes = max(SUHOOR_REMINDER_MINUTES_MIN, min(SUHOOR_REMINDER_MINUTES_MAX, minutes))
         suhoor_target = imsak_target - timedelta(minutes=minutes)
         if suhoor_target <= now:
@@ -575,9 +596,7 @@ class NidaScheduler:
         """
         if not bool(options.get(OPT_IFTAR_REMINDER_ENABLED, False)):
             return
-        minutes = int(
-            options.get(OPT_IFTAR_REMINDER_MINUTES, DEFAULT_IFTAR_REMINDER_MINUTES) or 0
-        )
+        minutes = _opt_int(options, OPT_IFTAR_REMINDER_MINUTES, DEFAULT_IFTAR_REMINDER_MINUTES)
         minutes = max(IFTAR_REMINDER_MINUTES_MIN, min(IFTAR_REMINDER_MINUTES_MAX, minutes))
         iftar_target = maghrib_target - timedelta(minutes=minutes)
         if iftar_target <= now:
@@ -628,20 +647,14 @@ class NidaScheduler:
         """
         if not bool(options.get(OPT_FAJR_ALARM_ENABLED, DEFAULT_FAJR_ALARM_ENABLED)):
             return
-        minutes = int(
-            options.get(OPT_FAJR_ALARM_MINUTES, DEFAULT_FAJR_ALARM_MINUTES) or 0
-        )
+        minutes = _opt_int(options, OPT_FAJR_ALARM_MINUTES, DEFAULT_FAJR_ALARM_MINUTES)
         minutes = max(FAJR_ALARM_MINUTES_MIN, min(FAJR_ALARM_MINUTES_MAX, minutes))
         wake_target = fajr_target - timedelta(minutes=minutes)
         if wake_target <= now:
             return
 
         scene = options.get(OPT_FAJR_ALARM_SCENE) or None
-        transition_minutes = int(
-            options.get(
-                OPT_FAJR_ALARM_TRANSITION_MINUTES, DEFAULT_FAJR_ALARM_TRANSITION_MINUTES
-            ) or 0
-        )
+        transition_minutes = _opt_int(options, OPT_FAJR_ALARM_TRANSITION_MINUTES, DEFAULT_FAJR_ALARM_TRANSITION_MINUTES)
         transition_minutes = max(
             FAJR_ALARM_TRANSITION_MINUTES_MIN,
             min(FAJR_ALARM_TRANSITION_MINUTES_MAX, transition_minutes),
@@ -747,9 +760,7 @@ class NidaScheduler:
         """Plant the Friday Jumu'ah reminder N minutes before Dhuhr."""
         if not bool(options.get(OPT_JUMUAH_REMINDER_ENABLED, True)):
             return
-        minutes = int(
-            options.get(OPT_JUMUAH_REMINDER_MINUTES, DEFAULT_JUMUAH_MINUTES) or 0
-        )
+        minutes = _opt_int(options, OPT_JUMUAH_REMINDER_MINUTES, DEFAULT_JUMUAH_MINUTES)
         minutes = max(JUMUAH_MIN_MINUTES, min(JUMUAH_MAX_MINUTES, minutes))
         jumuah_target = dhuhr_target - timedelta(minutes=minutes)
         if jumuah_target <= now:
@@ -829,61 +840,17 @@ class NidaScheduler:
         hijri_map = await async_lookup_hijri_range(
             self.hass, self.entry, today, lookahead_end
         )
-        today_hijri = hijri_map.get(today)
-        messages: list[str] = []
-
-        if options.get(OPT_CALENDAR_HOLIDAYS_ENABLED, False):
-            lead1 = int(
-                options.get(OPT_CALENDAR_HOLIDAYS_LEAD_DAYS, DEFAULT_CALENDAR_HOLIDAYS_LEAD_DAYS)
-                or 0
-            )
-            leads = {lead1}
-            if bool(options.get(OPT_CALENDAR_HOLIDAYS_SECOND_ENABLED, False)):
-                lead2 = int(
-                    options.get(
-                        OPT_CALENDAR_HOLIDAYS_SECOND_LEAD_DAYS,
-                        DEFAULT_CALENDAR_HOLIDAYS_SECOND_LEAD_DAYS,
-                    )
-                    or 0
-                )
-                leads.add(lead2)
-            for holiday in ISLAMIC_HOLIDAYS:
-                for lead in leads:
-                    check_date = today + timedelta(days=lead)
-                    hijri = hijri_map.get(check_date)
-                    if hijri is not None and hijri == (holiday["month"], holiday["day"]):
-                        when = "today" if lead == 0 else f"in {lead} day{'s' if lead != 1 else ''}"
-                        messages.append(f"{holiday['name']} is {when}")
-
-        if options.get(OPT_CALENDAR_ASHURA_ARAFAH_ENABLED, False) and today_hijri is not None:
-            for d in ASHURA_ARAFAH_DATES:
-                if today_hijri == (d["month"], d["day"]):
-                    messages.append(f"Today: {d['name']}")
-
-        if (
-            options.get(OPT_CALENDAR_WHITE_DAYS_ENABLED, False)
-            and today_hijri is not None
-            and today_hijri[1] in WHITE_DAYS
-        ):
-            messages.append("Today: White Days fasting (Ayyam al-Beed)")
-
-        if (
-            options.get(OPT_CALENDAR_WEEKLY_SUNNAH_ENABLED, False)
-            and dt_util.now().weekday() in WEEKLY_SUNNAH_WEEKDAYS
-        ):
-            messages.append("Today: Weekly Sunnah fasting")
-
-        if options.get(OPT_CALENDAR_LAYLATUL_QADR_ENABLED, False) and today_hijri is not None:
-            for lq in LAYLATUL_QADR_DATES:
-                if today_hijri == (lq["month"], lq["day"]):
-                    messages.append(f"Tonight: {lq['name']}")
+        texts = await async_get_texts(self.hass, self.entry)
+        messages = _calendar_messages(
+            texts, options, today, hijri_map, dt_util.now().weekday()
+        )
 
         if not messages:
             _LOGGER.debug("Islamic Calendar check: nothing matches today")
             return
 
         targets = list(options.get(OPT_CALENDAR_NOTIFY_TARGETS) or [])
-        title = "🕌 Nida — Islamic Calendar"
+        title = texts.get("calendar_title")
         message = "\n".join(messages)
         # _async_make_calendar_handler returns a _fire(_now) closure meant
         # for async_track_point_in_time — its argument is unused (message
@@ -932,10 +899,16 @@ class NidaScheduler:
             # AND an HA-internal notification can build an automation
             # off the nida.play_pre_adhan_jingle service call.
             if not audio_enabled and not tts_enabled:
+                texts = await async_get_texts(self.hass, self.entry)
                 persistent_notification.async_create(
                     self.hass,
-                    f"**{prayer.capitalize()}** is in {minutes} minutes.",
-                    title="Nida",
+                    texts.plural(
+                        "pre_adhan_message",
+                        minutes,
+                        prayer=texts.prayer(prayer),
+                        minutes=minutes,
+                    ),
+                    title=PRODUCT_NAME,
                     notification_id=f"nida_pre{nid_suffix}_{prayer}",
                 )
 
@@ -1640,15 +1613,104 @@ def _notify_enabled_for_prayer(options: dict, prayer: str) -> bool:
     return True if val is None else bool(val)
 
 
+def _calendar_messages(
+    texts: NidaTexts,
+    options,
+    today: date,
+    hijri_map: dict,
+    weekday: int,
+) -> list[str]:
+    """The lines of today's Islamic calendar notification (2.5.7).
+
+    hijri_map maps a Gregorian date to its Hijri (month, day). Each enabled
+    reminder type adds its lines, worded by the translation files in Nida's
+    language: holidays today, tomorrow or in N days, the fasting days of
+    today, and tonight's Laylatul Qadr.
+    """
+    today_hijri = hijri_map.get(today)
+    messages: list[str] = []
+
+    if options.get(OPT_CALENDAR_HOLIDAYS_ENABLED, False):
+        leads = {_opt_int(options, OPT_CALENDAR_HOLIDAYS_LEAD_DAYS, DEFAULT_CALENDAR_HOLIDAYS_LEAD_DAYS)}
+        if bool(options.get(OPT_CALENDAR_HOLIDAYS_SECOND_ENABLED, False)):
+            leads.add(_opt_int(options, OPT_CALENDAR_HOLIDAYS_SECOND_LEAD_DAYS, DEFAULT_CALENDAR_HOLIDAYS_SECOND_LEAD_DAYS))
+        for holiday in ISLAMIC_HOLIDAYS:
+            for lead in sorted(leads):
+                hijri = hijri_map.get(today + timedelta(days=lead))
+                if hijri is None or hijri != (holiday["month"], holiday["day"]):
+                    continue
+                occasion = texts.get(f"occasion_{holiday['key']}")
+                if lead == 0:
+                    messages.append(texts.get("calendar_holiday_today", occasion=occasion))
+                elif lead == 1:
+                    messages.append(texts.get("calendar_holiday_tomorrow", occasion=occasion))
+                else:
+                    messages.append(
+                        texts.plural("calendar_holiday_in_days", lead, occasion=occasion, days=lead)
+                    )
+
+    if options.get(OPT_CALENDAR_ASHURA_ARAFAH_ENABLED, False) and today_hijri is not None:
+        for day in ASHURA_ARAFAH_DATES:
+            if today_hijri == (day["month"], day["day"]):
+                messages.append(
+                    texts.get("calendar_today", occasion=texts.get(f"occasion_{day['key']}"))
+                )
+
+    if (
+        options.get(OPT_CALENDAR_WHITE_DAYS_ENABLED, False)
+        and today_hijri is not None
+        and today_hijri[1] in WHITE_DAYS
+    ):
+        messages.append(texts.get("calendar_today", occasion=texts.get("occasion_white_days")))
+
+    if options.get(OPT_CALENDAR_WEEKLY_SUNNAH_ENABLED, False) and weekday in WEEKLY_SUNNAH_WEEKDAYS:
+        messages.append(texts.get("calendar_today", occasion=texts.get("occasion_weekly_sunnah")))
+
+    if options.get(OPT_CALENDAR_LAYLATUL_QADR_ENABLED, False) and today_hijri is not None:
+        for night in LAYLATUL_QADR_DATES:
+            if today_hijri == (night["month"], night["day"]):
+                occasion = texts.get("occasion_laylatul_qadr", night=night["day"])
+                messages.append(texts.get("calendar_tonight", occasion=occasion))
+
+    return messages
+
+
+def _opt_int(options, key: str, default: int) -> int:
+    """Whole-number option that can never stop the planning (2.5.7).
+
+    Empty values (None, "", 0) read as 0, exactly like the old
+    `int(options.get(...) or 0)`. A value that int() rejects ("1e2",
+    "abc", a list) used to raise out of _reschedule and leave the rest of
+    the day unplanned; it now falls back to the default with a warning.
+    Callers still clamp the result to their own range.
+    """
+    raw = options.get(key, default)
+    if not raw:
+        return 0
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        pass
+    try:
+        return int(float(raw))
+    except (TypeError, ValueError, OverflowError):
+        _LOGGER.warning(
+            "Nida: option %s has an invalid value %r; using %s", key, raw, default
+        )
+        return int(default)
+
+
 def _parse_today_time(time_str: str | None, ref: datetime) -> datetime | None:
     if not time_str:
         return None
     try:
         hh, mm = (int(x) for x in time_str.split(" ")[0].split(":"))
+        # 2.5.7: inside the try, so an out-of-range time ("24:00") is
+        # skipped like any other bad value instead of raising.
+        return ref.replace(hour=hh, minute=mm, second=0, microsecond=0)
     except (ValueError, AttributeError):
         _LOGGER.debug("Unexpected time format from Aladhan: %s", time_str)
         return None
-    return ref.replace(hour=hh, minute=mm, second=0, microsecond=0)
 
 
 def _hijri_month_number(hijri: dict) -> int | None:

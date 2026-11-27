@@ -1,6 +1,13 @@
 """Nida sound catalog — fetch + download + delete.
 
 Changelog:
+  2.5.7 (2026-11-27): a catalog item is only used when its URL (resolved
+                      against the manifest) has the same scheme, host and
+                      port as the manifest it came from; others are refused
+                      with a warning. The item id is checked with fullmatch.
+  2.5.7 (2026-11-27): _validate_rel_path matches the whole path
+                      (re.fullmatch): "$" also matched before a trailing
+                      newline, so "adhan/x.mp3\n" was accepted.
   2.5.6 (2026-11-27): async_download_sound now refuses anything that is not
                       a .mp3 catalog item. The (url, rel_path) pair must be
                       present in the fetched catalog, so this admin-only
@@ -74,6 +81,7 @@ import logging
 import os
 import re
 from typing import Any
+from urllib.parse import urljoin, urlsplit
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -111,7 +119,9 @@ _MAX_SOUND_BYTES = 25 * 1024 * 1024
 # Sanity check on rel_path values from the catalog. We refuse anything
 # containing ".." or absolute paths to keep downloads constrained to
 # the sounds subdirectory.
-_REL_PATH_RE = re.compile(r"^[A-Za-z0-9_\-./]+$")
+# 2.5.7: matched with fullmatch(); "$" also matched before a trailing
+# newline, so "adhan/x.mp3\n" used to pass.
+_REL_PATH_RE = re.compile(r"[A-Za-z0-9_\-./]+")
 
 
 def _catalog_url(hass: HomeAssistant) -> str | None:
@@ -167,7 +177,7 @@ def _validate_rel_path(rel_path: str) -> bool:
         return False
     if rel_path.startswith("/") or ".." in rel_path:
         return False
-    return bool(_REL_PATH_RE.match(rel_path))
+    return bool(_REL_PATH_RE.fullmatch(rel_path))
 
 
 def _abs_path(hass: HomeAssistant, rel_path: str) -> str | None:
@@ -445,13 +455,22 @@ async def _fetch_manifest(
 
     sounds = []
     skipped = 0
+    off_origin = 0
     items = parsed.get("items", []) if isinstance(parsed, dict) else []
     for raw in items:
-        adapted = _adapt_item(raw)
+        adapted = _adapt_item(raw, url)
         if adapted is None:
             skipped += 1
+            if isinstance(raw, dict) and raw.get("url") and _item_url(url, str(raw["url"])) is None:
+                off_origin += 1
             continue
         sounds.append(adapted)
+    if off_origin:
+        _LOGGER.warning(
+            "Nida catalog: %d item(s) refused because their URL is not on the "
+            "catalog's own host (%s)",
+            off_origin, urlsplit(url).hostname,
+        )
     if skipped:
         _LOGGER.debug(
             "Nida catalog: %d item(s) skipped (unknown type or missing fields)",
@@ -550,11 +569,39 @@ _LABEL_PREFIX_RE = re.compile(
 )
 
 
-def _adapt_item(raw: Any) -> dict[str, Any] | None:
+def _origin(url: str) -> tuple[str, str, int | None]:
+    """(scheme, host, port) of a URL, with the default port filled in."""
+    parts = urlsplit(url)
+    scheme = parts.scheme.lower()
+    try:
+        port = parts.port or {"http": 80, "https": 443}.get(scheme)
+    except ValueError:
+        port = -1
+    return scheme, (parts.hostname or "").lower(), port
+
+
+def _item_url(manifest_url: str, url: str) -> str | None:
+    """The item's URL, accepted only on the manifest's own origin (2.5.7).
+
+    A relative URL is resolved against the manifest. The result must use
+    http(s) and the same scheme, host and port as the manifest, so a
+    manifest can never send Home Assistant to another address (an internal
+    host, say) and have the response saved under the public www/ folder.
+    The official catalog serves every file from its own host.
+    """
+    resolved = urljoin(manifest_url, url)
+    origin = _origin(resolved)
+    if origin[0] not in ("http", "https") or not origin[1]:
+        return None
+    return resolved if origin == _origin(manifest_url) else None
+
+
+def _adapt_item(raw: Any, manifest_url: str) -> dict[str, Any] | None:
     """Map an external manifest item to the integration's normalised shape.
 
     Returns None for items we can't or won't use (unknown type, missing
-    required fields, suspicious id). The caller filters these out.
+    required fields, suspicious id, a URL off the manifest's own origin).
+    The caller filters these out.
     """
     if not isinstance(raw, dict):
         return None
@@ -571,7 +618,10 @@ def _adapt_item(raw: Any) -> dict[str, Any] | None:
     # Sanity-check the id so we can safely use it as a filename. The
     # manifest's ids are slug-like (alnum + underscore), but we don't
     # blindly trust an external source.
-    if not re.match(r"^[A-Za-z0-9_\-]+$", str(sid)) or len(sid) > 150:
+    if not re.fullmatch(r"[A-Za-z0-9_\-]+", str(sid)) or len(sid) > 150:
+        return None
+    item_url = _item_url(manifest_url, str(url))
+    if item_url is None:
         return None
 
     folder = _CATEGORY_FOLDER.get(category, category)
@@ -589,7 +639,7 @@ def _adapt_item(raw: Any) -> dict[str, Any] | None:
         "category": category,
         "name": name,
         "rel_path": rel_path,
-        "url": str(url),
+        "url": item_url,
         "duration_s": raw.get("duration_s"),
         "size_bytes": raw.get("sizeBytes"),
     }

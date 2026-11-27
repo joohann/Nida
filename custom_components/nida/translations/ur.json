@@ -13,64 +13,82 @@
   "options": {
     "step": {
       "init": {
-        "title": "ندا کے اختیارات",
-        "description": "نماز کے اوقات، آوازیں، زبان اور میڈیا پلیئرز سنبھالنے کے لیے [مسجد ڈیش بورڈ](/nida) کھولیں۔\n\nنیچے والا سوئچ طے کرتا ہے کہ مسجد سائیڈبار میں بھی دکھائی دے یا نہیں۔",
+        "title": "{name} کے اختیارات",
+        "description": "نماز کے اوقات، آوازیں، زبان اور میڈیا پلیئرز سنبھالنے کے لیے [{panel} ڈیش بورڈ](/nida) کھولیں۔\n\nنیچے والا سوئچ طے کرتا ہے کہ {panel} سائیڈبار میں بھی دکھائی دے یا نہیں۔",
         "data": {
-          "show_in_sidebar": "مسجد کو سائیڈبار میں دکھائیں"
+          "show_in_sidebar": "{panel} کو سائیڈبار میں دکھائیں"
         }
       }
     }
   },
+  "issues": {
+    "api_unreachable": {
+      "title": "Nida نماز کے اوقات کی API تک نہیں پہنچ پا رہا",
+      "description": "Nida، Aladhan کی نماز کے اوقات کی API (`api.aladhan.com`) تک نہیں پہنچ سکا اور آخری محفوظ شدہ اوقات دکھا رہا ہے۔\n\nاس کی سب سے عام وجہ آپ کے نیٹ ورک میں کوئی DNS بلاکر ({blocker}) ہوتا ہے جو API کا ڈومین بلاک کرتا ہے۔\n\n**حل:** اپنے بلاکر میں ان دو ڈومینز کی اجازت دیں اور پھر Nida کو دوبارہ لوڈ کریں:\n\n- `api.aladhan.com`\n- `bahriya.app`\n\n**AdGuard Home میں:** Filters → Custom filtering rules کھولیں اور یہ شامل کریں:\n```\n@@||api.aladhan.com^\n@@||bahriya.app^\n```\nپھر DNS کیش صاف کریں۔ جب Nida دوبارہ API تک پہنچ سکے گا تو یہ پیغام غائب ہو جائے گا۔"
+    }
+  },
   "entity": {
-    "sensor": {
-      "fajr": {
-        "name": "فجر"
-      },
-      "dhuhr": {
-        "name": "ظہر"
-      },
-      "asr": {
-        "name": "عصر"
-      },
-      "maghrib": {
-        "name": "مغرب"
-      },
-      "isha": {
-        "name": "عشاء"
-      },
-      "fajr_readable": {
-        "name": "فجر (آسان)"
-      },
-      "dhuhr_readable": {
-        "name": "ظہر (آسان)"
-      },
-      "asr_readable": {
-        "name": "عصر (آسان)"
-      },
-      "maghrib_readable": {
-        "name": "مغرب (آسان)"
-      },
-      "isha_readable": {
-        "name": "عشاء (آسان)"
-      },
-      "hijri_date": {
-        "name": "ہجری تاریخ"
-      },
-      "hijri_day": {
-        "name": "ہجری دن"
-      },
-      "hijri_month": {
-        "name": "ہجری مہینہ"
-      },
-      "hijri_year": {
-        "name": "ہجری سال"
-      },
-      "hijri_holiday": {
-        "name": "ہجری تعطیل"
-      },
-      "next_prayer": {
-        "name": "اگلی نماز"
+    "select": {
+      "visitors_mode": {
+        "name": "مہمانوں کا موڈ",
+        "state": {
+          "off": "بند",
+          "1h": "1 گھنٹہ",
+          "2h": "2 گھنٹے",
+          "3h": "3 گھنٹے",
+          "4h": "4 گھنٹے",
+          "6h": "6 گھنٹے",
+          "8h": "8 گھنٹے",
+          "12h": "12 گھنٹے",
+          "24h": "24 گھنٹے",
+          "until_off": "جب تک میں بند نہ کروں"
+        },
+        "state_attributes": {
+          "until": {
+            "name": "تک"
+          }
+        }
+      }
+    },
+    "switch": {
+      "visitors_mode": {
+        "name": "مہمانوں کا موڈ",
+        "state_attributes": {
+          "until": {
+            "name": "تک"
+          }
+        }
       }
     }
+  },
+  "common": {
+    "welcome_message": "**السلام علیکم۔** {name} تیار ہے۔\n\n**{panel}** سائیڈبار میں موجود ہے، یا خودکار اذان کے لیے نماز کے اوقات، آوازیں، زبان اور میڈیا پلیئرز ترتیب دینے کے لیے براہِ راست [{panel} ڈیش بورڈ](/nida) کھولیں۔",
+    "pre_adhan_message_one": "**{prayer}** میں {minutes} منٹ باقی ہے۔",
+    "pre_adhan_message_other": "**{prayer}** میں {minutes} منٹ باقی ہیں۔",
+    "calendar_title": "{name} · اسلامی کیلنڈر",
+    "calendar_holiday_today": "{occasion} آج ہے",
+    "calendar_holiday_tomorrow": "{occasion} کل ہے",
+    "calendar_holiday_in_days_one": "{occasion} {days} دن بعد ہے",
+    "calendar_holiday_in_days_other": "{occasion} {days} دن بعد ہے",
+    "calendar_today": "آج: {occasion}",
+    "calendar_tonight": "آج رات: {occasion}",
+    "occasion_islamic_new_year": "اسلامی نیا سال",
+    "occasion_mawlid": "میلاد النبی",
+    "occasion_eid_al_fitr": "عید الفطر",
+    "occasion_eid_al_adha": "عید الاضحیٰ",
+    "occasion_ashura_pre": "عاشورہ کا روزہ (9 محرم)",
+    "occasion_ashura": "عاشورہ کا روزہ (10 محرم)",
+    "occasion_ashura_post": "عاشورہ کا روزہ (11 محرم)",
+    "occasion_arafah": "یوم عرفہ",
+    "occasion_white_days": "سفید دن",
+    "occasion_weekly_sunnah": "ہفتہ وار سنت روزہ",
+    "occasion_laylatul_qadr": "لیلۃ القدر (رمضان کی {night}ویں رات)",
+    "live_next": "اگلی نماز",
+    "live_now": "ابھی",
+    "prayer_fajr": "فجر",
+    "prayer_dhuhr": "ظہر",
+    "prayer_asr": "عصر",
+    "prayer_maghrib": "مغرب",
+    "prayer_isha": "عشاء"
   }
 }

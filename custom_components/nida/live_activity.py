@@ -17,6 +17,13 @@ a chronometer runs the app shows the timer instead of the message, so the name
 and time of the prayer go in `critical_text`, the corner label.
 
 Changelog:
+  2.5.7 (2026-11-27): slots use prayer_times.coordinator_datetimes(), so an
+                      Isha after midnight gets its card on the coming night.
+                      The progress bar refreshes every 15 minutes instead of
+                      every 5 (LIVE_ACTIVITY_REFRESH_MINUTES). The texts come
+                      from the translation files (texts.py) instead of an own
+                      table, and the prayer's name is written as the panel
+                      writes it in Nida's language (Subuh, الفجر, ...).
   2.5.0 (2026-10-10): New file — Live Activity for the next prayer, with a day
                        card (Dhuhr/Asr) and a night card (Fajr/Maghrib/Isha),
                        prayer name + time in the corner, and texts in the
@@ -63,7 +70,9 @@ from .const import (
     PRAYERS,
 )
 from .coordinator import PrayerTimesCoordinator
-from .scheduler import _parse_today_time, brand_image_url
+from .prayer_times import coordinator_datetimes
+from .scheduler import brand_image_url
+from .texts import NidaTexts, async_get_texts
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -71,26 +80,6 @@ _LOGGER = logging.getLogger(__name__)
 # service would just get a plain notification.
 _MOBILE_APP_PREFIX = "notify.mobile_app_"
 _TEST_SECONDS = 90
-
-# Card texts, keyed by the panel's language codes (Malay is "ms").
-_TEXTS: dict[str, dict[str, str]] = {
-    "en": {"next": "Next prayer", "now": "Now"},
-    "nl": {"next": "Volgend gebed", "now": "Nu"},
-    "ar": {"next": "الصلاة القادمة", "now": "الآن"},
-    "tr": {"next": "Sonraki namaz", "now": "Şimdi"},
-    "de": {"next": "Nächstes Gebet", "now": "Jetzt"},
-    "fr": {"next": "Prochaine prière", "now": "Maintenant"},
-    "ms": {"next": "Solat seterusnya", "now": "Sekarang"},
-    "id": {"next": "Salat berikutnya", "now": "Sekarang"},
-    "ur": {"next": "اگلی نماز", "now": "ابھی"},
-    "fa": {"next": "نماز بعدی", "now": "اکنون"},
-}
-
-
-def _texts(language: str | None) -> dict[str, str]:
-    base = (language or "en").replace("_", "-").split("-")[0].lower()
-    return _TEXTS.get(base, _TEXTS["en"])
-
 
 def _clamp_minutes(raw) -> int:
     try:
@@ -204,7 +193,8 @@ class NidaLiveActivity:
         remaining = max((target - now).total_seconds(), 1)
         total = max(lead.total_seconds(), remaining)
         slot = _Slot(prayer, target, target - timedelta(seconds=total), target)
-        payload = self._build_payload(slot, "ahead", remaining, False)
+        texts = await async_get_texts(self.hass, self.entry)
+        payload = self._build_payload(slot, "ahead", remaining, False, texts)
 
         if self._unsub_test is not None:
             self._unsub_test()
@@ -241,7 +231,6 @@ class NidaLiveActivity:
         timings = data.get("data", {}).get("timings", {})
         if not timings:
             return []
-        now = dt_util.now()
         lead = timedelta(
             minutes=_clamp_minutes(
                 self.entry.options.get(OPT_LIVE_ACTIVITY_MINUTES)
@@ -249,9 +238,12 @@ class NidaLiveActivity:
         )
         linger = timedelta(minutes=LIVE_ACTIVITY_LINGER_MINUTES)
 
+        # 2.5.7: the shared timestamps, so an Isha after midnight gets its
+        # card on the coming night (prayer_times.py).
+        stamps = coordinator_datetimes(self.coordinator)
         targets = []
         for prayer in PRAYERS:
-            target = _parse_today_time(timings.get(prayer.capitalize()), now)
+            target = stamps.get(prayer.capitalize())
             if target is not None:
                 targets.append((prayer, target))
         targets.sort(key=lambda p: p[1])
@@ -309,7 +301,8 @@ class NidaLiveActivity:
         silent = self._last_key is not None and phase == "ahead" and (
             self._last_key[0] == slot.prayer and self._last_key[1] == "ahead"
         )
-        payload = self._build_payload(slot, phase, max(remaining, 0), silent)
+        texts = await async_get_texts(self.hass, self.entry)
+        payload = self._build_payload(slot, phase, max(remaining, 0), silent, texts)
         self._last_key = key
         await self._async_send(payload)
 
@@ -319,13 +312,10 @@ class NidaLiveActivity:
         phase: str,
         remaining: float,
         silent: bool,
+        texts: NidaTexts,
     ) -> dict:
-        # Follow the panel's language choice; "auto" (or unset) means HA's.
-        chosen = self.entry.options.get("language")
-        text = _texts(
-            self.hass.config.language if chosen in (None, "", "auto") else chosen
-        )
-        name = slot.prayer.capitalize()
+        # Nida's language (the panel's choice, else HA's), see texts.py.
+        name = texts.prayer(slot.prayer)
         palette = LIVE_ACTIVITY_DAY if slot.prayer in LIVE_ACTIVITY_DAY_PRAYERS else LIVE_ACTIVITY_NIGHT
         icon = (
             LIVE_ACTIVITY_ICON_DAY
@@ -334,7 +324,7 @@ class NidaLiveActivity:
         )
 
         if phase == "now":
-            message = f"{name} · {text['now']}"
+            message = f"{name} · {texts.get('live_now')}"
         else:
             message = f"{name} · {slot.target.strftime('%H:%M')}"
 
@@ -389,7 +379,7 @@ class NidaLiveActivity:
             )
         if silent:
             data["silent"] = True
-        return {"title": text["next"], "message": message, "data": data}
+        return {"title": texts.get("live_next"), "message": message, "data": data}
 
     async def _async_clear_if_up(self) -> None:
         if self._last_key is None:
