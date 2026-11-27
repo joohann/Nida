@@ -18,6 +18,11 @@ calculation like prayer times. They're still passed through when available
 for consistency with the rest of Nida and in case that ever changes.
 
 Changelog:
+  2.5.6 (2026-11-27): the calendar lookups now also catch
+                      asyncio.TimeoutError, not just aiohttp.ClientError,
+                      so an API timeout returns an empty list (the caller
+                      renders an empty grid) instead of raising out of the
+                      nida/get_calendar_month websocket command.
   2.1.34 (2026-07-11): events_for_hijri_day now also matches
                        LAYLATUL_QADR_DATES (const.py) — the fifth Islamic
                        Calendar reminder type, odd nights 21/23/25/27/29
@@ -117,7 +122,7 @@ async def _fetch_month(
                     return []
                 body = await response.json()
                 return body.get("data", []) or []
-    except aiohttp.ClientError as err:
+    except (aiohttp.ClientError, asyncio.TimeoutError) as err:
         _LOGGER.warning(
             "Nida calendar lookahead: API error for %s-%s: %s", month, year, err
         )
@@ -231,7 +236,7 @@ async def async_get_hijri_month_calendar(
                     return []
                 body = await response.json()
                 entries = body.get("data", []) or []
-    except aiohttp.ClientError as err:
+    except (aiohttp.ClientError, asyncio.TimeoutError) as err:
         _LOGGER.warning(
             "Nida calendar month view: API error for Hijri %s-%s: %s",
             hijri_month, hijri_year, err,

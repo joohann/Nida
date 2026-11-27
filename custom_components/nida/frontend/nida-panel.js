@@ -25,6 +25,25 @@
  *   catalog wiring is built.
  *
  * Changelog:
+ *   2.5.6  (2026-11-27): _saveSettings() sends only the change; the server
+ *                        merges it and returns the merged options, which the
+ *                        panel takes over once no other save is in flight.
+ *                        Sending the whole local copy used to undo changes
+ *                        made elsewhere since the panel loaded (e.g. visitors
+ *                        mode switched off, then back on by a volume change
+ *                        on a tablet). The voiced-jingle follow flag, which
+ *                        was only set locally, is now saved with the pick.
+ *   2.5.6  (2026-11-27): Full innerHTML sweep (every ${...} in every template
+ *                        traced back to its source). Entity states were
+ *                        already escaped in 2.5.4; now the remaining outside
+ *                        values go through _escape() too: overlay-list item
+ *                        keys (entity ids, user ids, notify services, dua ids
+ *                        from the sound catalog), the city-suggestion
+ *                        coordinates, the calendar day numbers and the
+ *                        version attribute of the donate button.
+ *                        _effectiveLanguage() falls back to "en" for a stored
+ *                        language the panel does not ship, instead of handing
+ *                        it to Intl (which threw and broke the country picker).
  *   2.5.4  (2026-11-26): Entity states and server text are escaped before they
  *                        reach innerHTML: the Hijri date in the Today card, the
  *                        error screen and the calculation-method name; the Hijri
@@ -6417,7 +6436,7 @@ const NIDA_ISSUES_URL = "https://github.com/joohann/Nida/issues";
 // Used in the footer and tagged onto backup exports (so a future restore
 // can tell how old a backup file is). Bump this alongside manifest.json
 // at release time — see the "Versiebump" changelog task.
-const NIDA_PANEL_VERSION = "2.5.5";
+const NIDA_PANEL_VERSION = "2.5.6";
 
 // 2.2.0 — watercolor mosque brand icon (from Johann's approved ornament
 // sheet), shown in the header tile in ALL themes. WebP with alpha,
@@ -7899,19 +7918,33 @@ class NidaPanel extends HTMLElement {
 
   async _saveSettings(patch) {
     if (!this._entryId) return;
-    const next = { ...(this._settings || {}), ...patch };
-    this._settings = next;
+    // 2.5.6: only the change goes to the server, which merges it into the
+    // stored options and returns the result. Sending the whole local copy
+    // used to put back anything changed elsewhere since the panel loaded
+    // (another device, the visitors-mode switch, its expiry timer, an
+    // automation). The local copy is updated right away for the UI.
+    this._settings = { ...(this._settings || {}), ...patch };
+    this._pendingSaves = (this._pendingSaves || 0) + 1;
+    let res;
     try {
-      await this._hass.callWS({
+      res = await this._hass.callWS({
         type: "nida/update_settings",
         entry_id: this._entryId,
-        options: next,
+        options: patch,
       });
     } catch (e) {
+      this._pendingSaves -= 1;
       this._error = this._errorText(e);
       this._errorIsConnection = this._isConnectionError(e);
       this._render();
       return;
+    }
+    this._pendingSaves -= 1;
+    // Take over the merged options, which also brings in changes made
+    // elsewhere. Only once no other save is in flight, so an older reply
+    // never undoes a newer change.
+    if (this._pendingSaves === 0 && res?.options && typeof res.options === "object") {
+      this._settings = res.options;
     }
     this._render();
     this._showSaveToast();
@@ -7965,7 +7998,10 @@ class NidaPanel extends HTMLElement {
 
   _effectiveLanguage() {
     const stored = this._settings?.language ?? "auto";
-    if (stored !== "auto") return stored;
+    // 2.5.6: only a language the panel ships counts; anything else (a
+    // hand-edited or restored backup) used to reach Intl as a locale and
+    // throw "Invalid language tag", which broke the country picker.
+    if (stored !== "auto") return TRANSLATIONS[stored] ? stored : "en";
     const hassLang = (this._hass?.language || "en").slice(0, 2).toLowerCase();
     return TRANSLATIONS[hassLang] ? hassLang : "en";
   }
@@ -8286,8 +8322,8 @@ class NidaPanel extends HTMLElement {
       <div class="city-suggestion"
            data-action="pick-city"
            data-name="${this._escape(s.name)}"
-           data-lat="${s.lat}"
-           data-lon="${s.lon}">
+           data-lat="${this._escape(s.lat)}"
+           data-lon="${this._escape(s.lon)}">
         <div class="city-suggestion-name">${this._escape(s.name)}</div>
         <div class="city-suggestion-sub">${this._escape(s.display_name)}</div>
       </div>
@@ -8801,7 +8837,7 @@ class NidaPanel extends HTMLElement {
           </div>
         </div>
         <div class="footer-support">
-          <majikan-donate accent="--nida-gold" contact="https://majikan.nl/contact-me" version="${this._haInfo?.version || ''}"></majikan-donate>
+          <majikan-donate accent="--nida-gold" contact="https://majikan.nl/contact-me" version="${this._escape(this._haInfo?.version || "")}"></majikan-donate>
         </div>
         <div class="footer-note">Nida ${NIDA_PANEL_VERSION}</div>
       </div>
@@ -13476,8 +13512,8 @@ class NidaPanel extends HTMLElement {
       if (events.length) cls.push("has-event");
       return `
         <button class="${cls.join(" ")}"
-                ${events.length ? `data-action="open-calendar-day" data-hijri-day="${d.hijri_day}"` : "disabled"}>
-          <span class="calendar-day-num">${d.hijri_day}</span>
+                ${events.length ? `data-action="open-calendar-day" data-hijri-day="${this._escape(d.hijri_day)}"` : "disabled"}>
+          <span class="calendar-day-num">${this._escape(d.hijri_day)}</span>
           <span class="calendar-day-dots">${dots}</span>
         </button>`;
     }).join("");
@@ -14257,15 +14293,19 @@ class NidaPanel extends HTMLElement {
         // 2.5.4 — picking the voiced jingle in the panel language means
         // "my language": it follows later language changes. A pick from
         // "Other languages" is a deliberate fixed choice.
+        let extra = {};
         if (sound.category === "pre_adhan_jingle" && !this._fajrAlarmSoundPicking &&
             this._voicedJingleLang(sound.rel_path)) {
           const follow = this._voicedJingleLang(sound.rel_path) ===
             this._wantedVoicedLang(this._catalog?.sounds);
           this._settings = { ...(this._settings || {}), pre_adhan_jingle_follow_language: follow };
+          // 2.5.6: saved together with the pick. It used to ride along
+          // only because the whole local copy was sent on every save.
+          extra = { pre_adhan_jingle_follow_language: follow };
           // The pick becomes the parent row; fold the children away again.
           this._voicedOthersOpen = false;
         }
-        this._selectSound(sound);
+        this._selectSound(sound, extra);
       }
     }
   }
@@ -14373,7 +14413,7 @@ class NidaPanel extends HTMLElement {
     }
   }
 
-  _selectSound(sound) {
+  _selectSound(sound, extra = {}) {
     // Tapping a not-yet-downloaded row is ambiguous: select-and-download,
     // or just select? We pick "download first, then auto-select on
     // success" — the Android app does the same, and it avoids a 404
@@ -14395,7 +14435,7 @@ class NidaPanel extends HTMLElement {
           } else if (this._fajrAlarmSoundPicking) {
             this._assignFajrAlarmSound(sound);
           } else {
-            this._saveSettings({ [`sound_${sound.category}`]: sound.rel_path });
+            this._saveSettings({ [`sound_${sound.category}`]: sound.rel_path, ...extra });
           }
         }
       })();
@@ -14409,7 +14449,7 @@ class NidaPanel extends HTMLElement {
       this._assignFajrAlarmSound(sound);
       return;
     }
-    this._saveSettings({ [`sound_${sound.category}`]: sound.rel_path });
+    this._saveSettings({ [`sound_${sound.category}`]: sound.rel_path, ...extra });
     this._renderPortal();
   }
 
@@ -14853,7 +14893,7 @@ class NidaPanel extends HTMLElement {
           <div class="welcome-thanks">${w.thanks}</div>
           <div class="welcome-author">${w.author}</div>
           <button class="welcome-cta" data-action="dismiss-welcome">${w.cta}</button>
-          <majikan-donate accent="--nida-gold" contact="https://majikan.nl/contact-me" version="${this._haInfo?.version || ''}"></majikan-donate>
+          <majikan-donate accent="--nida-gold" contact="https://majikan.nl/contact-me" version="${this._escape(this._haInfo?.version || "")}"></majikan-donate>
         </div>
       </div>
     `;
@@ -14950,12 +14990,12 @@ class NidaPanel extends HTMLElement {
           ${searchHtml}
           <div class="overlay-list">
             ${items.map((it) => `
-              <div class="overlay-item ${it.active ? "active" : ""}" data-action="${action}" data-key="${it.key}">
+              <div class="overlay-item ${it.active ? "active" : ""}" data-action="${action}" data-key="${this._escape(it.key)}">
                 <span>${this._escape(it.label)}</span>
                 <span class="overlay-item-controls">
                   ${secondary && secondary.showFor(it) ? `
                     <div class="toggle-mini critical ${secondary.isOn(it) ? "on" : ""}"
-                         data-action="${secondary.action}" data-key="${it.key}"
+                         data-action="${secondary.action}" data-key="${this._escape(it.key)}"
                          title="${this._escape(secondary.title)}">
                       ${secondary.icon}
                     </div>

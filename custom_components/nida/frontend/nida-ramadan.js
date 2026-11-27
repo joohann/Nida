@@ -26,6 +26,23 @@
  *     as the panel's own ?theme override.
  *
  * Changelog:
+ *   2.5.6 (2026-11-27): the settings drawer uses the theme's colours instead
+ *                       of the day-phase palette around it: in daytime (and
+ *                       always in ramadan-light) it showed dark text on its
+ *                       fixed dark green. Text colours come from :host, the
+ *                       background from --nida-surface/--nida-bg, the gear
+ *                       icon from --nida-gold.
+ *   2.5.6 (2026-11-27): the settings drawer builds its sections from the
+ *                       panel's _sectionRenderers() and _visibleGroups(),
+ *                       and shows the panel's notice to users who may not
+ *                       change settings. The old list called the removed
+ *                       _htmlSectionSoundModes(), so html() threw a
+ *                       TypeError and the Ramadan Edition (and its
+ *                       preview) never rendered.
+ *   2.5.6 (2026-11-27): schedule card now escapes the Hijri date
+ *                       (p._hijriDateText(), raw AlAdhan day/month/year)
+ *                       with p._escape() before it enters shadowRoot
+ *                       innerHTML, matching the base panel's Today card.
  *   2.2.0 (2026-07-11): New file — Ramadan Edition layout module per the
  *                       approved mockup (single column, day phases, iftar
  *                       experience, progress/dua/quran/qadr cards, gear
@@ -849,17 +866,26 @@ export function css(p) {
 
   /* settings drawer — a native <dialog> so showModal() lifts it into the
      top layer, immune to transformed ancestors (2.0.11 lesson). Hosts the
-     existing settings sections untouched. */
+     existing settings sections untouched.
+     2.5.6: the drawer uses the theme's own colours, not the day-phase
+     palette of .r-app around it. .r-app.r-phase-day turns --nida-text dark
+     for the sunlit cards, and the drawer inherited that onto its fixed dark
+     green, so in daytime its sections were dark on dark. The theme's text
+     colours are taken at :host, which no phase overrides, and the
+     background now comes from --nida-surface/--nida-bg (light in
+     ramadan-light; the same two colours as before in ramadan-dark). */
+  :host{--r-theme-text:var(--nida-text);--r-theme-text-dim:var(--nida-text-dim)}
   .r-drawer{margin:0 0 0 auto;width:min(520px,96vw);height:100dvh;max-height:100dvh;
+    --nida-text:var(--r-theme-text);--nida-text-dim:var(--r-theme-text-dim);
     border:none;border-left:1px solid rgba(246,194,74,.25);
-    background:linear-gradient(200deg,rgba(17,36,27,.97),rgba(8,20,15,.99));
+    background:linear-gradient(200deg,var(--nida-surface,#11241B),var(--nida-bg,#08140F));
     box-shadow:-30px 0 80px rgba(0,0,0,.6);color:var(--nida-text);
     padding:clamp(14px,2.4vh,26px);overflow-y:auto}
   .r-drawer::backdrop{background:rgba(3,8,6,.6)}
   .r-drawer-head{display:flex;align-items:center;gap:.6em;
     font-family:var(--nida-display-font,'Cairo'),sans-serif;font-weight:700;
     font-size:1.25rem;margin-bottom:.6em}
-  .r-drawer-head svg{width:1.1em;height:1.1em;fill:none;stroke:var(--r-gold-soft);
+  .r-drawer-head svg{width:1.1em;height:1.1em;fill:none;stroke:var(--nida-gold,var(--r-gold-soft));
     stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   .r-dclose{margin-left:auto;cursor:pointer;background:none;border:none;
     color:var(--nida-text-dim);font-size:1.6rem;line-height:1}
@@ -1119,7 +1145,7 @@ function scheduleCard(p, st) {
     <div class="r-content">
       <div class="r-schhead">
         <span class="r-kicker" style="color:var(--nida-text)">${tr(p, "rme_today")}</span>
-        <span class="hj" data-live="hijri-date">${p._hijriDateText()}</span>
+        <span class="hj" data-live="hijri-date">${p._escape(p._hijriDateText())}</span>
         <span class="gg" data-live="hijri-greg">${p._gregorianDateText()}</span>
       </div>
       ${rows}
@@ -1252,18 +1278,22 @@ function drawer(p, st) {
     <div class="r-drawer-head">${SVG_GEAR} ${tr(p, "rme_settings")}
       <button class="r-dclose" data-action="ramadan-close-drawer" aria-label="close">×</button>
     </div>
-    ${p._htmlSectionLocation()}
-    ${p._htmlSectionPrayers()}
-    ${p._htmlSectionSpeakers()}
-    ${p._htmlSectionSounds()}
-    ${p._htmlSectionSoundModes()}
-    ${p._htmlSectionDua()}
-    ${p._htmlSectionNotifications()}
-    ${p._htmlSectionJumuah()}
-    ${p._htmlSectionRamadan()}
-    ${p._htmlSectionIslamicCalendar()}
-    ${p._htmlSectionSetup()}
+    ${drawerSections(p)}
   </dialog>`;
+}
+
+// 2.5.6: the drawer takes its sections from the panel itself: the same
+// groups, order and renderers as the settings column, and the same access
+// rule (someone who may not change settings gets the panel's notice). The
+// old hard-coded list still called _htmlSectionSoundModes(), which the
+// panel no longer has, so html() threw and the edition never rendered.
+function drawerSections(p) {
+  if (!p._maySeeSettings()) return p._htmlSettingsHidden();
+  const renderers = p._sectionRenderers();
+  return p._visibleGroups()
+    .flatMap((g) => g.sections)
+    .map((id) => (renderers[id] ? renderers[id]() : ""))
+    .join("");
 }
 
 export function html(p) {

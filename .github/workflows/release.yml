@@ -1,15 +1,22 @@
 # Changelog:
+#   2.5.6 (2026-11-27): Builds only on a pushed v* tag, no longer also on
+#     release published/edited. Creating a release (gh release create or the
+#     web UI) creates the tag, so that still builds, once. Two runs uploading
+#     nida.zip at the same moment made one fail with "Not Found" (v2.5.5),
+#     and every edit of the release notes rebuilt the zip. The concurrency
+#     group makes a re-pushed tag wait for a running build instead of racing it.
 #   2.3.14 (2026-09-09): Single-source release. nida.zip now contains only
 #     custom_components/nida/ (sounds + frontend live inside it). Dropped the
 #     old www/ sound and card bundling and the extension-pack assets, per the
 #     single-source-of-truth rule.
 name: Release Nida
 on:
-  release:
-    types: [published, edited]
   push:
     tags:
       - "v*"
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 permissions:
   contents: write
 jobs:

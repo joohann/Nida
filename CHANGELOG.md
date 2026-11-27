@@ -4,6 +4,42 @@ All notable changes to Nida are documented here. The `version` in
 `custom_components/nida/manifest.json` is the source of truth for the current
 release; newest entry on top.
 
+## 2.5.6 — 2026-11-27
+
+- **Security fix: settings stay within Nida.** Nida's settings commands now
+  only accept Nida's own configuration entry. Before, any logged-in user could
+  use them to read the settings of another integration (for some integrations
+  these include credentials), and a user with access to Nida's settings could
+  change them. Updating is recommended.
+- **Changes made elsewhere are no longer undone.** The panel and the card sent
+  their whole copy of the settings with every change, so anything changed since
+  they were opened (on another device, with the visitors mode switch or select,
+  by its timer or by an automation) was quietly put back. Visitors mode could
+  switch itself back on this way and silence every adhan. Now only the change
+  is sent, and Home Assistant merges it into the stored settings.
+- **Ramadan Edition works again.** Its settings drawer still asked the panel
+  for a section that no longer exists, so the edition and its preview could not
+  render and the panel stopped reacting to clicks. With the edition on by
+  default, this would have hit everyone at the start of Ramadan. The drawer now
+  shows the same sections as the settings column, including Volume and modes,
+  Other audio and the Fajr wake-up alarm, and users without settings access see
+  a notice instead. Its colours now follow the theme, so the sections are
+  readable in daytime and in the light variant, where the drawer showed dark
+  text on dark green.
+- **Escaping everywhere.** The Hijri date in the Ramadan schedule card is
+  escaped like everywhere else, and so are the remaining values from the server
+  in the panel (list keys, city coordinates, calendar days). The donate button
+  escapes its text and only opens http(s) links.
+- **Safer sound downloads.** A sound is only downloaded when its address and
+  file name match an item in the sound catalog, and only as an `.mp3`.
+- **Notifications only through `notify`.** Notification targets from the
+  settings are only ever called as `notify.<service>`, for real notifications
+  and the test button alike.
+- **Smaller fixes.** A timeout from the Aladhan calendar shows an empty month
+  instead of an error. City and country are URL-encoded in the lookup by name,
+  so a city with a space, `&` or accent works. A language code the panel does
+  not know falls back to English instead of breaking the country list.
+
 ## 2.5.5 — 2026-11-26
 
 - **Manifest fix.** `hassio` is now listed under `after_dependencies`. Nida

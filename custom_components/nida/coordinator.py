@@ -6,6 +6,12 @@ to get the hijri data. sensor.py reads it straight from
 coordinator.data["data"]["date"]["hijri"].
 
 Changelog:
+  2.5.6 (2026-11-26): _build_url now URL-encodes the city/country text in
+                      the /timingsByCity fallback. An unencoded value with
+                      a space, "&" or non-ASCII character would break the
+                      request or inject a stray query parameter. Only the
+                      manual-entry fallback (no lat/lon) was affected; the
+                      coordinate paths were already safe.
   2.5.4 (2026-11-12): The last good API response is now cached to disk
                       (Store "nida_timings_<entry>"). On startup, when the
                       Aladhan API cannot be reached (e.g. a transient
@@ -34,6 +40,7 @@ import asyncio
 import logging
 from datetime import date, timedelta
 from typing import Any
+from urllib.parse import quote_plus
 
 import aiohttp
 
@@ -229,9 +236,15 @@ class PrayerTimesCoordinator(DataUpdateCoordinator):
         country = self.entry.options.get(
             CONF_COUNTRY, self.entry.data.get(CONF_COUNTRY, "Netherlands")
         )
+        # URL-encode the free-text city/country: a value with a space
+        # ("New York"), an "&", or non-ASCII would otherwise break the
+        # query string or inject a stray parameter. This fallback path is
+        # only reached on manual entry without the panel's lat/lon
+        # autocomplete; the coordinate paths above are already safe.
         return (
             f"{API_BASE}/timingsByCity"
-            f"?city={city}&country={country}&method={method}"
+            f"?city={quote_plus(str(city))}"
+            f"&country={quote_plus(str(country))}&method={method}"
         )
 
     async def _async_update_data(self):

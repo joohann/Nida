@@ -23,10 +23,38 @@
  *
  * The popup renders in document.body (portal) with inline styles, so a
  * transform ancestor in the panel cannot break the fixed overlay.
+ *
+ * Attribute values and theme colours are HTML-escaped before they go into
+ * innerHTML, `accent` must be a CSS custom property name, and `url` and
+ * `contact` must be absolute http(s) links (anything else falls back to
+ * the default). Added 2026-11-27 (Nida 2.5.6) after a full innerHTML
+ * review; copy this version to the other integrations as well.
  */
 
 const DEFAULT_URL =
   "https://www.paypal.com/donate/?hosted_button_id=SGVVUM4GVYF66";
+
+// Escape a value before it goes into an innerHTML template.
+function esc(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Only absolute http(s) links; anything else (javascript:, data:, a
+// relative path, garbage) returns the fallback.
+function safeUrl(value, fallback = "") {
+  if (!value) return fallback;
+  try {
+    const u = new URL(String(value));
+    return u.protocol === "https:" || u.protocol === "http:" ? u.href : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
 
 // Strings per language. Default English; NL-Alert uses lang="nl".
 const STRINGS = {
@@ -92,11 +120,14 @@ class MajikanDonate extends HTMLElement {
       ? "nl"
       : "en";
     this._t = STRINGS[lang];
-    this._accentVar = this.getAttribute("accent") || "--primary-color";
+    const accentAttr = this.getAttribute("accent") || "";
+    this._accentVar = /^--[A-Za-z0-9_-]+$/.test(accentAttr)
+      ? accentAttr
+      : "--primary-color";
     this._label = this.getAttribute("label") || this._t.label;
     this._made = this.getAttribute("made") || this._t.made;
-    this._url = this.getAttribute("url") || DEFAULT_URL;
-    this._contact = this.getAttribute("contact") || "";
+    this._url = safeUrl(this.getAttribute("url"), DEFAULT_URL);
+    this._contact = safeUrl(this.getAttribute("contact"));
     this._version = this.getAttribute("version") || "";
 
     const accent = `var(${this._accentVar}, var(--primary-color, #ffe500))`;
@@ -119,9 +150,9 @@ class MajikanDonate extends HTMLElement {
           color: var(--secondary-text-color, #9a9a9a); font-family: monospace; }
       </style>
       <div class="bar">
-        <button class="trigger" title="${this._label}">${HEART} ${this._label}</button>
+        <button class="trigger" title="${esc(this._label)}">${HEART} ${esc(this._label)}</button>
       </div>
-      ${this._version ? `<div class="ver">v${this._version}</div>` : ""}`;
+      ${this._version ? `<div class="ver">v${esc(this._version)}</div>` : ""}`;
 
     root
       .querySelector(".trigger")
@@ -157,33 +188,33 @@ class MajikanDonate extends HTMLElement {
       "display:flex;align-items:center;justify-content:center;padding:16px;" +
       "font-family:var(--paper-font-body1_-_font-family,var(--mdc-typography-font-family,system-ui,sans-serif));";
     ov.innerHTML = `
-      <div role="dialog" aria-modal="true" aria-label="${this._label}"
-           style="width:min(460px,100%);background:${card};color:${text};
+      <div role="dialog" aria-modal="true" aria-label="${esc(this._label)}"
+           style="width:min(460px,100%);background:${esc(card)};color:${esc(text)};
                   border-radius:16px;overflow:hidden;box-sizing:border-box;">
         <div style="padding:16px 20px;">
-          <h2 style="margin:0;font-size:18px;font-weight:500;">${this._label}</h2>
+          <h2 style="margin:0;font-size:18px;font-weight:500;">${esc(this._label)}</h2>
         </div>
-        <div style="padding:4px 20px 16px;border-top:1px solid ${divider};
-                    border-bottom:1px solid ${divider};">
+        <div style="padding:4px 20px 16px;border-top:1px solid ${esc(divider)};
+                    border-bottom:1px solid ${esc(divider)};">
           <p style="margin:12px 0 0;font-size:14px;line-height:1.5;">
             ${this._t.redirect}</p>
-          <p style="margin:12px 0 0;font-size:13px;line-height:1.5;color:${dim};">
-            ${this._t.note(this._made)}</p>
+          <p style="margin:12px 0 0;font-size:13px;line-height:1.5;color:${esc(dim)};">
+            ${this._t.note(esc(this._made))}</p>
         </div>
         <div style="display:flex;gap:12px;align-items:center;padding:12px 20px;">
           <button id="mjk-go" style="font:inherit;font-weight:500;font-size:14px;
             cursor:pointer;padding:8px 16px;border-radius:8px;border:none;
-            background:${accent};color:${onAccent};">${this._t.go}</button>
+            background:${esc(accent)};color:${esc(onAccent)};">${this._t.go}</button>
           <button id="mjk-cancel" style="font:inherit;font-weight:500;
             font-size:14px;cursor:pointer;padding:8px 16px;border-radius:8px;
-            background:transparent;color:${accent};border:1px solid ${accent};"
+            background:transparent;color:${esc(accent)};border:1px solid ${esc(accent)};"
             >${this._t.cancel}</button>
           ${this._contact ? `<span style="flex:1"></span>
-          <a href="${this._contact}" target="_blank" rel="noopener"
+          <a href="${esc(this._contact)}" target="_blank" rel="noopener"
              style="font:inherit;font-weight:500;font-size:14px;text-decoration:none;
              display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
-             border-radius:8px;background:transparent;color:${accent};
-             border:1px solid ${accent};"><svg viewBox="0 0 24 24" width="15"
+             border-radius:8px;background:transparent;color:${esc(accent)};
+             border:1px solid ${esc(accent)};"><svg viewBox="0 0 24 24" width="15"
              height="15" fill="none" stroke="currentColor" stroke-width="2"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
              ><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"

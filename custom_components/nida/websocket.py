@@ -12,6 +12,16 @@ ws_update_settings only stored the chosen value. The Sound Library
 (catalog.py) added the actual download later.
 
 Changelog:
+  2.5.6 (2026-11-27): nida/update_settings merges the sent options into the
+                      stored ones instead of replacing them, and returns the
+                      merged options. Clients now send only what changed.
+  2.5.6 (2026-11-27): _get_entry only returns Nida's own config entries; an
+                      entry_id of another integration is treated as not
+                      found by every command that takes one.
+  2.5.6 (2026-11-27): _dispatch_notify (the test-notification path) now
+                      parses targets with scheduler._parse_notify_target
+                      and skips anything outside the notify domain, the
+                      same rule the scheduler applies to real notifications.
   2.5.0 (2026-10-10): New nida/test_live_activity command — a 90-second preview
                        of the next-prayer Live Activity for the panel's test button.
   2.1.35 (2026-07-11): nida/list_scenes added — same shape as
@@ -222,8 +232,16 @@ _PLACE_TYPES = {
 
 
 def _get_entry(hass: HomeAssistant, entry_id: str):
-    """Return the Nida config entry, or None when it does not exist."""
-    return hass.config_entries.async_get_entry(entry_id)
+    """Return the Nida config entry with this id, or None.
+
+    2.5.6: the entry must belong to Nida. An entry_id of another
+    integration is treated as not found, so the settings commands can
+    never read or write another integration's options.
+    """
+    entry = hass.config_entries.async_get_entry(entry_id)
+    if entry is None or entry.domain != DOMAIN:
+        return None
+    return entry
 
 
 def _may_edit_settings(hass: HomeAssistant, connection) -> bool:
@@ -292,7 +310,7 @@ async def ws_get_settings(hass: HomeAssistant, connection, msg) -> None:
 )
 @websocket_api.async_response
 async def ws_update_settings(hass: HomeAssistant, connection, msg) -> None:
-    """Store new settings sent by the panel."""
+    """Merge a settings change from the panel or card into the options."""
     # 2.3.16 — server-side gate; the panel hiding its settings is
     # cosmetic, this is what actually refuses the write.
     if not _may_edit_settings(hass, connection):
@@ -304,9 +322,18 @@ async def ws_update_settings(hass: HomeAssistant, connection, msg) -> None:
         connection.send_error(msg["id"], "not_found", "Config entry not found")
         return
 
-    hass.config_entries.async_update_entry(entry, options=msg["options"])
-    _LOGGER.debug("Nida settings bijgewerkt via panel: %s", msg["options"])
-    connection.send_result(msg["id"], {"success": True})
+    # 2.5.6: merge, never replace. The panel and the card send only what
+    # changed; replacing used to put back every value that was changed
+    # elsewhere (another device, the visitors-mode switch or select, the
+    # expiry timer, an automation) since the sender loaded its copy. The
+    # merged result goes back so the sender's copy catches up too.
+    hass.config_entries.async_update_entry(
+        entry, options={**entry.options, **msg["options"]}
+    )
+    _LOGGER.debug("Nida settings updated via panel: %s", msg["options"])
+    connection.send_result(
+        msg["id"], {"success": True, "options": dict(entry.options)}
+    )
 
 
 @websocket_api.websocket_command(
@@ -870,15 +897,19 @@ async def _dispatch_notify(
     Samsung TTS/alarm-stream workaround forks per target here exactly
     like it does for the real scheduler-fired notification.
     """
-    from .scheduler import _notify_service_data_for_target
+    from .scheduler import _notify_service_data_for_target, _parse_notify_target
 
     sent: list[str] = []
     for target in targets:
-        try:
-            domain, service = target.split(".", 1)
-        except ValueError:
-            _LOGGER.warning("Invalid notify target %r; skipping", target)
+        # 2.5.6: same notify-domain restriction as the scheduler: a target
+        # from the options is only ever dispatched as notify.<service>.
+        parsed = _parse_notify_target(target)
+        if parsed is None:
+            _LOGGER.warning(
+                "Skipping notify target %r: not a notify.<service>", target
+            )
             continue
+        domain, service = parsed
         # 2.3.12 — options threaded through so a TEST notification carries
         # the same Nida icon/branding the real ones do; a test that looked
         # different from the real thing would defeat its purpose.

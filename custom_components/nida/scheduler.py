@@ -12,6 +12,11 @@ scheduler fires `hass.services.async_call('notify', <target>, ...)`
 directly because the routing logic is purely scheduler-internal.
 
 Changelog:
+  2.5.6 (2026-11-27): notify targets are now parsed with
+                      _parse_notify_target, which refuses any domain other
+                      than notify. A stray or hand-edited target (e.g.
+                      homeassistant.restart) is skipped instead of being
+                      dispatched as a service call.
   2.5.4 (2026-11-12): The adhan notify message gained a [time] placeholder.
                       _maybe_schedule_notify passes the planned adhan
                       target through to _async_make_notify_handler, whose
@@ -996,11 +1001,13 @@ class NidaScheduler:
                         prayer, err,
                     )
             for target in targets:
-                try:
-                    domain, service = target.split(".", 1)
-                except ValueError:
-                    _LOGGER.warning("Invalid notify target %r; skipping", target)
+                parsed = _parse_notify_target(target)
+                if parsed is None:
+                    _LOGGER.warning(
+                        "Skipping notify target %r: not a notify.<service>", target
+                    )
                     continue
+                domain, service = parsed
                 # 2.0.95 — payload now forks per target (TTS/alarm-stream
                 # workaround vs. the normal critical/plain payload), so
                 # it's built inside the loop instead of once for all
@@ -1043,11 +1050,13 @@ class NidaScheduler:
                 )
                 return
             for target in targets:
-                try:
-                    domain, service = target.split(".", 1)
-                except ValueError:
-                    _LOGGER.warning("Invalid notify target %r; skipping", target)
+                parsed = _parse_notify_target(target)
+                if parsed is None:
+                    _LOGGER.warning(
+                        "Skipping notify target %r: not a notify.<service>", target
+                    )
                     continue
+                domain, service = parsed
                 service_data = _notify_service_data_for_target(
                     self.hass, target, title, message, critical=False,
                     options=self.entry.options,
@@ -1083,11 +1092,13 @@ class NidaScheduler:
                 )
                 return
             for target in targets:
-                try:
-                    domain, service = target.split(".", 1)
-                except ValueError:
-                    _LOGGER.warning("Invalid notify target %r; skipping", target)
+                parsed = _parse_notify_target(target)
+                if parsed is None:
+                    _LOGGER.warning(
+                        "Skipping notify target %r: not a notify.<service>", target
+                    )
                     continue
+                domain, service = parsed
                 service_data = _notify_service_data_for_target(
                     self.hass, target, title, message, critical=False,
                     options=self.entry.options,
@@ -1118,11 +1129,13 @@ class NidaScheduler:
                 )
                 return
             for target in targets:
-                try:
-                    domain, service = target.split(".", 1)
-                except ValueError:
-                    _LOGGER.warning("Invalid notify target %r; skipping", target)
+                parsed = _parse_notify_target(target)
+                if parsed is None:
+                    _LOGGER.warning(
+                        "Skipping notify target %r: not a notify.<service>", target
+                    )
                     continue
+                domain, service = parsed
                 service_data = _notify_service_data_for_target(
                     self.hass, target, title, message, critical=False,
                     options=self.entry.options,
@@ -1289,11 +1302,13 @@ class NidaScheduler:
                 )
                 return
             for target in targets:
-                try:
-                    domain, service = target.split(".", 1)
-                except ValueError:
-                    _LOGGER.warning("Invalid notify target %r; skipping", target)
+                parsed = _parse_notify_target(target)
+                if parsed is None:
+                    _LOGGER.warning(
+                        "Skipping notify target %r: not a notify.<service>", target
+                    )
                     continue
+                domain, service = parsed
                 service_data = _notify_service_data_for_target(
                     self.hass, target, title, message, critical=False,
                     options=self.entry.options,
@@ -1428,6 +1443,22 @@ def _tts_critical_notify_data(message: str) -> dict:
             "priority": "high",
         },
     }
+
+
+def _parse_notify_target(target: str) -> tuple[str, str] | None:
+    """Split a "notify.<service>" target, refusing any other domain.
+
+    2.5.6: notify targets come straight from the saved options and are
+    dispatched as domain.service. Restricting the domain to `notify` is
+    exactly what the panel's target picker offers, and it stops a stray or
+    hand-edited option (e.g. "homeassistant.restart") from being invoked
+    as a service here. Returns (domain, service), or None when the target
+    is malformed or not in the notify domain.
+    """
+    domain, sep, service = target.partition(".")
+    if not sep or domain != "notify" or not service:
+        return None
+    return domain, service
 
 
 def _is_android_tv_target(hass: HomeAssistant, target: str) -> bool:

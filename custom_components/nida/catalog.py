@@ -1,6 +1,12 @@
 """Nida sound catalog — fetch + download + delete.
 
 Changelog:
+  2.5.6 (2026-11-27): async_download_sound now refuses anything that is not
+                      a .mp3 catalog item. The (url, rel_path) pair must be
+                      present in the fetched catalog, so this admin-only
+                      endpoint can no longer pull an arbitrary url into the
+                      unauthenticated www/ root or write a non-catalog file
+                      type.
   2.1.29 (2026-07-09): New async_sound_duration_seconds(hass, rel_path) —
                        reads a sound file's real length via mutagen (new
                        dependency, see manifest.json), offloaded to the
@@ -602,6 +608,22 @@ async def async_download_sound(
         return {"ok": False, "error": "invalid_rel_path"}
     if not url or not url.startswith(("http://", "https://")):
         return {"ok": False, "error": "invalid_url"}
+
+    # 2.5.6: only download files that are actually in the catalog, to the
+    # .mp3 path the catalog assigns them. The rel_path regex and www/
+    # confinement above already block path traversal; this additionally
+    # stops this (admin-only) endpoint from pulling an ARBITRARY url (an
+    # internal host included) into the unauthenticated webroot, or writing
+    # a non-catalog file type. A legitimate download always originates from
+    # a catalog item the user picked, so the (url, rel_path) pair is listed.
+    if not rel_path.lower().endswith(".mp3"):
+        return {"ok": False, "error": "invalid_rel_path"}
+    catalog = await async_fetch_catalog(hass)
+    if not any(
+        item.get("url") == url and item.get("rel_path") == rel_path
+        for item in (catalog.get("sounds") or [])
+    ):
+        return {"ok": False, "error": "not_in_catalog"}
 
     parent = os.path.dirname(abs_path)
     tmp_path = abs_path + ".tmp"

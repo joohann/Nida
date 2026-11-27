@@ -31,6 +31,10 @@
  * card should look at home next to the rest of the user's dashboard.
  *
  * Changelog:
+ *   2.5.6  (2026-11-27): The visitors-mode menu sends only the change and takes
+ *                        over the merged options the server returns; when the
+ *                        server refuses or is unreachable, the card shows the
+ *                        stored state again instead of keeping its guess.
  *   2.5.4  (2026-11-26): The Hijri date (sensor states from the AlAdhan API)
  *                        is escaped with escapeHtml() before it goes into the
  *                        innerHTML templates of every card type.
@@ -249,7 +253,7 @@
  *                        the dashboard UI, not just YAML.
  */
 
-const NIDA_CARD_VERSION = "2.5.5";
+const NIDA_CARD_VERSION = "2.5.6";
 
 const PRAYERS = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
 
@@ -1146,18 +1150,25 @@ class NidaCard extends HTMLElement {
       const until = new Date(Date.now() + hours * 3600 * 1000).toISOString();
       patch = { guest_mode_enabled: true, guest_mode_hours: hours, guest_mode_until: until };
     }
+    // 2.5.6: only the change goes to the server, which merges it and
+    // returns the merged options. Sending the whole copy loaded when the
+    // card first rendered used to undo every setting changed since.
+    const before = this._settings;
     this._settings = { ...(this._settings || {}), ...patch };
     this._render();
     try {
-      await this._hass.callWS({
+      const res = await this._hass.callWS({
         type: "nida/update_settings",
         entry_id: this._entryId,
-        options: this._settings,
+        options: patch,
       });
+      if (res?.options && typeof res.options === "object") this._settings = res.options;
     } catch (e) {
-      // Best-effort; a stale toggle state is a minor annoyance, not
-      // worth surfacing an error UI for in a compact card.
+      // Refused (no settings access) or offline: show the stored state
+      // again instead of a visitors mode the server never saved.
+      this._settings = before;
     }
+    this._render();
   }
 
   // ───── render ─────────────────────────────────────────────────────────
